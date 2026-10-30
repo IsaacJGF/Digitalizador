@@ -9,31 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as RevisarRouteImport } from './routes/revisar'
-import { Route as QuestoesRouteImport } from './routes/questoes'
-import { Route as DocumentoRouteImport } from './routes/documento'
-import { Route as CatalogosRouteImport } from './routes/catalogos'
-import { Route as AnaliseProvasRouteImport } from './routes/analise-provas'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AnaliseProvasRouteImport } from './routes/analise-provas'
+import { Route as CatalogosRouteImport } from './routes/catalogos'
+import { Route as DocumentoRouteImport } from './routes/documento'
+import { Route as QuestoesRouteImport } from './routes/questoes'
+import { Route as RevisarRouteImport } from './routes/revisar'
 
-const RevisarRoute = RevisarRouteImport.update({
-  id: '/revisar',
-  path: '/revisar',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QuestoesRoute = QuestoesRouteImport.update({
-  id: '/questoes',
-  path: '/questoes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DocumentoRoute = DocumentoRouteImport.update({
-  id: '/documento',
-  path: '/documento',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CatalogosRoute = CatalogosRouteImport.update({
-  id: '/catalogos',
-  path: '/catalogos',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AnaliseProvasRoute = AnaliseProvasRouteImport.update({
@@ -41,9 +26,24 @@ const AnaliseProvasRoute = AnaliseProvasRouteImport.update({
   path: '/analise-provas',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const CatalogosRoute = CatalogosRouteImport.update({
+  id: '/catalogos',
+  path: '/catalogos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocumentoRoute = DocumentoRouteImport.update({
+  id: '/documento',
+  path: '/documento',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuestoesRoute = QuestoesRouteImport.update({
+  id: '/questoes',
+  path: '/questoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RevisarRoute = RevisarRouteImport.update({
+  id: '/revisar',
+  path: '/revisar',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -110,32 +110,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/revisar': {
-      id: '/revisar'
-      path: '/revisar'
-      fullPath: '/revisar'
-      preLoaderRoute: typeof RevisarRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/questoes': {
-      id: '/questoes'
-      path: '/questoes'
-      fullPath: '/questoes'
-      preLoaderRoute: typeof QuestoesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/documento': {
-      id: '/documento'
-      path: '/documento'
-      fullPath: '/documento'
-      preLoaderRoute: typeof DocumentoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/catalogos': {
-      id: '/catalogos'
-      path: '/catalogos'
-      fullPath: '/catalogos'
-      preLoaderRoute: typeof CatalogosRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/analise-provas': {
@@ -145,11 +124,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnaliseProvasRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/catalogos': {
+      id: '/catalogos'
+      path: '/catalogos'
+      fullPath: '/catalogos'
+      preLoaderRoute: typeof CatalogosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/documento': {
+      id: '/documento'
+      path: '/documento'
+      fullPath: '/documento'
+      preLoaderRoute: typeof DocumentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/questoes': {
+      id: '/questoes'
+      path: '/questoes'
+      fullPath: '/questoes'
+      preLoaderRoute: typeof QuestoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/revisar': {
+      id: '/revisar'
+      path: '/revisar'
+      fullPath: '/revisar'
+      preLoaderRoute: typeof RevisarRouteImport
       parentRoute: typeof rootRouteImport
     }
   }

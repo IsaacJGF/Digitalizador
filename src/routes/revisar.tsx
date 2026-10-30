@@ -464,17 +464,16 @@ function Page() {
           </div>
         )}
 
-        <div className="grid lg:grid-cols-2 gap-4">
+        <div className={draft.imageDataUrl ? "grid lg:grid-cols-2 gap-4" : "grid gap-4 max-w-4xl mx-auto"}>
+          {draft.imageDataUrl && (
           <div className="rounded-xl border bg-card overflow-hidden">
             <div className="p-3 border-b text-sm font-medium">Imagem original</div>
             <div className="p-4 bg-muted/30 flex items-center justify-center min-h-[300px] max-h-[80vh] overflow-auto">
-              {draft.imageDataUrl ? (
-                <img src={draft.imageDataUrl} alt="Original" className="max-w-full object-contain" />
-              ) : (
-                <p className="text-sm text-muted-foreground">Imagem indisponível</p>
-              )}
+              <img src={draft.imageDataUrl} alt="Original" className="max-w-full object-contain" />
             </div>
           </div>
+          )}
+
 
           <div className="rounded-xl border bg-card p-4 space-y-4">
             <ReferenceEditor

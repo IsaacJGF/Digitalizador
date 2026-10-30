@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { FileText, ImageIcon } from "lucide-react";
+import { FileText, ImageIcon, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppLayout } from "@/components/AppLayout";
 import { digitizeQuestion } from "@/lib/digitize.functions";
@@ -457,9 +457,35 @@ export function DigitalizarPage() {
             <h2 className="font-semibold">Etapa 1 — Escolher origem</h2>
             <p className="text-sm text-muted-foreground">Use imagem para uma questão rápida ou PDF para provas maiores.</p>
           </div>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2 sm:grid-cols-3">
             <ModeButton active={mode === "image"} icon={<ImageIcon className="size-4" />} title="Imagens" description="JPG, PNG ou WEBP em partes sequenciais." onClick={() => setMode("image")} />
             <ModeButton active={mode === "pdf"} icon={<FileText className="size-4" />} title="PDF" description="Selecione páginas, crie fila e revise em massa." onClick={() => setMode("pdf")} />
+            <ModeButton
+              active={false}
+              icon={<PenLine className="size-4" />}
+              title="Manual"
+              description="Digite a questão do zero e adicione imagens por fora."
+              onClick={() =>
+                saveDraftAndReview(
+                  {
+                    referencia_texto: "",
+                    referencia_fonte: "",
+                    questoes: [{
+                      numero: "",
+                      enunciado: "",
+                      alternativas: [],
+                      tipo: "multipla_escolha",
+                      resposta: "",
+                      fonte: "",
+                      tem_equacao: false,
+                      tem_imagem: false,
+                      baixa_confianca: [],
+                    } as DraftQuestion],
+                  },
+                  "Questão manual criada. Preencha os campos.",
+                )
+              }
+            />
           </div>
         </section>
 
