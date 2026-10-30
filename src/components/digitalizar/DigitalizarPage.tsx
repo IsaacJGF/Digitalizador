@@ -474,7 +474,7 @@ export function DigitalizarPage() {
                       numero: "",
                       enunciado: "",
                       alternativas: [],
-                      tipo: "objetiva",
+                      tipo: "multipla_escolha",
                       resposta: "",
                       fonte: "",
                       tem_equacao: false,
