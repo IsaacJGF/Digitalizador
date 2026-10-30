@@ -24,6 +24,8 @@ import {
   UnderlineType,
   WidthType,
 } from "docx";
+import { DEFAULT_REFERENCE_IMAGE_BLOCK_LAYOUT, normalizeExtraImages, normalizeImagePlacementLayout, type ImagePlacementLayout } from "@/lib/image-layout";
+import { legacyReferenceToContent, splitContent } from "@/lib/content-blocks";
 import { parseRichInlines, parseRichText, type RichAlign, type RichBlock, type RichInline } from "@/lib/rich-text";
 
 const Alt = z.object({ letra: z.string(), texto: z.string(), imagem: z.string().nullable().optional() });
@@ -41,6 +43,7 @@ const QInput = z.object({
   referencia_imagem_pos: z.string().nullable().optional(),
   referencia_imagem_layout: ImagePlacement,
   referencia_texto_apos: z.string().nullable().optional(),
+  referencia_imagens_extra: z.any().nullable().optional(),
   grupo_id: z.string().nullable().optional(),
   enunciado_imagem: z.string().nullable().optional(),
   enunciado_imagem_pos: z.string().nullable().optional(),
@@ -216,14 +219,23 @@ function buildPasChildren(data: PasInput): DocxChild[] {
 
 function referenceChildren(q: PasQuestion): DocxChild[] {
   const children: DocxChild[] = [];
-  const image = q.referencia_imagem ? imageParagraph(q.referencia_imagem, PAS_COLUMN_WIDTH_PX) : null;
-  const imagePos = q.referencia_imagem_pos ?? "depois";
+  const content = legacyReferenceToContent({
+    text: q.referencia_texto ?? "",
+    textAfter: q.referencia_texto_apos,
+    mainImage: q.referencia_imagem,
+    mainPos: q.referencia_imagem_pos,
+    mainLayout: q.referencia_imagem_layout,
+    extras: q.referencia_imagens_extra,
+  });
 
-  if (image && imagePos === "antes") children.push(image);
-  if (q.referencia_texto) children.push(...richChildrenFromText(q.referencia_texto, { firstLine: Math.round(1 * TWIP_PER_CM), spacingAfter: 90 }));
-  if (image && imagePos === "entre") children.push(image);
-  if (q.referencia_texto_apos) children.push(...richChildrenFromText(q.referencia_texto_apos, { firstLine: Math.round(1 * TWIP_PER_CM), spacingAfter: 90 }));
-  if (image && imagePos !== "antes" && imagePos !== "entre") children.push(image);
+  for (const block of splitContent(content.text, content.images)) {
+    if (block.type === "text") {
+      children.push(...richChildrenFromText(block.value, { firstLine: Math.round(1 * TWIP_PER_CM), spacingAfter: 90 }));
+    } else {
+      const image = imageParagraph(block.image.url, PAS_COLUMN_WIDTH_PX, undefined, block.image.layout);
+      if (image) children.push(image);
+    }
+  }
   if (q.referencia_fonte) children.push(pasParagraph(q.referencia_fonte, { size: PAS_REFERENCE_SIZE, align: AlignmentType.RIGHT, spacingAfter: 120 }));
 
   return children;
@@ -415,19 +427,22 @@ function readLatexScript(input: string, start: number): { value: string; end: nu
   return { value: input[start] ?? "", end: start + 1 };
 }
 
-function imageParagraph(dataUrl: string, maxWidthPx: number, align: typeof AlignmentType[keyof typeof AlignmentType] = AlignmentType.CENTER): Paragraph | null {
+function imageParagraph(dataUrl: string, maxWidthPx: number, align: typeof AlignmentType[keyof typeof AlignmentType] = AlignmentType.CENTER, placementInput?: unknown): Paragraph | null {
   const img = decodeDataUrl(dataUrl);
   if (!img) return null;
   const ratio = img.height / img.width;
-  const width = Math.max(40, Math.min(maxWidthPx, img.width));
+  const placement = placementInput
+    ? normalizeImagePlacementLayout({ ...DEFAULT_REFERENCE_IMAGE_BLOCK_LAYOUT, ...(placementInput as Partial<ImagePlacementLayout>), mode: "block" })
+    : null;
+  const width = Math.max(40, Math.min(maxWidthPx, img.width, placement ? (maxWidthPx * placement.width) / 100 : maxWidthPx));
   const height = width * ratio;
   return new Paragraph({
-    alignment: align,
+    alignment: placement?.align === "left" ? AlignmentType.LEFT : placement?.align === "right" ? AlignmentType.RIGHT : align,
     spacing: { after: 80 },
     children: [new ImageRun({
       type: img.type,
       data: img.buffer,
-      transformation: { width: Math.round(width), height: Math.round(height) },
+      transformation: { width: Math.round(width), height: Math.round(height), ...(placement ? { rotation: placement.rotation } : {}) },
     })],
   });
 }
@@ -477,10 +492,12 @@ function alignmentFromRichAlign(align: RichAlign) {
 }
 
 function getReferenceKey(q: PasQuestion) {
-  const hasReference = Boolean(q.referencia_texto?.trim() || q.referencia_texto_apos?.trim() || q.referencia_imagem);
+  const extraImages = normalizeExtraImages(q.referencia_imagens_extra);
+  const hasReference = Boolean(q.referencia_texto?.trim() || q.referencia_texto_apos?.trim() || q.referencia_imagem || extraImages.length > 0);
   if (!hasReference) return null;
   if (q.grupo_id?.trim()) return `grupo:${q.grupo_id.trim()}`;
-  return [q.referencia_texto?.trim() ?? "", q.referencia_texto_apos?.trim() ?? "", q.referencia_imagem ?? ""].join("|");
+  const extraImageSignature = extraImages.map((image) => `${image.url.length}:${image.url.slice(0, 64)}:${image.url.slice(-64)}:${JSON.stringify(image.layout)}`).join(",");
+  return [q.referencia_texto?.trim() ?? "", q.referencia_texto_apos?.trim() ?? "", q.referencia_imagem ?? "", extraImageSignature].join("|");
 }
 
 function validatePasQuestions(questions: PasQuestion[]) {

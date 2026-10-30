@@ -1,12 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import {
-  AlignCenter,
-  AlignLeft,
-  AlignRight,
-  ArrowDown,
   ArrowLeft,
-  ArrowUp,
   Save,
   Trash2,
   Plus,
@@ -34,19 +29,19 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AppLayout } from "@/components/AppLayout";
 import { ImageCropDialog, type ImageCropSource } from "@/components/ImageCropDialog";
+import { ContentBlocksEditor, type ContentImageRequest } from "@/components/ContentBlocksEditor";
 import { ImageLayoutEditor } from "@/components/ImageLayoutEditor";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { CatalogSelect, CatalogMultiSelect } from "@/components/CatalogSelect";
 import { ExtraImagesEditor } from "@/components/ExtraImagesEditor";
+import { legacyReferenceToContent, newContentImage, parseBlocks, serializeBlocks, stripImageMarkers, type ContentBlock } from "@/lib/content-blocks";
 import { loadDraft, clearDraft, LETRAS, reletter, DraftDigitization, DraftQuestion } from "@/lib/draft-store";
 import {
   DEFAULT_IMAGE_PLACEMENT_LAYOUT,
-  DEFAULT_REFERENCE_IMAGE_BLOCK_LAYOUT,
   normalizeExtraImage,
   normalizeImagePlacementLayout,
   normalizeExtraImages,
   type ExtraImage,
-  type ImagePlacementAlign,
   type ImagePlacementLayout,
 } from "@/lib/image-layout";
 import { formatMetadataSuggestion, hasMetadataSuggestion, suggestQuestionMetadata } from "@/lib/metadata-suggestions";
@@ -55,13 +50,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 type CatalogItem = { id: string; nome: string; ativo: boolean; area_id?: string; conteudo_id?: string };
-type ReferenceTextPart = "before" | "after";
-type ReferenceCursor = { part: ReferenceTextPart; start: number; end: number };
 type SharedMetadataKey = "ano" | "prova" | "instituicao";
 type CropTarget =
-  | { kind: "referencia"; cursor?: ReferenceCursor; replace?: boolean; currentImage?: string }
+  | ({ kind: "referencia" } & ContentImageRequest)
   | { kind: "enunciado"; currentImage?: string }
-  | { kind: "ref-extra"; index?: number; currentImage?: string }
   | { kind: "enun-extra"; index?: number; currentImage?: string }
   | { kind: "alt"; index: number; currentImage?: string };
 
@@ -76,7 +68,6 @@ function Page() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [saving, setSaving] = useState(false);
   const [classificationDialogOpen, setClassificationDialogOpen] = useState(false);
-  const [referenceCursor, setReferenceCursor] = useState<ReferenceCursor>({ part: "before", start: 0, end: 0 });
   const [cropTarget, setCropTarget] = useState<CropTarget | null>(null);
 
   const [areas, setAreas] = useState<CatalogItem[]>([]);
@@ -117,6 +108,14 @@ function Page() {
 
   if (!draft) return null;
   const active = draft.questoes[Math.min(activeIndex, draft.questoes.length - 1)];
+  const referenceContent = legacyReferenceToContent({
+    text: draft.referencia_texto,
+    textAfter: draft.referencia_texto_apos,
+    mainImage: draft.referencia_imagem,
+    mainPos: draft.referencia_imagem_pos,
+    mainLayout: draft.referencia_imagem_layout,
+    extras: draft.referencia_imagens_extra,
+  });
   const cropImageSources = cropTarget ? getCropImageSources(draft, active, cropTarget) : [];
 
   const areaItem = areas.find((a) => a.nome === active.area_geral);
@@ -139,68 +138,16 @@ function Page() {
     updateQuestion(activeIndex, (q) => ({ ...q, [k]: v }));
   };
 
-  const updateReferenceText = (part: ReferenceTextPart, value: string) => {
-    setDraft((current) => {
-      if (!current) return current;
-      const next = part === "before"
-        ? { ...current, referencia_texto: value }
-        : { ...current, referencia_texto_apos: value };
-      return current.referencia_imagem ? withAutoReferenceImagePosition(next) : next;
-    });
-  };
-
-  const updateReferenceImageLayout = (partial: Partial<ImagePlacementLayout>) => {
-    setDraft((current) => {
-      if (!current) return current;
-      return withReferenceBlockImageLayout({
-        ...current,
-        referencia_imagem_layout: normalizeImagePlacementLayout({
-          ...DEFAULT_REFERENCE_IMAGE_BLOCK_LAYOUT,
-          ...(current.referencia_imagem_layout ?? {}),
-          ...partial,
-          mode: "block",
-        }),
-      });
-    });
-  };
-
-  const rotateReferenceImage = (delta: number) => {
-    updateReferenceImageLayout({ rotation: (draft.referencia_imagem_layout?.rotation ?? 0) + delta });
-  };
-
-  const moveReferenceImage = (position: "antes" | "entre" | "depois") => {
-    setDraft((current) => {
-      if (!current?.referencia_imagem) return current;
-      let next: DraftDigitization = current;
-      if (position === "antes") {
-        next = {
-          ...current,
-          referencia_texto: "",
-          referencia_texto_apos: joinReferenceTextParts(current.referencia_texto, current.referencia_texto_apos ?? ""),
-        };
-      } else if (position === "depois") {
-        next = {
-          ...current,
-          referencia_texto: joinReferenceTextParts(current.referencia_texto, current.referencia_texto_apos ?? ""),
-          referencia_texto_apos: "",
-        };
-      }
-      return withReferenceBlockImageLayout({ ...next, referencia_imagem_pos: position });
-    });
-  };
-
-  const removeReferenceImage = () => {
-    setDraft((current) => {
-      if (!current) return current;
-      return {
-        ...current,
-        referencia_texto: joinReferenceTextParts(current.referencia_texto, current.referencia_texto_apos ?? ""),
-        referencia_texto_apos: "",
-        referencia_imagem: undefined,
-        referencia_imagem_pos: undefined,
-        referencia_imagem_layout: undefined,
-      };
-    });
+  const updateReferenceContent = (content: { text: string; images: ExtraImage[] }) => {
+    setDraft((current) => current ? {
+      ...current,
+      referencia_texto: content.text,
+      referencia_texto_apos: "",
+      referencia_imagem: undefined,
+      referencia_imagem_pos: undefined,
+      referencia_imagem_layout: undefined,
+      referencia_imagens_extra: content.images,
+    } : current);
   };
 
   const updateSharedMetadata = <K extends SharedMetadataKey>(key: K, value: DraftQuestion[K]) => {
@@ -237,12 +184,8 @@ function Page() {
   const setRelacionadosSel = (next: string[]) => update("conteudos_relacionados", next);
   const setTagsSel = (next: string[]) => update("tags_livres", next);
 
-  const referenceExtras = normalizeExtraImages(draft.referencia_imagens_extra);
   const statementExtras = normalizeExtraImages(active.enunciado_imagens_extra);
 
-  const setReferenceExtras = (images: ExtraImage[]) => {
-    setDraft((current) => (current ? { ...current, referencia_imagens_extra: images } : current));
-  };
   const setStatementExtras = (images: ExtraImage[]) => {
     updateQuestion(activeIndex, (q) => ({ ...q, enunciado_imagens_extra: images }));
   };
@@ -280,7 +223,7 @@ function Page() {
 
     const suggestion = suggestQuestionMetadata({
       question: active,
-      referenceText: [draft.referencia_texto, draft.referencia_texto_apos ?? ""].join(" "),
+      referenceText: stripImageMarkers(referenceContent.text),
       areas,
       conteudos,
       subconteudos,
@@ -355,20 +298,9 @@ function Page() {
     setClassificationDialogOpen(false);
     setSaving(true);
     try {
-      const hasReference = !!draft.referencia_texto.trim() || !!draft.referencia_texto_apos?.trim() || !!draft.referencia_imagem;
+      const referenceImages = referenceContent.images;
+      const hasReference = Boolean(stripImageMarkers(referenceContent.text).trim() || referenceImages.length > 0);
       const grupoId = hasReference || draft.questoes.length > 1 ? crypto.randomUUID() : null;
-      const referenceImageLayout = draft.referencia_imagem
-        ? normalizeImagePlacementLayout({
-          ...DEFAULT_REFERENCE_IMAGE_BLOCK_LAYOUT,
-          ...(draft.referencia_imagem_layout ?? {}),
-          mode: "block",
-        })
-        : null;
-      const referenceImagePos = draft.referencia_imagem
-        ? draft.referencia_imagem_pos && draft.referencia_imagem_pos !== "livre"
-          ? draft.referencia_imagem_pos
-          : getReferenceImagePosition(draft.referencia_texto, draft.referencia_texto_apos ?? "")
-        : null;
       const rows = draft.questoes.map((q) => ({
         numero: q.numero || null,
         enunciado: q.enunciado,
@@ -389,19 +321,18 @@ function Page() {
         prova: q.prova || null,
         instituicao: q.instituicao || null,
         observacoes: q.observacoes || null,
-        referencia_texto: draft.referencia_texto || null,
+        referencia_texto: referenceContent.text || null,
         referencia_fonte: draft.referencia_fonte || null,
-        referencia_imagem: draft.referencia_imagem ?? null,
-        referencia_imagem_pos: referenceImagePos,
-        referencia_imagem_layout: referenceImageLayout,
-        referencia_texto_apos: draft.referencia_texto_apos || null,
-        referencia_imagens_extra: normalizeExtraImages(draft.referencia_imagens_extra),
+        referencia_imagem: null,
+        referencia_imagem_pos: null,
+        referencia_imagem_layout: null,
+        referencia_texto_apos: null,
+        referencia_imagens_extra: referenceImages,
         grupo_id: grupoId,
         tem_equacao: q.tem_equacao,
         tem_imagem: q.tem_imagem
-          || !!draft.referencia_imagem
+          || referenceImages.length > 0
           || !!q.enunciado_imagem
-          || normalizeExtraImages(draft.referencia_imagens_extra).length > 0
           || normalizeExtraImages(q.enunciado_imagens_extra).length > 0
           || q.alternativas.some((a) => !!a.imagem),
         imagem_original_url: draft.imageDataUrl ?? null,
@@ -476,28 +407,15 @@ function Page() {
 
 
           <div className="rounded-xl border bg-card p-4 space-y-4">
-            <ReferenceEditor
-              draft={draft}
-              onTextChange={updateReferenceText}
-              onCursorChange={setReferenceCursor}
-              onInsertImage={() => setCropTarget({ kind: "referencia", cursor: referenceCursor })}
-              onReplaceImage={() => setCropTarget({ kind: "referencia", replace: true, currentImage: draft.referencia_imagem })}
-              onRemoveImage={removeReferenceImage}
-              onMoveImage={moveReferenceImage}
-              onRotateImage={rotateReferenceImage}
-              onImageLayoutChange={updateReferenceImageLayout}
+            <ContentBlocksEditor
+              label={`Referência / texto-base comum · ${draft.questoes.length} item${draft.questoes.length > 1 ? "s" : ""}`}
+              text={referenceContent.text}
+              images={referenceContent.images}
+              rows={7}
+              placeholder="Texto, tabela ou comando geral que vale para todos os itens."
+              onChange={updateReferenceContent}
+              onRequestImage={(request) => setCropTarget({ kind: "referencia", ...request })}
             />
-
-            <div className="rounded-lg border p-3">
-              <ExtraImagesEditor
-                images={referenceExtras}
-                onChange={setReferenceExtras}
-                onAdd={() => setCropTarget({ kind: "ref-extra" })}
-                onReplace={(index) => setCropTarget({ kind: "ref-extra", index, currentImage: referenceExtras[index]?.url })}
-                label="Imagens adicionais da referência"
-                addLabel="Adicionar imagem"
-              />
-            </div>
 
 
             {draft.questoes.length > 1 && (
@@ -750,8 +668,8 @@ function Page() {
         open={!!cropTarget}
         imageUrl={cropImageSources[0]?.url ?? draft.imageDataUrl}
         imageSources={cropImageSources}
-        title={cropTarget?.kind === "referencia" || cropTarget?.kind === "ref-extra"
-          ? "Inserir imagem na referência"
+        title={cropTarget?.kind === "referencia"
+          ? typeof cropTarget.replaceImage === "number" ? "Recortar ou trocar imagem da referência" : "Inserir imagem na referência"
           : cropTarget?.kind === "alt"
             ? `Inserir imagem na alternativa ${active.alternativas[cropTarget.index]?.letra ?? ""}`
             : "Inserir imagem no enunciado"}
@@ -760,11 +678,8 @@ function Page() {
           if (!cropTarget) return;
           if (cropTarget.kind === "referencia") {
             setDraft((current) => current
-              ? applyReferenceImageToDraft(current, dataUrl, cropTarget.cursor ?? referenceCursor, cropTarget.replace)
+              ? applyReferenceImageToDraft(current, dataUrl, cropTarget)
               : current);
-          } else if (cropTarget.kind === "ref-extra") {
-            const next = upsertExtraImage(referenceExtras, dataUrl, cropTarget.index);
-            setReferenceExtras(next);
           } else if (cropTarget.kind === "enun-extra") {
             setStatementExtras(upsertExtraImage(statementExtras, dataUrl, cropTarget.index));
           } else if (cropTarget.kind === "enunciado") {
@@ -783,157 +698,6 @@ function Page() {
         }}
       />
     </AppLayout>
-  );
-}
-
-function ReferenceEditor({
-  draft,
-  onTextChange,
-  onCursorChange,
-  onInsertImage,
-  onReplaceImage,
-  onRemoveImage,
-  onMoveImage,
-  onRotateImage,
-  onImageLayoutChange,
-}: {
-  draft: DraftDigitization;
-  onTextChange: (part: ReferenceTextPart, value: string) => void;
-  onCursorChange: (cursor: ReferenceCursor) => void;
-  onInsertImage: () => void;
-  onReplaceImage: () => void;
-  onRemoveImage: () => void;
-  onMoveImage: (position: "antes" | "entre" | "depois") => void;
-  onRotateImage: (delta: number) => void;
-  onImageLayoutChange: (layout: Partial<ImagePlacementLayout>) => void;
-}) {
-  const hasImage = Boolean(draft.referencia_imagem);
-  const layout = normalizeImagePlacementLayout({
-    ...DEFAULT_REFERENCE_IMAGE_BLOCK_LAYOUT,
-    ...(draft.referencia_imagem_layout ?? {}),
-    mode: "block",
-  });
-  const imageAlignClass = layout.align === "left"
-    ? "justify-start"
-    : layout.align === "right"
-      ? "justify-end"
-      : "justify-center";
-
-  const rememberCursor = (part: ReferenceTextPart, target: HTMLTextAreaElement) => {
-    onCursorChange({ part, start: target.selectionStart ?? 0, end: target.selectionEnd ?? target.selectionStart ?? 0 });
-  };
-
-  const alignButton = (align: ImagePlacementAlign, icon: ReactNode, title: string) => (
-    <Button
-      type="button"
-      size="icon"
-      variant={layout.align === align ? "secondary" : "ghost"}
-      className="size-8"
-      title={title}
-      onClick={() => onImageLayoutChange({ align })}
-    >
-      {icon}
-    </Button>
-  );
-
-  return (
-    <div className="rounded-lg border p-3 space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        <Label>Referência / texto-base comum</Label>
-        <span className="text-xs text-muted-foreground">{draft.questoes.length} item{draft.questoes.length > 1 ? "s" : ""}</span>
-      </div>
-
-      <div className="rounded-lg border bg-background p-3 space-y-3">
-        <RichTextEditor
-          value={hasImage ? draft.referencia_texto : joinReferenceTextParts(draft.referencia_texto, draft.referencia_texto_apos ?? "")}
-          onChange={(value) => {
-            onTextChange("before", value);
-            if (!hasImage && draft.referencia_texto_apos) onTextChange("after", "");
-          }}
-          onCursorChange={(target) => rememberCursor("before", target)}
-          rows={hasImage ? 4 : 7}
-          placeholder="Texto, tabela ou comando geral que vale para todos os itens."
-          className="text-sm"
-        />
-
-        {!hasImage && (
-          <div className="flex justify-end">
-            <Button type="button" size="sm" variant="outline" className="gap-1" onClick={onInsertImage}>
-              <ImagePlus className="size-3.5" /> Inserir imagem
-            </Button>
-          </div>
-        )}
-
-        {hasImage && draft.referencia_imagem && (
-          <div className="space-y-2 rounded-lg border bg-muted/20 p-2">
-            <div className="flex flex-wrap items-center gap-1">
-              <Button type="button" size="sm" variant="outline" className="h-8 gap-1" onClick={onReplaceImage}>
-                <ImagePlus className="size-3.5" /> Substituir
-              </Button>
-              <Button type="button" size="icon" variant="outline" className="size-8" title="Girar para a esquerda" onClick={() => onRotateImage(-15)}>
-                <RotateCcw className="size-3.5" />
-              </Button>
-              <Button type="button" size="icon" variant="outline" className="size-8" title="Girar para a direita" onClick={() => onRotateImage(15)}>
-                <RotateCw className="size-3.5" />
-              </Button>
-              <Button type="button" size="icon" variant={draft.referencia_imagem_pos === "antes" ? "secondary" : "outline"} className="size-8" title="Mover acima do texto" onClick={() => onMoveImage("antes")}>
-                <ArrowUp className="size-3.5" />
-              </Button>
-              <Button type="button" size="sm" variant={draft.referencia_imagem_pos === "entre" ? "secondary" : "outline"} className="h-8" onClick={() => onMoveImage("entre")}>
-                Entre
-              </Button>
-              <Button type="button" size="icon" variant={draft.referencia_imagem_pos === "depois" ? "secondary" : "outline"} className="size-8" title="Mover abaixo do texto" onClick={() => onMoveImage("depois")}>
-                <ArrowDown className="size-3.5" />
-              </Button>
-              <div className="ml-auto flex items-center gap-1">
-                {alignButton("left", <AlignLeft className="size-3.5" />, "Alinhar à esquerda")}
-                {alignButton("center", <AlignCenter className="size-3.5" />, "Centralizar")}
-                {alignButton("right", <AlignRight className="size-3.5" />, "Alinhar à direita")}
-                <Button type="button" size="sm" variant="ghost" className="h-8 text-destructive gap-1" onClick={onRemoveImage}>
-                  <X className="size-3.5" /> Remover
-                </Button>
-              </div>
-            </div>
-
-            <div className={`flex ${imageAlignClass} rounded-md bg-background p-2`}>
-              <div className="rounded-md border bg-card p-2 shadow-sm" style={{ width: `${layout.width}%`, minWidth: 120, maxWidth: "100%" }}>
-                <img
-                  src={draft.referencia_imagem}
-                  alt="Imagem da referência"
-                  className="max-h-80 w-full rounded object-contain"
-                  style={{ transform: `rotate(${layout.rotation}deg)` }}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 px-1">
-              <Label className="text-xs text-muted-foreground">Tamanho</Label>
-              <input
-                type="range"
-                min={25}
-                max={95}
-                step={1}
-                value={layout.width}
-                onChange={(e) => onImageLayoutChange({ width: Number(e.target.value) })}
-                className="h-2 flex-1 accent-primary"
-              />
-              <span className="w-10 text-right text-xs text-muted-foreground">{Math.round(layout.width)}%</span>
-            </div>
-          </div>
-        )}
-
-        {hasImage && (
-          <RichTextEditor
-            value={draft.referencia_texto_apos ?? ""}
-            onChange={(value) => onTextChange("after", value)}
-            onCursorChange={(target) => rememberCursor("after", target)}
-            rows={4}
-            placeholder="Texto depois da imagem."
-            className="text-sm"
-          />
-        )}
-      </div>
-    </div>
   );
 }
 
@@ -973,83 +737,59 @@ function upsertExtraImage(images: ExtraImage[], url: string, index?: number): Ex
   return [...images, created];
 }
 
-function applyReferenceImageToDraft(current: DraftDigitization, dataUrl: string, cursor?: ReferenceCursor, replace?: boolean): DraftDigitization {
-  const layout = normalizeImagePlacementLayout({
-    ...DEFAULT_REFERENCE_IMAGE_BLOCK_LAYOUT,
-    ...(current.referencia_imagem_layout ?? {}),
-    mode: "block",
+function applyReferenceImageToDraft(current: DraftDigitization, dataUrl: string, request: ContentImageRequest): DraftDigitization {
+  const content = legacyReferenceToContent({
+    text: current.referencia_texto,
+    textAfter: current.referencia_texto_apos,
+    mainImage: current.referencia_imagem,
+    mainPos: current.referencia_imagem_pos,
+    mainLayout: current.referencia_imagem_layout,
+    extras: current.referencia_imagens_extra,
   });
+  const blocks = parseBlocks(content.text, content.images);
 
-  if (replace || current.referencia_imagem) {
-    return withReferenceBlockImageLayout({
-      ...current,
-      referencia_imagem: dataUrl,
-      referencia_imagem_layout: layout,
-      referencia_imagem_pos: current.referencia_imagem_pos ?? getReferenceImagePosition(current.referencia_texto, current.referencia_texto_apos ?? ""),
+  if (typeof request.replaceImage === "number") {
+    let imageIndex = 0;
+    const targetIndex = blocks.findIndex((block) => {
+      if (block.type !== "image") return false;
+      return imageIndex++ === request.replaceImage;
     });
+    if (targetIndex >= 0 && blocks[targetIndex].type === "image") {
+      blocks[targetIndex] = {
+        type: "image",
+        image: { ...blocks[targetIndex].image, url: dataUrl },
+      };
+    }
+  } else {
+    const imageBlock = { type: "image", image: newContentImage(dataUrl) } satisfies ContentBlock;
+    const textBlock = request.textBlock ? blocks[request.textBlock.index] : null;
+
+    if (request.textBlock && textBlock?.type === "text") {
+      const start = Math.max(0, Math.min(request.textBlock.start, textBlock.value.length));
+      const end = Math.max(start, Math.min(request.textBlock.end, textBlock.value.length));
+      blocks.splice(
+        request.textBlock.index,
+        1,
+        { type: "text", value: textBlock.value.slice(0, start) },
+        imageBlock,
+        { type: "text", value: textBlock.value.slice(end) },
+      );
+    } else {
+      const insertAt = Math.max(0, Math.min(request.insertAt ?? blocks.length, blocks.length));
+      blocks.splice(insertAt, 0, imageBlock);
+    }
   }
 
-  const fallbackCursor: ReferenceCursor = {
-    part: "before",
-    start: current.referencia_texto.length,
-    end: current.referencia_texto.length,
-  };
-  const target = cursor ?? fallbackCursor;
-  const key = target.part === "before" ? "referencia_texto" : "referencia_texto_apos";
-  const source = key === "referencia_texto" ? current.referencia_texto : current.referencia_texto_apos ?? "";
-  const start = Math.max(0, Math.min(target.start, source.length));
-  const end = Math.max(start, Math.min(target.end, source.length));
-  const beforeFragment = source.slice(0, start).trimEnd();
-  const afterFragment = source.slice(end).trimStart();
-
-  const next = target.part === "before"
-    ? {
-      ...current,
-      referencia_imagem: dataUrl,
-      referencia_imagem_layout: layout,
-      referencia_texto: beforeFragment,
-      referencia_texto_apos: joinReferenceTextParts(afterFragment, current.referencia_texto_apos ?? ""),
-    }
-    : {
-      ...current,
-      referencia_imagem: dataUrl,
-      referencia_imagem_layout: layout,
-      referencia_texto: joinReferenceTextParts(current.referencia_texto, beforeFragment),
-      referencia_texto_apos: afterFragment,
-    };
-
-  return withAutoReferenceImagePosition(next);
-}
-
-function withAutoReferenceImagePosition(draft: DraftDigitization): DraftDigitization {
-  return withReferenceBlockImageLayout({
-    ...draft,
-    referencia_imagem_pos: getReferenceImagePosition(draft.referencia_texto, draft.referencia_texto_apos ?? ""),
-  });
-}
-
-function withReferenceBlockImageLayout(draft: DraftDigitization): DraftDigitization {
-  if (!draft.referencia_imagem) return draft;
+  const serialized = serializeBlocks(blocks);
   return {
-    ...draft,
-    referencia_imagem_layout: normalizeImagePlacementLayout({
-      ...DEFAULT_REFERENCE_IMAGE_BLOCK_LAYOUT,
-      ...(draft.referencia_imagem_layout ?? {}),
-      mode: "block",
-    }),
+    ...current,
+    referencia_texto: serialized.text,
+    referencia_texto_apos: "",
+    referencia_imagem: undefined,
+    referencia_imagem_pos: undefined,
+    referencia_imagem_layout: undefined,
+    referencia_imagens_extra: serialized.images,
   };
-}
-
-function getReferenceImagePosition(before: string, after: string): "antes" | "entre" | "depois" {
-  const hasBefore = Boolean(before.trim());
-  const hasAfter = Boolean(after.trim());
-  if (!hasBefore && hasAfter) return "antes";
-  if (hasBefore && hasAfter) return "entre";
-  return "depois";
-}
-
-function joinReferenceTextParts(...parts: string[]) {
-  return parts.map((part) => part.trim()).filter(Boolean).join("\n\n");
 }
 
 function mergeUnique(current: string[], next: string[]) {

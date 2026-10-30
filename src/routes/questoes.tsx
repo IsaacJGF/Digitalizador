@@ -34,11 +34,14 @@ import {
 } from "@/components/ui/dialog";
 import { AppLayout } from "@/components/AppLayout";
 import { RichText } from "@/components/RichText";
+import { ContentBlocksEditor } from "@/components/ContentBlocksEditor";
+import { QuestionReferenceContent } from "@/components/QuestionReferenceContent";
 import { CatalogMultiSelect } from "@/components/CatalogSelect";
 import { supabase } from "@/integrations/supabase/client";
 import { insertQuestionsWithCompatibility } from "@/lib/question-compat";
 import { loadSelectedQuestionIds, saveSelectedQuestionIds } from "@/lib/selection-store";
-import type { ImagePlacementLayout } from "@/lib/image-layout";
+import { normalizeExtraImages, type ExtraImage, type ImagePlacementLayout } from "@/lib/image-layout";
+import { legacyReferenceToContent } from "@/lib/content-blocks";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/questoes")({
@@ -72,6 +75,7 @@ type Q = {
   referencia_imagem?: string | null;
   referencia_imagem_pos?: string | null;
   referencia_imagem_layout?: ImagePlacementLayout | null;
+  referencia_imagens_extra?: ExtraImage[] | null;
   referencia_texto_apos?: string | null;
   enunciado_imagem?: string | null;
   enunciado_imagem_pos?: string | null;
@@ -111,7 +115,7 @@ type EditDraft = {
 };
 type ReferenceDraft = {
   referencia_texto: string;
-  referencia_texto_apos: string;
+  referencia_imagens_extra: ExtraImage[];
   referencia_fonte: string;
 };
 type ReferenceDialogState = {
@@ -166,6 +170,7 @@ const DETAIL_COLUMNS = [
   "referencia_imagem",
   "referencia_imagem_pos",
   "referencia_imagem_layout",
+  "referencia_imagens_extra",
   "enunciado_imagem",
   "enunciado_imagem_pos",
   "enunciado_imagem_layout",
@@ -290,7 +295,7 @@ function Page() {
   };
 
   const openQuestionEditor = async (question: Q) => {
-    const full = question.alternativas?.length || question.enunciado_imagem || question.referencia_imagem
+    const full = question.alternativas?.length || question.enunciado_imagem || question.referencia_imagem || normalizeExtraImages(question.referencia_imagens_extra).length > 0
       ? question
       : await fetchFullQuestion(question.id);
     if (!full) return;
@@ -525,7 +530,7 @@ function Page() {
             {items.map((it) => {
               const isSel = sel.has(it.id);
               const source = formatQuestionSource(it) || "Fonte não informada";
-              const hasImagem = Boolean(it.tem_imagem || it.enunciado_imagem || it.referencia_imagem);
+              const hasImagem = Boolean(it.tem_imagem || it.enunciado_imagem || it.referencia_imagem || normalizeExtraImages(it.referencia_imagens_extra).length > 0);
               const hasAlternativas = it.tipo === "multipla_escolha" || (it.alternativas?.length ?? 0) > 0;
               const chips = getCardChips(it).slice(0, 4);
               const hasReferenceGroup = Boolean(it.grupo_id || it.referencia_texto || it.referencia_texto_apos);
@@ -683,7 +688,7 @@ function ReferenceViewDialog({ state, onClose, onDraftChange, onStartEdit, onCan
 }) {
   if (!state) return null;
   const { question, draft, editing, saving } = state;
-  const hasReference = Boolean(question.referencia_texto || question.referencia_texto_apos || question.referencia_imagem || question.referencia_fonte);
+  const hasReference = Boolean(question.referencia_texto || question.referencia_texto_apos || question.referencia_imagem || normalizeExtraImages(question.referencia_imagens_extra).length > 0 || question.referencia_fonte);
   return (
     <Dialog open={!!state} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
@@ -696,15 +701,18 @@ function ReferenceViewDialog({ state, onClose, onDraftChange, onStartEdit, onCan
 
         {editing ? (
           <div className="space-y-4">
-            {question.referencia_imagem && <div className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">Imagem da referência preservada. Esta edição altera apenas texto, complemento e fonte.</div>}
-            <FilterBlock label="Texto da referência"><Textarea value={draft.referencia_texto} onChange={(event) => onDraftChange({ referencia_texto: event.target.value })} rows={7} placeholder="Texto-base antes da imagem ou comando geral" /></FilterBlock>
-            <FilterBlock label="Complemento da referência"><Textarea value={draft.referencia_texto_apos} onChange={(event) => onDraftChange({ referencia_texto_apos: event.target.value })} rows={4} placeholder="Texto após imagem/tabela, se houver" /></FilterBlock>
+            <ContentBlocksEditor
+              label="Texto e imagens da referência"
+              text={draft.referencia_texto}
+              images={draft.referencia_imagens_extra}
+              rows={7}
+              placeholder="Texto, tabela ou comando geral que vale para todos os itens."
+              onChange={(content) => onDraftChange({ referencia_texto: content.text, referencia_imagens_extra: content.images })}
+            />
             <FilterBlock label="Fonte da referência"><Input value={draft.referencia_fonte} onChange={(event) => onDraftChange({ referencia_fonte: event.target.value })} placeholder="Fonte do texto-base, se houver" /></FilterBlock>
             <div className="rounded-md border bg-muted/20 p-3 text-sm">
               <p className="mb-2 text-xs font-semibold text-muted-foreground">Prévia da referência</p>
-              {draft.referencia_texto ? <RichText text={draft.referencia_texto} /> : <p className="text-muted-foreground">Sem texto antes da imagem.</p>}
-              {question.referencia_imagem && <img src={question.referencia_imagem} alt="Referência" className="my-3 max-h-96 max-w-full rounded border object-contain" />}
-              {draft.referencia_texto_apos && <RichText text={draft.referencia_texto_apos} className="mt-2" />}
+              <QuestionReferenceContent text={draft.referencia_texto} extraImages={draft.referencia_imagens_extra} />
               {draft.referencia_fonte && <p className="mt-2 text-right text-xs text-muted-foreground">{draft.referencia_fonte}</p>}
             </div>
           </div>
@@ -712,9 +720,15 @@ function ReferenceViewDialog({ state, onClose, onDraftChange, onStartEdit, onCan
           <div className="space-y-4">
             {hasReference ? (
               <section className="rounded-lg border bg-muted/20 p-3">
-                {question.referencia_texto && <RichText text={question.referencia_texto} className="text-sm" />}
-                {question.referencia_imagem && <img src={question.referencia_imagem} alt="Referência" className="my-2 max-h-96 max-w-full rounded border object-contain" />}
-                {question.referencia_texto_apos && <RichText text={question.referencia_texto_apos} className="text-sm" />}
+                <QuestionReferenceContent
+                  text={question.referencia_texto}
+                  textAfter={question.referencia_texto_apos}
+                  mainImage={question.referencia_imagem}
+                  mainImagePosition={question.referencia_imagem_pos}
+                  mainImageLayout={question.referencia_imagem_layout}
+                  extraImages={question.referencia_imagens_extra}
+                  textClassName="text-sm"
+                />
                 {question.referencia_fonte && <p className="mt-2 text-right text-xs text-muted-foreground">{question.referencia_fonte}</p>}
               </section>
             ) : (
@@ -791,13 +805,13 @@ function EditQuestionDialog({ question, draft, saving, areas, conteudos, subcont
 
 function QuestionDetailsDialog({ question, loading, onClose, onEdit }: { question: Q | null; loading: boolean; onClose: () => void; onEdit: (question: Q) => void }) {
   if (!question) return null;
-  const hasReference = Boolean(question.referencia_texto || question.referencia_texto_apos || question.referencia_imagem);
+  const hasReference = Boolean(question.referencia_texto || question.referencia_texto_apos || question.referencia_imagem || normalizeExtraImages(question.referencia_imagens_extra).length > 0);
   return (
     <Dialog open={!!question} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
         <DialogHeader><DialogTitle>{formatQuestionSource(question) || "Questão"}</DialogTitle><DialogDescription>{loading ? "Carregando dados completos..." : `${formatTipo(question.tipo)}${question.numero ? ` · Item ${question.numero}` : ""}`}</DialogDescription></DialogHeader>
         {loading ? <div className="flex items-center justify-center py-16 text-muted-foreground"><Loader2 className="mr-2 size-5 animate-spin" /> Carregando questão completa...</div> : <div className="space-y-4">
-          {hasReference && <section className="rounded-lg border bg-muted/20 p-3"><h3 className="mb-2 text-sm font-semibold">Referência</h3>{question.referencia_texto && <RichText text={question.referencia_texto} className="text-sm" />}{question.referencia_imagem && <img src={question.referencia_imagem} alt="Referência" className="my-2 max-h-96 max-w-full rounded border object-contain" />}{question.referencia_texto_apos && <RichText text={question.referencia_texto_apos} className="text-sm" />}{question.referencia_fonte && <p className="mt-2 text-right text-xs text-muted-foreground">{question.referencia_fonte}</p>}</section>}
+          {hasReference && <section className="rounded-lg border bg-muted/20 p-3"><h3 className="mb-2 text-sm font-semibold">Referência</h3><QuestionReferenceContent text={question.referencia_texto} textAfter={question.referencia_texto_apos} mainImage={question.referencia_imagem} mainImagePosition={question.referencia_imagem_pos} mainImageLayout={question.referencia_imagem_layout} extraImages={question.referencia_imagens_extra} textClassName="text-sm" />{question.referencia_fonte && <p className="mt-2 text-right text-xs text-muted-foreground">{question.referencia_fonte}</p>}</section>}
           <section><h3 className="mb-2 text-sm font-semibold">Enunciado</h3><RichText text={question.enunciado} className="text-sm" />{question.enunciado_imagem && <img src={question.enunciado_imagem} alt="Enunciado" className="my-2 max-h-96 max-w-full rounded border object-contain" />}</section>
           {question.alternativas?.length > 0 && <section><h3 className="mb-2 text-sm font-semibold">Alternativas</h3><div className="space-y-2">{question.alternativas.map((alt) => <div key={alt.letra} className="rounded-md border p-2 text-sm"><strong>{alt.letra}) </strong><RichText text={alt.texto} className="inline" />{alt.imagem && <img src={alt.imagem} alt={`Alternativa ${alt.letra}`} className="mt-2 max-h-60 max-w-full rounded border object-contain" />}</div>)}</div></section>}
           <section className="grid gap-2 rounded-lg border bg-muted/20 p-3 text-xs sm:grid-cols-2"><p><strong>Área:</strong> {question.area_geral || "—"}</p><p><strong>Conteúdo:</strong> {question.conteudo_principal || "—"}</p><p><strong>Subconteúdo:</strong> {question.subconteudo_principal || "—"}</p><p><strong>Gabarito:</strong> {question.resposta || "—"}</p><p><strong>Prova:</strong> {question.prova || "—"}</p><p><strong>Instituição:</strong> {question.instituicao || "—"}</p><p><strong>Ano:</strong> {question.ano || "—"}</p><p><strong>Tags:</strong> {(question.tags_livres ?? question.tags ?? []).join(", ") || "—"}</p></section>
@@ -814,7 +828,7 @@ function ReferenceGroupDialog({ group, selectedIds, assessmentIds, onToggle, onS
     <Dialog open={group.length > 0} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[92vh] max-w-5xl overflow-y-auto">
         <DialogHeader><DialogTitle>Itens da mesma referência</DialogTitle><DialogDescription>Selecione itens individuais ou adicione todo o grupo à avaliação.</DialogDescription></DialogHeader>
-        {first && <div className="rounded-lg border bg-muted/20 p-3">{first.referencia_texto && <RichText text={first.referencia_texto} className="text-sm" />}{first.referencia_imagem && <img src={first.referencia_imagem} alt="Referência" className="my-2 max-h-96 max-w-full rounded border object-contain" />}{first.referencia_texto_apos && <RichText text={first.referencia_texto_apos} className="text-sm" />}{first.referencia_fonte && <p className="mt-2 text-right text-xs text-muted-foreground">{first.referencia_fonte}</p>}</div>}
+        {first && <div className="rounded-lg border bg-muted/20 p-3"><QuestionReferenceContent text={first.referencia_texto} textAfter={first.referencia_texto_apos} mainImage={first.referencia_imagem} mainImagePosition={first.referencia_imagem_pos} mainImageLayout={first.referencia_imagem_layout} extraImages={first.referencia_imagens_extra} textClassName="text-sm" />{first.referencia_fonte && <p className="mt-2 text-right text-xs text-muted-foreground">{first.referencia_fonte}</p>}</div>}
         <div className="space-y-3">{group.map((item) => <div key={item.id} className="rounded-lg border p-3" title={metadataTooltip(item)}><div className="mb-2 flex items-start gap-2"><Checkbox checked={selectedIds.has(item.id)} onCheckedChange={(value) => onToggle(item.id, Boolean(value))} className="mt-1" /><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><strong>{item.numero ? `Item ${item.numero}` : "Item"}</strong>{assessmentIds.has(item.id) && <Badge variant="secondary">já selecionado</Badge>}<CompactPedagogicalInfo question={item} /></div><RichText text={item.enunciado} className="mt-2 text-sm" />{item.enunciado_imagem && <img src={item.enunciado_imagem} alt="Imagem do item" className="mt-2 max-h-80 max-w-full rounded border object-contain" />}{item.alternativas?.length > 0 && <div className="mt-2 space-y-1 text-sm">{item.alternativas.map((alt) => <div key={alt.letra}><strong>{alt.letra}) </strong><RichText text={alt.texto} className="inline" /></div>)}</div>}</div></div></div>)}</div>
         <DialogFooter className="gap-2 sm:justify-between sm:space-x-0"><div className="flex gap-2"><Button type="button" variant="outline" onClick={onSelectAll}>Selecionar todos</Button><Button type="button" variant="ghost" onClick={onClear}>Limpar</Button></div><div className="flex gap-2"><Button type="button" variant="outline" onClick={onClose}>Fechar</Button><Button type="button" onClick={onAdd}>Adicionar selecionados</Button></div></DialogFooter>
       </DialogContent>
@@ -873,6 +887,7 @@ function normalizeRow(row: Partial<Q>): Q {
     referencia_imagem: row.referencia_imagem ?? null,
     referencia_imagem_pos: row.referencia_imagem_pos ?? null,
     referencia_imagem_layout: row.referencia_imagem_layout ?? null,
+    referencia_imagens_extra: normalizeExtraImages(row.referencia_imagens_extra),
     referencia_texto_apos: row.referencia_texto_apos ?? null,
     enunciado_imagem: row.enunciado_imagem ?? null,
     enunciado_imagem_pos: row.enunciado_imagem_pos ?? null,
@@ -895,9 +910,29 @@ function getPedagogicalEntries(q: Q) { return [["Área", q.area_geral], ["Conte�
 function metadataTooltip(q: Q) { const lines = getPedagogicalEntries(q).map((entry) => `${entry.label}: ${entry.value}`); if (q.resposta) lines.push(`Gabarito: ${q.resposta}`); return lines.join("\n"); }
 function compareReferenceItems(a: Q, b: Q) { return String(a.numero ?? "").localeCompare(String(b.numero ?? ""), "pt-BR", { numeric: true }); }
 function toEditDraft(q: Q): EditDraft { return { numero: q.numero ?? "", enunciado: q.enunciado ?? "", alternativas: q.alternativas ?? [], tipo: q.tipo ?? "discursiva", resposta: q.resposta ?? "", fonte: q.fonte ?? "", area_geral: q.area_geral ?? "", conteudo_principal: q.conteudo_principal ?? "", subconteudo_principal: q.subconteudo_principal ?? "", conteudos_relacionados: q.conteudos_relacionados ?? [], tags_livres: q.tags_livres?.length ? q.tags_livres : q.tags ?? [], ano: q.ano ?? "", prova: q.prova ?? "", instituicao: q.instituicao ?? "", observacoes: q.observacoes ?? "" }; }
-function toReferenceDraft(q: Q): ReferenceDraft { return { referencia_texto: q.referencia_texto ?? "", referencia_texto_apos: q.referencia_texto_apos ?? "", referencia_fonte: q.referencia_fonte ?? "" }; }
+function toReferenceDraft(q: Q): ReferenceDraft {
+  const content = legacyReferenceToContent({
+    text: q.referencia_texto ?? "",
+    textAfter: q.referencia_texto_apos,
+    mainImage: q.referencia_imagem,
+    mainPos: q.referencia_imagem_pos,
+    mainLayout: q.referencia_imagem_layout,
+    extras: q.referencia_imagens_extra,
+  });
+  return { referencia_texto: content.text, referencia_imagens_extra: content.images, referencia_fonte: q.referencia_fonte ?? "" };
+}
 function editDraftToPayload(draft: EditDraft, original: Q) { return { numero: draft.numero || null, enunciado: draft.enunciado, alternativas: draft.alternativas, tipo: draft.tipo, resposta: draft.resposta || null, fonte: draft.fonte || null, disciplina: draft.area_geral || original.disciplina || null, conteudo: draft.conteudo_principal || original.conteudo || null, area_geral: draft.area_geral || null, conteudo_principal: draft.conteudo_principal || null, subconteudo_principal: draft.subconteudo_principal || null, conteudos_relacionados: draft.conteudos_relacionados, tags_livres: draft.tags_livres, tags: draft.tags_livres, ano: draft.ano || null, prova: draft.prova || null, instituicao: draft.instituicao || null, observacoes: draft.observacoes || null, tem_equacao: detectEquation(draft.enunciado, draft.alternativas), tem_imagem: Boolean(original.tem_imagem || original.referencia_imagem || original.enunciado_imagem || draft.alternativas.some((alt) => alt.imagem)) }; }
-function referenceDraftToPayload(draft: ReferenceDraft) { return { referencia_texto: draft.referencia_texto || null, referencia_texto_apos: draft.referencia_texto_apos || null, referencia_fonte: draft.referencia_fonte || null }; }
+function referenceDraftToPayload(draft: ReferenceDraft) {
+  return {
+    referencia_texto: draft.referencia_texto || null,
+    referencia_texto_apos: null,
+    referencia_fonte: draft.referencia_fonte || null,
+    referencia_imagem: null,
+    referencia_imagem_pos: null,
+    referencia_imagem_layout: null,
+    referencia_imagens_extra: normalizeExtraImages(draft.referencia_imagens_extra),
+  };
+}
 function buildDuplicatePayload(q: Q) { const { id: _id, created_at: _createdAt, ...rest } = q; return { ...rest, numero: q.numero ? `${q.numero} cópia` : null }; }
 function reletterAlternatives(alternatives: EditDraft["alternativas"]) { return alternatives.map((alt, index) => ({ ...alt, letra: LETTERS[index] ?? alt.letra ?? String(index + 1) })); }
 function detectEquation(text: string, alternatives: EditDraft["alternativas"]) { return /\$[^$]+\$|\\frac|\\sqrt|[=<>≤≥]/.test([text, ...alternatives.map((alt) => alt.texto)].join(" ")); }

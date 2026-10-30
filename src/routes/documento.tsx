@@ -394,10 +394,10 @@ function downloadDocx(base64: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-type DocumentReferenceLike = Pick<DocumentQuestion, "grupo_id" | "referencia_texto" | "referencia_texto_apos" | "referencia_fonte" | "referencia_imagem" | "referencia_imagem_layout">;
+type DocumentReferenceLike = Pick<DocumentQuestion, "grupo_id" | "referencia_texto" | "referencia_texto_apos" | "referencia_fonte" | "referencia_imagem" | "referencia_imagem_layout" | "referencia_imagens_extra">;
 
 function hasDocumentReference(question: DocumentReferenceLike) {
-  return Boolean(question.referencia_texto?.trim() || question.referencia_texto_apos?.trim() || question.referencia_imagem);
+  return Boolean(question.referencia_texto?.trim() || question.referencia_texto_apos?.trim() || question.referencia_imagem || question.referencia_imagens_extra.length > 0);
 }
 
 function getDocumentReferenceKey(question: DocumentReferenceLike) {
@@ -411,7 +411,10 @@ function documentReferenceFingerprint(question: DocumentReferenceLike) {
   const image = question.referencia_imagem
     ? `${question.referencia_imagem.length}:${question.referencia_imagem.slice(0, 64)}:${question.referencia_imagem.slice(-64)}`
     : "";
-  return [question.referencia_texto?.trim() ?? "", question.referencia_texto_apos?.trim() ?? "", question.referencia_fonte?.trim() ?? "", image].join("|");
+  const extraImages = question.referencia_imagens_extra
+    .map((item) => `${item.url.length}:${item.url.slice(0, 64)}:${item.url.slice(-64)}:${JSON.stringify(item.layout)}`)
+    .join(",");
+  return [question.referencia_texto?.trim() ?? "", question.referencia_texto_apos?.trim() ?? "", question.referencia_fonte?.trim() ?? "", image, extraImages].join("|");
 }
 
 function countReferenceBlockSize(questions: DocumentQuestion[], index: number) {

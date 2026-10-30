@@ -929,6 +929,7 @@ function plainQuestionText(question: ProvaAnalysisQuestion) {
   ]
     .filter(Boolean)
     .join(" ")
+    .replace(/\[\[img:\d+\]\]/g, " ")
     .replace(/<[^>]+>/g, " ")
     .replace(/\$+/g, "")
     .replace(/\s+/g, " ")

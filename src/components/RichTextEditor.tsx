@@ -27,6 +27,8 @@ type Props = {
   rows?: number;
   placeholder?: string;
   className?: string;
+  containerClassName?: string;
+  showPreview?: boolean;
 };
 
 type ToolbarButtonProps = {
@@ -35,7 +37,7 @@ type ToolbarButtonProps = {
   children: ReactNode;
 };
 
-export function RichTextEditor({ value, onChange, onCursorChange, rows = 4, placeholder, className }: Props) {
+export function RichTextEditor({ value, onChange, onCursorChange, rows = 4, placeholder, className, containerClassName, showPreview = true }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const rememberCursor = () => {
@@ -93,7 +95,7 @@ export function RichTextEditor({ value, onChange, onCursorChange, rows = 4, plac
   const hasPreview = value.trim().length > 0;
 
   return (
-    <div className="overflow-hidden rounded-md border bg-background">
+    <div className={cn("overflow-hidden rounded-md border bg-background", containerClassName)}>
       <div className="flex flex-wrap gap-1 border-b bg-muted/30 p-1.5">
         <ToolbarButton title="Negrito" onClick={() => wrapSelection("**")}><Bold className="size-3.5" /></ToolbarButton>
         <ToolbarButton title="Itálico" onClick={() => wrapSelection("*")}><Italic className="size-3.5" /></ToolbarButton>
@@ -126,7 +128,7 @@ export function RichTextEditor({ value, onChange, onCursorChange, rows = 4, plac
         className={cn("min-h-0 resize-y rounded-none border-0 shadow-none focus-visible:ring-0", className)}
       />
 
-      {hasPreview && (
+      {showPreview && hasPreview && (
         <div className="border-t bg-muted/20 p-2 text-sm">
           <p className="mb-1 text-xs font-medium text-muted-foreground">Prévia formatada</p>
           <RichText text={value} className="leading-relaxed" />
