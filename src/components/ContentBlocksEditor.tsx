@@ -92,7 +92,7 @@ export function ContentBlocksEditor({ label, text, images, placeholder, rows = 4
                 <Button type="button" size="icon" variant="outline" className="size-7" title="Subir" disabled={index <= 1 && blocks[0]?.type === "text" && !blocks[0].value.trim() && index === 1} onClick={() => moveImage(index, -1)}>
                   <ArrowUp className="size-3.5" />
                 </Button>
-                <Button type="button" size="icon" variant="outline" className="size-7" title="Descer" disabled={index >= blocks.length - 2 && !blocks[blocks.length - 1].value?.trim()} onClick={() => moveImage(index, 1)}>
+                <Button type="button" size="icon" variant="outline" className="size-7" title="Descer" disabled={index >= blocks.length - 2 && (() => { const l = blocks[blocks.length - 1]; return l.type === "text" && !l.value.trim(); })()} onClick={() => moveImage(index, 1)}>
                   <ArrowDown className="size-3.5" />
                 </Button>
                 <Button type="button" size="sm" variant="outline" className="h-7 gap-1" onClick={() => onRequestImage({ replaceImage: number - 1, currentImage: image.url })}>
