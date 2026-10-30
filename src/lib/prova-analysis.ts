@@ -386,7 +386,7 @@ function buildReferenceRow(key: string, group: ProvaAnalysisQuestion[]): Referen
     itemCount: group.length,
     questionIds: group.map((q) => q.id),
     years,
-    hasImage: group.some((q) => Boolean(q.referencia_imagem)),
+    hasImage: group.some((q) => Boolean(q.referencia_imagem || /\[\[img:\d+\]\]/.test(q.referencia_texto ?? ""))),
     textLength: plainText(text).length,
     preview: buildReferencePreview(first),
     areas,
@@ -601,6 +601,7 @@ function buildPreview(question: ProvaAnalysisQuestion) {
 
 function normalizeForSearch(value: string | null | undefined) {
   return (value ?? "")
+    .replace(/\[\[img:\d+\]\]/g, " ")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
@@ -612,6 +613,7 @@ function normalizeForSearch(value: string | null | undefined) {
 
 function plainText(value: string | null | undefined) {
   return (value ?? "")
+    .replace(/\[\[img:\d+\]\]/g, " ")
     .replace(/<[^>]+>/g, " ")
     .replace(/\$+/g, "")
     .replace(/\s+/g, " ")

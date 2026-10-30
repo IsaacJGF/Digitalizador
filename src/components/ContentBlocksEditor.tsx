@@ -1,4 +1,5 @@
-import { AlignCenter, AlignLeft, AlignRight, ArrowDown, ArrowUp, Crop, ImagePlus, RotateCcw, RotateCw, Trash2 } from "lucide-react";
+import { useState, type DragEvent } from "react";
+import { AlignCenter, AlignLeft, AlignRight, ArrowDown, ArrowUp, Crop, GripVertical, ImagePlus, RotateCcw, RotateCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/RichTextEditor";
@@ -19,15 +20,28 @@ type Props = {
   rows?: number;
   onChange: (value: { text: string; images: ExtraImage[] }) => void;
   /** Pede uma imagem ao pai. `insertAt` = índice do bloco onde inserir; `replaceImage` = nº da imagem a substituir. */
-  onRequestImage: (request: { insertAt?: number; replaceImage?: number; currentImage?: string }) => void;
+  onRequestImage?: (request: ContentImageRequest) => void;
+};
+
+export type ContentImageRequest = {
+  insertAt?: number;
+  replaceImage?: number;
+  currentImage?: string;
+  textBlock?: { index: number; start: number; end: number };
 };
 
 export function ContentBlocksEditor({ label, text, images, placeholder, rows = 4, onChange, onRequestImage }: Props) {
   const blocks = parseBlocks(text, images);
   const imageCount = blocks.filter((b) => b.type === "image").length;
-  const canAdd = imageCount < MAX_CONTENT_IMAGES;
+  const canAdd = imageCount < MAX_CONTENT_IMAGES && Boolean(onRequestImage);
+  const [textSelections, setTextSelections] = useState<Record<number, { start: number; end: number }>>({});
+  const [dragSourceIndex, setDragSourceIndex] = useState<number | null>(null);
 
   const commit = (next: ContentBlock[]) => onChange(serializeBlocks(next));
+  const requestImage = (request: ContentImageRequest) => {
+    setTextSelections({});
+    onRequestImage?.(request);
+  };
 
   const setBlock = (index: number, block: ContentBlock) => commit(blocks.map((b, i) => (i === index ? block : b)));
 
@@ -50,28 +64,73 @@ export function ContentBlocksEditor({ label, text, images, placeholder, rows = 4
     commit(next);
   };
 
+  const dropOnBlock = (event: DragEvent<HTMLDivElement>, index: number) => {
+    event.preventDefault();
+    const rawIndex = event.dataTransfer.getData("text/plain");
+    if (!rawIndex) return;
+    const from = Number(rawIndex);
+    if (!Number.isInteger(from) || from < 0 || from >= blocks.length || from === index) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const target = event.clientY > rect.top + rect.height / 2 ? index + 1 : index;
+    const next = [...blocks];
+    const [item] = next.splice(from, 1);
+    const insertionIndex = target > from ? target - 1 : target;
+    next.splice(insertionIndex, 0, item);
+    commit(next);
+    setDragSourceIndex(null);
+  };
+
+  const blockDropProps = (index: number) => ({
+    onDragOver: (event: DragEvent<HTMLDivElement>) => event.preventDefault(),
+    onDrop: (event: DragEvent<HTMLDivElement>) => dropOnBlock(event, index),
+  });
+
   let imageNumber = 0;
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
         <Label>{label}</Label>
-        <span className="text-xs text-muted-foreground">{imageCount}/{MAX_CONTENT_IMAGES} imagens</span>
+        <div className="flex items-center gap-2">
+          {onRequestImage && (
+            <Button type="button" size="sm" variant="outline" className="h-7 gap-1" disabled={!canAdd} onClick={() => requestImage({ insertAt: 0 })}>
+              <ImagePlus className="size-3.5" /> Imagem no início
+            </Button>
+          )}
+          <span className="text-xs text-muted-foreground">{imageCount}/{MAX_CONTENT_IMAGES} imagens</span>
+        </div>
       </div>
-      <div className="space-y-2 rounded-lg border bg-muted/10 p-2">
+      <div className="space-y-2 rounded-lg border bg-background px-4 py-3 shadow-sm sm:px-6 sm:py-5">
         {blocks.map((block, index) => {
           if (block.type === "text") {
             const isOnly = blocks.length === 1;
             return (
-              <div key={`t-${index}`} className="space-y-1">
+              <div key={`t-${index}`} className={`space-y-1 rounded-sm ${dragSourceIndex !== null ? "outline outline-1 outline-dashed outline-primary/40" : ""}`} {...blockDropProps(index)}>
                 <RichTextEditor
                   value={block.value}
                   onChange={(value) => setBlock(index, { type: "text", value })}
+                  onCursorChange={(target) => setTextSelections((current) => ({
+                    ...current,
+                    [index]: { start: target.selectionStart ?? 0, end: target.selectionEnd ?? target.selectionStart ?? 0 },
+                  }))}
                   rows={isOnly ? Math.max(rows, 6) : block.value ? rows : 2}
                   placeholder={index === 0 ? placeholder : "Texto (opcional) — continue aqui"}
                   className="text-sm"
+                  containerClassName="rounded-none border-0 bg-transparent shadow-none"
+                  showPreview={false}
                 />
-                <InsertBar disabled={!canAdd} onClick={() => onRequestImage({ insertAt: index + 1 })} />
+                {onRequestImage && (
+                  <InsertBar
+                    disabled={!canAdd}
+                    onClick={() => {
+                      const selection = textSelections[index];
+                      requestImage({
+                        insertAt: index + 1,
+                        ...(selection ? { textBlock: { index, ...selection } } : {}),
+                      });
+                    }}
+                  />
+                )}
               </div>
             );
           }
@@ -86,18 +145,36 @@ export function ContentBlocksEditor({ label, text, images, placeholder, rows = 4
             </Button>
           );
           return (
-            <div key={`i-${index}`} className="space-y-2 rounded-lg border border-primary/30 bg-card p-2">
+            <div key={`i-${index}`} className={`space-y-2 rounded-lg border border-primary/30 bg-card p-2 ${dragSourceIndex === index ? "opacity-50" : ""}`} {...blockDropProps(index)}>
               <div className="flex flex-wrap items-center gap-1">
                 <span className="mr-1 rounded bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">Imagem {number}</span>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="size-7 cursor-grab active:cursor-grabbing"
+                  title="Arrastar para reposicionar"
+                  draggable
+                  onDragStart={(event) => {
+                    event.dataTransfer.effectAllowed = "move";
+                    event.dataTransfer.setData("text/plain", String(index));
+                    setDragSourceIndex(index);
+                  }}
+                  onDragEnd={() => setDragSourceIndex(null)}
+                >
+                  <GripVertical className="size-3.5" />
+                </Button>
                 <Button type="button" size="icon" variant="outline" className="size-7" title="Subir" disabled={index <= 1 && blocks[0]?.type === "text" && !blocks[0].value.trim() && index === 1} onClick={() => moveImage(index, -1)}>
                   <ArrowUp className="size-3.5" />
                 </Button>
                 <Button type="button" size="icon" variant="outline" className="size-7" title="Descer" disabled={index >= blocks.length - 2 && (() => { const l = blocks[blocks.length - 1]; return l.type === "text" && !l.value.trim(); })()} onClick={() => moveImage(index, 1)}>
                   <ArrowDown className="size-3.5" />
                 </Button>
-                <Button type="button" size="sm" variant="outline" className="h-7 gap-1" onClick={() => onRequestImage({ replaceImage: number - 1, currentImage: image.url })}>
-                  <Crop className="size-3.5" /> Recortar / trocar
-                </Button>
+                {onRequestImage && (
+                  <Button type="button" size="sm" variant="outline" className="h-7 gap-1" onClick={() => requestImage({ replaceImage: number - 1, currentImage: image.url })}>
+                    <Crop className="size-3.5" /> Recortar / trocar
+                  </Button>
+                )}
                 <Button type="button" size="icon" variant="outline" className="size-7" title="Girar à esquerda" onClick={() => patchLayout(index, image, { rotation: layout.rotation - 15 })}>
                   <RotateCcw className="size-3.5" />
                 </Button>
@@ -125,11 +202,6 @@ export function ContentBlocksEditor({ label, text, images, placeholder, rows = 4
           );
         })}
       </div>
-      {blocks.length === 1 && (
-        <Button type="button" size="sm" variant="outline" className="gap-1" disabled={!canAdd} onClick={() => onRequestImage({ insertAt: 0 })}>
-          <ImagePlus className="size-3.5" /> Imagem antes do texto
-        </Button>
-      )}
     </div>
   );
 }

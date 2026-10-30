@@ -28,6 +28,7 @@ import {
   WidthType,
 } from "docx";
 import { normalizeExtraImages, normalizeImagePlacementLayout, type ExtraImagePosition, type ImagePlacementLayout } from "@/lib/image-layout";
+import { legacyReferenceToContent, splitContent } from "@/lib/content-blocks";
 import { parseRichInlines, parseRichText, type RichAlign, type RichBlock, type RichInline } from "@/lib/rich-text";
 
 const Alt = z.object({ letra: z.string(), texto: z.string(), imagem: z.string().nullable().optional() });
@@ -467,32 +468,32 @@ export const generateDocx = createServerFn({ method: "POST" })
     questions.forEach((q, idx) => {
       const n = idx + 1;
       const hasReference = Boolean(q.referencia_texto || q.referencia_texto_apos || q.referencia_imagem || normalizeExtraImages(q.referencia_imagens_extra).length > 0);
-      const referenceKey = q.grupo_id || [q.referencia_texto, q.referencia_texto_apos, q.referencia_imagem, JSON.stringify(q.referencia_imagem_layout ?? null)].filter(Boolean).join("|");
-      const shouldRenderReference = hasReference && referenceKey !== previousReferenceKey;
       const referenceExtras = normalizeExtraImages(q.referencia_imagens_extra);
+      const extraImageSignature = referenceExtras.map((image) => `${image.url.length}:${image.url.slice(0, 64)}:${image.url.slice(-64)}:${JSON.stringify(image.layout)}`).join(",");
+      const referenceKey = q.grupo_id || [q.referencia_texto, q.referencia_texto_apos, q.referencia_imagem, JSON.stringify(q.referencia_imagem_layout ?? null), extraImageSignature].filter(Boolean).join("|");
+      const shouldRenderReference = hasReference && referenceKey !== previousReferenceKey;
       const statementExtras = normalizeExtraImages(q.enunciado_imagens_extra);
       const extrasAt = (list: typeof referenceExtras, pos: ExtraImagePosition) => list
         .filter((image) => image.pos === pos)
         .map((image) => imageParagraph(image.url, CONTENT_WIDTH_PX, AlignmentType.CENTER, undefined, image.layout))
         .filter((paragraph): paragraph is NonNullable<typeof paragraph> => Boolean(paragraph));
       if (shouldRenderReference) {
-        const referenceImage = q.referencia_imagem
-          ? imageParagraph(q.referencia_imagem, CONTENT_WIDTH_PX, AlignmentType.CENTER, undefined, q.referencia_imagem_layout)
-          : null;
-        const imagePos = q.referencia_imagem_pos ?? "depois";
-        const imageIsFloating = Boolean(q.referencia_imagem_layout && normalizeImagePlacementLayout(q.referencia_imagem_layout as Partial<ImagePlacementLayout>).mode !== "block");
-        if (referenceImage && (imageIsFloating || imagePos === "antes")) children.push(referenceImage);
-        children.push(...extrasAt(referenceExtras, "antes"));
-        if (q.referencia_texto) {
-          children.push(...richChildrenFromText(q.referencia_texto, { size, spacingAfter: 100 }));
+        const referenceContent = legacyReferenceToContent({
+          text: q.referencia_texto ?? "",
+          textAfter: q.referencia_texto_apos,
+          mainImage: q.referencia_imagem,
+          mainPos: q.referencia_imagem_pos,
+          mainLayout: q.referencia_imagem_layout,
+          extras: q.referencia_imagens_extra,
+        });
+        for (const block of splitContent(referenceContent.text, referenceContent.images)) {
+          if (block.type === "text") {
+            children.push(...richChildrenFromText(block.value, { size, spacingAfter: 100 }));
+          } else {
+            const image = imageParagraph(block.image.url, CONTENT_WIDTH_PX, AlignmentType.CENTER, undefined, block.image.layout);
+            if (image) children.push(image);
+          }
         }
-        if (referenceImage && !imageIsFloating && imagePos === "entre") children.push(referenceImage);
-        children.push(...extrasAt(referenceExtras, "entre"));
-        if (q.referencia_texto_apos) {
-          children.push(...richChildrenFromText(q.referencia_texto_apos, { size, spacingAfter: 100 }));
-        }
-        if (referenceImage && !imageIsFloating && imagePos !== "antes" && imagePos !== "entre") children.push(referenceImage);
-        children.push(...extrasAt(referenceExtras, "depois"));
         if (q.referencia_fonte) {
           children.push(paragraphFromText(q.referencia_fonte, { size: size - 2, align: AlignmentType.RIGHT, spacingAfter: 180 }));
         }

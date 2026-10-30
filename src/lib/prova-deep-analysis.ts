@@ -286,6 +286,7 @@ function toCrossPayload(matrix: CrossAnalysisSummary["contentByType"]): CrossPay
 
 function cleanText(value: string) {
   return value
+    .replace(/\[\[img:\d+\]\]/g, " ")
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim()
