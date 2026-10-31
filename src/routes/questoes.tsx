@@ -1192,7 +1192,7 @@ function QuestionDetailsDialog({ question, loading, position, totalCount, canGoP
 
   return (
     <Dialog open={!!question} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="relative max-h-[92vh] max-w-5xl overflow-visible p-0">
+      <DialogContent className="max-h-[92vh] max-w-5xl overflow-visible p-0">
         <div className="max-h-[92vh] overflow-y-auto rounded-lg bg-background p-6">
           <DialogHeader>
             <DialogTitle>{formatQuestionSource(question) || "Questão"}</DialogTitle>
