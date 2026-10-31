@@ -15,20 +15,19 @@ import {
   Loader2,
   Search,
   Sigma,
-  Sparkles,
   Target,
   TextSearch,
   TrendingUp,
   X,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
+import { AnalysisCatalogHierarchyPanel } from "@/components/AnalysisCatalogHierarchyPanel";
 import { AnalysisCrossPanel } from "@/components/AnalysisCrossPanel";
 import { AnalysisDataQualityPanel } from "@/components/AnalysisDataQualityPanel";
-import { AnalysisDeepAIPanel } from "@/components/AnalysisDeepAIPanel";
-import { AnalysisGeneralSummaryPanel } from "@/components/AnalysisAISummaryPanel";
 import { AnalysisLanguagePanel } from "@/components/AnalysisLanguagePanel";
+import { AnalysisPeriodComparisonPanel } from "@/components/AnalysisPeriodComparisonPanel";
 import { AnalysisReferencePanel } from "@/components/AnalysisReferencePanel";
-import { AnalysisSimulationSuggestionPanel } from "@/components/AnalysisSimulationSuggestionPanel";
+import { AnalysisResolutionPanel } from "@/components/AnalysisResolutionPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,7 +63,7 @@ type AnalysisFilters = {
 };
 type QuestionRow = ProvaAnalysisQuestion;
 type MatrixRow = { content: string; byYear: Record<string, number>; total: number };
-type AnalysisTab = "geral" | "conteudos" | "linguagem" | "referencias" | "cruzamentos" | "ia" | "qualidade";
+type AnalysisTab = "geral" | "conteudos" | "comparacao" | "resolucao" | "padroes" | "referencias" | "qualidade";
 type FilterChipData = { key: keyof AnalysisFilters; label: string; value: string; clearKeys?: Array<keyof AnalysisFilters> };
 type QuickFilterMatch = { key: keyof AnalysisFilters; label: string; value: string };
 type DrilldownRequest = {
@@ -237,7 +236,7 @@ function Page() {
         <div className="mb-4 flex flex-col gap-3 sm:mb-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Análise de Provas</h1>
-            <p className="text-sm text-muted-foreground">Padrões de conteúdo, linguagem e cobrança da banca.</p>
+            <p className="text-sm text-muted-foreground">Distribuição por área e conteúdo, comparação entre períodos e padrões observados nas questões salvas.</p>
           </div>
           <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
             <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
@@ -441,10 +440,6 @@ function AnalysisResult({ summary, filters }: { summary: ProvaAnalysisSummary; f
   const openFrequencyDrilldown = (title: string, kind: FrequencyKind, row: FrequencyRow) => {
     setDrilldown(buildFrequencyDrilldown(summary, title, kind, row));
   };
-  const openTextDrilldown = (title: string, evidence: string[], recommendations: string[] = []) => {
-    setDrilldown(buildTextDrilldown(summary, title, evidence, recommendations));
-  };
-
   return (
     <div className="space-y-4">
       {summary.total < 10 && (
@@ -457,13 +452,13 @@ function AnalysisResult({ summary, filters }: { summary: ProvaAnalysisSummary; f
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as AnalysisTab)}>
         <TabsList className="flex h-auto w-full justify-start overflow-x-auto rounded-lg p-1 [scrollbar-width:none]">
-          <TabsTrigger value="geral" className="shrink-0">Visão geral</TabsTrigger>
-          <TabsTrigger value="conteudos" className="shrink-0">Conteúdos</TabsTrigger>
-          <TabsTrigger value="linguagem" className="shrink-0">Linguagem</TabsTrigger>
+          <TabsTrigger value="geral" className="shrink-0">Panorama</TabsTrigger>
+          <TabsTrigger value="conteudos" className="shrink-0">Áreas e conteúdos</TabsTrigger>
+          <TabsTrigger value="comparacao" className="shrink-0">Comparar períodos</TabsTrigger>
+          <TabsTrigger value="resolucao" className="shrink-0">Resolução</TabsTrigger>
+          <TabsTrigger value="padroes" className="shrink-0">Padrões</TabsTrigger>
           <TabsTrigger value="referencias" className="shrink-0">Textos-base</TabsTrigger>
-          <TabsTrigger value="cruzamentos" className="shrink-0">Cruzamentos</TabsTrigger>
-          <TabsTrigger value="ia" className="shrink-0 gap-1"><Sparkles className="size-3.5" />IA</TabsTrigger>
-          <TabsTrigger value="qualidade" className="shrink-0">Qualidade</TabsTrigger>
+          <TabsTrigger value="qualidade" className="shrink-0">Qualidade da base</TabsTrigger>
         </TabsList>
 
         <TabsContent value="geral" className="mt-4 space-y-4">
@@ -483,35 +478,27 @@ function AnalysisResult({ summary, filters }: { summary: ProvaAnalysisSummary; f
         </TabsContent>
 
         <TabsContent value="conteudos" className="mt-4 space-y-4">
+          <AnalysisCatalogHierarchyPanel summary={summary} />
           <HeatmapChart title="Mapa Ano × Conteúdo" {...buildContentYearMatrix(summary)} />
-          <div className="grid gap-4 lg:grid-cols-2">
-            <VisualFrequencyTable title="Conteúdos" rows={summary.contentFrequency} total={summary.total} highlightFirst onRowClick={(row) => openFrequencyDrilldown("Conteúdo", "conteudo", row)} />
-            <VisualFrequencyTable title="Subconteúdos" rows={summary.subcontentFrequency} total={summary.total} highlightFirst onRowClick={(row) => openFrequencyDrilldown("Subconteúdo", "subconteudo", row)} />
-            <VisualFrequencyTable title="Tags" rows={summary.tagFrequency} total={summary.total} emptyText="Nenhuma tag cadastrada." onRowClick={(row) => openFrequencyDrilldown("Tag", "tag", row)} />
-            <VisualFrequencyTable title="Conteúdos relacionados" rows={summary.relatedContentFrequency} total={summary.total} emptyText="Nenhum relacionado cadastrado." onRowClick={(row) => openFrequencyDrilldown("Conteúdo relacionado", "relacionado", row)} />
-          </div>
+          <VisualFrequencyTable
+            title="Conteúdos relacionados"
+            rows={summary.relatedContentFrequency}
+            total={summary.total}
+            emptyText="Nenhum conteúdo relacionado cadastrado."
+            onRowClick={(row) => openFrequencyDrilldown("Conteúdo relacionado", "relacionado", row)}
+          />
         </TabsContent>
 
-        <TabsContent value="linguagem" className="mt-4"><AnalysisLanguagePanel summary={summary} /></TabsContent>
+        <TabsContent value="padroes" className="mt-4 space-y-4">
+          <AnalysisCrossPanel summary={summary} />
+          <AnalysisLanguagePanel summary={summary} />
+        </TabsContent>
         <TabsContent value="referencias" className="mt-4"><AnalysisReferencePanel summary={summary} /></TabsContent>
-        <TabsContent value="cruzamentos" className="mt-4"><AnalysisCrossPanel summary={summary} /></TabsContent>
-        <TabsContent value="ia" className="mt-4 space-y-4">
-          <div className="grid gap-4 xl:grid-cols-2">
-            <AnalysisGeneralSummaryPanel summary={summary} onEvidenceClick={openTextDrilldown} />
-            <AnalysisSimulationSuggestionPanel summary={summary} />
-          </div>
-          <AnalysisDeepAIPanel
-            summary={summary}
-            filters={filters}
-            onPatternClick={(pattern, sectionTitle) => {
-              openTextDrilldown(
-                `${sectionTitle}: ${pattern.titulo}`,
-                [pattern.evidencia, pattern.explicacao].filter(Boolean),
-                sectionTitle.toLowerCase().includes("recomenda") ? [pattern.explicacao] : [],
-              );
-            }}
-            onEvidenceClick={(value, sectionTitle) => openTextDrilldown(sectionTitle, [value])}
-          />
+        <TabsContent value="comparacao" className="mt-4">
+          <AnalysisPeriodComparisonPanel summary={summary} />
+        </TabsContent>
+        <TabsContent value="resolucao" className="mt-4">
+          <AnalysisResolutionPanel summary={summary} />
         </TabsContent>
         <TabsContent value="qualidade" className="mt-4"><AnalysisDataQualityPanel summary={summary} /></TabsContent>
       </Tabs>
@@ -901,23 +888,6 @@ function buildFrequencyDrilldown(summary: ProvaAnalysisSummary, title: string, k
   };
 }
 
-function buildTextDrilldown(summary: ProvaAnalysisSummary, title: string, evidence: string[], recommendations: string[] = []): DrilldownRequest {
-  const terms = evidence.flatMap(extractDrilldownTerms).slice(0, 12);
-  const questions = terms.length === 0
-    ? summary.questions.slice(0, 24)
-    : summary.questions.filter((question) => {
-      const searchable = normalizeSearch(plainQuestionText(question));
-      return terms.some((term) => searchable.includes(term));
-    });
-  return {
-    title,
-    subtitle: terms.length > 0 ? `Busca por: ${terms.slice(0, 5).join(", ")}` : "Amostra inicial da base analisada",
-    evidence,
-    recommendations,
-    questions,
-  };
-}
-
 function questionMatchesFrequency(question: ProvaAnalysisQuestion, kind: FrequencyKind, value: string) {
   if (kind === "area") return (question.area_geral || "Sem área geral") === value;
   if (kind === "conteudo") return (question.conteudo_principal || "Sem conteúdo principal") === value;
@@ -927,18 +897,6 @@ function questionMatchesFrequency(question: ProvaAnalysisQuestion, kind: Frequen
   if (kind === "tipo") return (question.tipo || "Sem tipo") === value;
   return false;
 }
-
-function extractDrilldownTerms(value: string) {
-  return normalizeSearch(value)
-    .split(/[^a-z0-9]+/i)
-    .filter((term) => term.length >= 4 && !DRILLDOWN_STOP_WORDS.has(term));
-}
-
-const DRILLDOWN_STOP_WORDS = new Set([
-  "questao", "questoes", "analise", "padrao", "padroes", "conteudo", "conteudos",
-  "evidencia", "base", "itens", "item", "mais", "menos", "para", "como", "com",
-  "sem", "dos", "das", "uma", "que", "por", "quando", "sobre", "dados",
-]);
 
 function plainQuestionText(question: ProvaAnalysisQuestion) {
   return [
