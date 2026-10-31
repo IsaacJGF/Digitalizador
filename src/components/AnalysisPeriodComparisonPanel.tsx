@@ -133,8 +133,8 @@ export function AnalysisPeriodComparisonPanel({ summary }: { summary: ProvaAnaly
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <PeriodCountCard label={rangeLabel(startA, endA)} count={periodA.total} accent="primary" />
-        <PeriodCountCard label={rangeLabel(startB, endB)} count={periodB.total} accent="secondary" />
+        <PeriodCountCard label={rangeLabel(startA, endA)} count={periodA.total} />
+        <PeriodCountCard label={rangeLabel(startB, endB)} count={periodB.total} />
       </div>
 
       {(periodA.total < 10 || periodB.total < 10) && (
@@ -215,19 +215,20 @@ function YearRange({ label, start, end, years, onStartChange, onEndChange }: {
   onStartChange: (value: string) => void;
   onEndChange: (value: string) => void;
 }) {
+  const idPrefix = label === "Período A" ? "period-a" : "period-b";
   return (
     <fieldset className="space-y-2 rounded-lg border bg-background p-3">
       <legend className="px-1 text-sm font-medium">{label}</legend>
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1">
-          <Label htmlFor={label + "-start"} className="text-xs">De</Label>
-          <select id={label + "-start"} value={start} onChange={(event) => onStartChange(event.target.value)} className="h-9 w-full rounded-md border bg-background px-2 text-sm">
+          <Label htmlFor={idPrefix + "-start"} className="text-xs">De</Label>
+          <select id={idPrefix + "-start"} value={start} onChange={(event) => onStartChange(event.target.value)} className="h-9 w-full rounded-md border bg-background px-2 text-sm">
             {years.map((year) => <option key={year} value={year}>{year}</option>)}
           </select>
         </div>
         <div className="space-y-1">
-          <Label htmlFor={label + "-end"} className="text-xs">Até</Label>
-          <select id={label + "-end"} value={end} onChange={(event) => onEndChange(event.target.value)} className="h-9 w-full rounded-md border bg-background px-2 text-sm">
+          <Label htmlFor={idPrefix + "-end"} className="text-xs">Até</Label>
+          <select id={idPrefix + "-end"} value={end} onChange={(event) => onEndChange(event.target.value)} className="h-9 w-full rounded-md border bg-background px-2 text-sm">
             {years.map((year) => <option key={year} value={year}>{year}</option>)}
           </select>
         </div>
@@ -236,7 +237,7 @@ function YearRange({ label, start, end, years, onStartChange, onEndChange }: {
   );
 }
 
-function PeriodCountCard({ label, count, accent }: { label: string; count: number; accent: "primary" | "secondary" }) {
+function PeriodCountCard({ label, count }: { label: string; count: number }) {
   return (
     <div className="rounded-xl border bg-card p-4">
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
