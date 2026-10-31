@@ -11,6 +11,8 @@ import {
   ScanLine,
   Pencil,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ListChecks,
   Layers,
   Filter,
@@ -40,6 +42,7 @@ import { RichText } from "@/components/RichText";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { ContentBlocksEditor, type ContentImageRequest } from "@/components/ContentBlocksEditor";
 import { QuestionReferenceContent } from "@/components/QuestionReferenceContent";
+import { QuestionPreviewContent } from "@/components/QuestionPreviewDialog";
 import { ImageCropDialog, type ImageCropSource } from "@/components/ImageCropDialog";
 import { ImageLayoutEditor } from "@/components/ImageLayoutEditor";
 import { ExtraImagesEditor } from "@/components/ExtraImagesEditor";
@@ -218,7 +221,9 @@ function Page() {
   const [editing, setEditing] = useState<Q | null>(null);
   const [editDraft, setEditDraft] = useState<EditDraft | null>(null);
   const [expanded, setExpanded] = useState<Q | null>(null);
+  const [expandedPosition, setExpandedPosition] = useState<number | null>(null);
   const [expandedLoading, setExpandedLoading] = useState(false);
+  const detailRequestIdRef = useRef(0);
   const [referenceDialog, setReferenceDialog] = useState<ReferenceDialogState | null>(null);
   const [referenceGroup, setReferenceGroup] = useState<ReferenceGroupState | null>(null);
   const [referenceLoading, setReferenceLoading] = useState<string | null>(null);
@@ -251,7 +256,7 @@ function Page() {
       const db = supabase as any;
       let query = db.from("questions").select(LIST_COLUMNS, { count: "exact" });
       query = applySupabaseFilters(query, debouncedQuery, advancedFilters);
-      query = query.order("created_at", { ascending: false }).range(from, to);
+      query = query.order("created_at", { ascending: false }).order("id", { ascending: true }).range(from, to);
       const { data, count, error } = await query;
       if (requestId !== loadRequestIdRef.current) return;
       if (error) {
@@ -335,14 +340,66 @@ function Page() {
   };
 
   const openQuestionDetails = async (question: Q) => {
+    const requestId = ++detailRequestIdRef.current;
+    const itemIndex = items.findIndex((item) => item.id === question.id);
+    setExpandedPosition(itemIndex >= 0 ? page * PAGE_SIZE + itemIndex : null);
     setExpandedLoading(true);
     setExpanded(question);
     try {
       const full = await fetchFullQuestion(question.id);
+      if (requestId !== detailRequestIdRef.current) return;
       if (full) setExpanded(full);
     } finally {
-      setExpandedLoading(false);
+      if (requestId === detailRequestIdRef.current) setExpandedLoading(false);
     }
+  };
+
+  const moveQuestionDetails = async (direction: -1 | 1) => {
+    if (expandedPosition === null || expandedLoading) return;
+    const nextPosition = expandedPosition + direction;
+    if (nextPosition < 0 || nextPosition >= totalCount) return;
+
+    const requestId = ++detailRequestIdRef.current;
+    setExpandedLoading(true);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabase as any;
+      let query = db.from("questions").select(DETAIL_COLUMNS);
+      query = applySupabaseFilters(query, debouncedQuery, advancedFilters);
+      query = query
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range(nextPosition, nextPosition);
+      const { data, error } = await query;
+      if (requestId !== detailRequestIdRef.current) return;
+      if (error) {
+        console.error(error);
+        toast.error("Não foi possível abrir outra questão.");
+        return;
+      }
+      const nextQuestion = Array.isArray(data) && data.length > 0
+        ? normalizeRow(data[0] as Partial<Q>)
+        : null;
+      if (!nextQuestion) {
+        toast.error("Não foi possível encontrar outra questão nesta lista.");
+        return;
+      }
+      setExpanded(nextQuestion);
+      setExpandedPosition(nextPosition);
+    } catch (error) {
+      if (requestId !== detailRequestIdRef.current) return;
+      console.error("Falha ao navegar entre questões:", error);
+      toast.error("Não foi possível abrir outra questão. Verifique sua conexão e tente novamente.");
+    } finally {
+      if (requestId === detailRequestIdRef.current) setExpandedLoading(false);
+    }
+  };
+
+  const closeQuestionDetails = () => {
+    detailRequestIdRef.current += 1;
+    setExpanded(null);
+    setExpandedPosition(null);
+    setExpandedLoading(false);
   };
 
   const openQuestionEditor = async (question: Q) => {
@@ -693,7 +750,18 @@ function Page() {
         </div>
 
         <AdvancedFiltersDialog open={advancedOpen} onOpenChange={setAdvancedOpen} filters={draftFilters} onFiltersChange={setDraftFilters} activeCount={activeFilterCount} areas={areas} conteudos={catalogConteudos} subconteudos={subconteudos} relacionados={relacionados} provas={provas} instituicoes={instituicoes} anos={anos} onApply={applyAdvancedFilters} onClear={clearAdvancedFilters} />
-        <QuestionDetailsDialog question={expanded} loading={expandedLoading} onClose={() => setExpanded(null)} onEdit={openQuestionEditor} />
+        <QuestionDetailsDialog
+          question={expanded}
+          loading={expandedLoading}
+          position={expandedPosition}
+          totalCount={totalCount}
+          canGoPrevious={expandedPosition !== null && expandedPosition > 0}
+          canGoNext={expandedPosition !== null && expandedPosition < totalCount - 1}
+          onPrevious={() => void moveQuestionDetails(-1)}
+          onNext={() => void moveQuestionDetails(1)}
+          onClose={closeQuestionDetails}
+          onEdit={openQuestionEditor}
+        />
         <ReferenceViewDialog state={referenceDialog} onClose={() => setReferenceDialog(null)} onDraftChange={(patch) => setReferenceDialog((current) => current ? { ...current, draft: { ...current.draft, ...patch } } : current)} onStartEdit={() => setReferenceDialog((current) => current ? { ...current, editing: true } : current)} onCancelEdit={() => setReferenceDialog((current) => current ? { ...current, draft: toReferenceDraft(current.question), editing: false } : current)} onSave={saveReferenceEdit} />
         <ReferenceGroupDialog group={referenceGroup?.items ?? []} selectedIds={referenceGroup?.selected ?? new Set()} assessmentIds={sel} onToggle={toggleReferenceGroupItem} onSelectAll={selectAllReferenceGroupItems} onClear={clearReferenceGroupItems} onAdd={addReferenceGroupSelection} onClose={() => setReferenceGroup(null)} />
         <EditQuestionDialog question={editing} draft={editDraft} saving={savingEdit} areas={areas} conteudos={catalogConteudos} subconteudos={subconteudos} relacionados={relacionados} tags={tagsCat} provas={provas} instituicoes={instituicoes} onDraftChange={setEditDraft} onClose={() => { setEditing(null); setEditDraft(null); }} onSave={saveQuestionEdit} />
@@ -1100,20 +1168,100 @@ function EditQuestionDialog({ question, draft, saving, areas, conteudos, subcont
     </Dialog>
   );
 }
-function QuestionDetailsDialog({ question, loading, onClose, onEdit }: { question: Q | null; loading: boolean; onClose: () => void; onEdit: (question: Q) => void }) {
+function QuestionDetailsDialog({ question, loading, position, totalCount, canGoPrevious, canGoNext, onPrevious, onNext, onClose, onEdit }: {
+  question: Q | null;
+  loading: boolean;
+  position: number | null;
+  totalCount: number;
+  canGoPrevious: boolean;
+  canGoNext: boolean;
+  onPrevious: () => void;
+  onNext: () => void;
+  onClose: () => void;
+  onEdit: (question: Q) => void;
+}) {
   if (!question) return null;
-  const hasReference = Boolean(question.referencia_texto || question.referencia_texto_apos || question.referencia_imagem || normalizeExtraImages(question.referencia_imagens_extra).length > 0);
+  const reference = legacyReferenceToContent({
+    text: question.referencia_texto ?? "",
+    textAfter: question.referencia_texto_apos,
+    mainImage: question.referencia_imagem,
+    mainPos: question.referencia_imagem_pos,
+    mainLayout: question.referencia_imagem_layout,
+    extras: question.referencia_imagens_extra,
+  });
+
   return (
     <Dialog open={!!question} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
-        <DialogHeader><DialogTitle>{formatQuestionSource(question) || "Questão"}</DialogTitle><DialogDescription>{loading ? "Carregando dados completos..." : `${formatTipo(question.tipo)}${question.numero ? ` · Item ${question.numero}` : ""}`}</DialogDescription></DialogHeader>
-        {loading ? <div className="flex items-center justify-center py-16 text-muted-foreground"><Loader2 className="mr-2 size-5 animate-spin" /> Carregando questão completa...</div> : <div className="space-y-4">
-          {hasReference && <section className="rounded-lg border bg-muted/20 p-3"><h3 className="mb-2 text-sm font-semibold">Referência</h3><QuestionReferenceContent text={question.referencia_texto} textAfter={question.referencia_texto_apos} mainImage={question.referencia_imagem} mainImagePosition={question.referencia_imagem_pos} mainImageLayout={question.referencia_imagem_layout} extraImages={question.referencia_imagens_extra} textClassName="text-sm" />{question.referencia_fonte && <p className="mt-2 text-right text-xs text-muted-foreground">{question.referencia_fonte}</p>}</section>}
-          <section><h3 className="mb-2 text-sm font-semibold">Enunciado</h3><RichText text={question.enunciado} className="text-sm" />{question.enunciado_imagem && <img src={question.enunciado_imagem} alt="Enunciado" className="my-2 max-h-96 max-w-full rounded border object-contain" />}</section>
-          {question.alternativas?.length > 0 && <section><h3 className="mb-2 text-sm font-semibold">Alternativas</h3><div className="space-y-2">{question.alternativas.map((alt) => <div key={alt.letra} className="rounded-md border p-2 text-sm"><strong>{alt.letra}) </strong><RichText text={alt.texto} className="inline" />{alt.imagem && <img src={alt.imagem} alt={`Alternativa ${alt.letra}`} className="mt-2 max-h-60 max-w-full rounded border object-contain" />}</div>)}</div></section>}
-          <section className="grid gap-2 rounded-lg border bg-muted/20 p-3 text-xs sm:grid-cols-2"><p><strong>Área:</strong> {question.area_geral || "—"}</p><p><strong>Conteúdo:</strong> {question.conteudo_principal || "—"}</p><p><strong>Subconteúdo:</strong> {question.subconteudo_principal || "—"}</p><p><strong>Gabarito:</strong> {question.resposta || "—"}</p><p><strong>Prova:</strong> {question.prova || "—"}</p><p><strong>Instituição:</strong> {question.instituicao || "—"}</p><p><strong>Ano:</strong> {question.ano || "—"}</p><p><strong>Tags:</strong> {(question.tags_livres ?? question.tags ?? []).join(", ") || "—"}</p></section>
-        </div>}
-        <DialogFooter><Button variant="outline" onClick={onClose}>Fechar</Button><Button onClick={() => { onClose(); onEdit(question); }} disabled={loading} className="gap-2"><Pencil className="size-4" /> Editar questão</Button></DialogFooter>
+      <DialogContent className="relative max-h-[92vh] max-w-5xl overflow-visible p-0">
+        <div className="max-h-[92vh] overflow-y-auto rounded-lg bg-background p-6">
+          <DialogHeader>
+            <DialogTitle>{formatQuestionSource(question) || "Questão"}</DialogTitle>
+            <DialogDescription>
+              {position !== null && totalCount > 0 ? "Questão " + (position + 1) + " de " + totalCount + " · " : ""}
+              {loading ? "Carregando dados completos..." : formatTipo(question.tipo) + (question.numero ? " · Item " + question.numero : "")}
+            </DialogDescription>
+          </DialogHeader>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-16 text-muted-foreground">
+              <Loader2 className="mr-2 size-5 animate-spin" /> Carregando questão completa...
+            </div>
+          ) : (
+            <div className="space-y-4 pt-4">
+              <QuestionPreviewContent
+                question={question}
+                itemIndex={0}
+                itemCount={1}
+                referenceText={reference.text}
+                referenceImages={reference.images}
+                referenceSource={question.referencia_fonte}
+              />
+              <section className="grid gap-2 rounded-lg border bg-muted/20 p-3 text-xs sm:grid-cols-2">
+                <p><strong>Área geral:</strong> {question.area_geral || "—"}</p>
+                <p><strong>Conteúdo principal:</strong> {question.conteudo_principal || "—"}</p>
+                <p><strong>Subconteúdo principal:</strong> {question.subconteudo_principal || "—"}</p>
+                <p><strong>Conteúdos relacionados:</strong> {(question.conteudos_relacionados ?? []).join(", ") || "—"}</p>
+                <p><strong>Tags:</strong> {(question.tags_livres ?? question.tags ?? []).join(", ") || "—"}</p>
+                <p><strong>Prova:</strong> {question.prova || "—"}</p>
+                <p><strong>Instituição:</strong> {question.instituicao || "—"}</p>
+                <p><strong>Ano:</strong> {question.ano || "—"}</p>
+                <p><strong>Observações:</strong> {question.observacoes || "—"}</p>
+              </section>
+            </div>
+          )}
+
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={onClose}>Fechar</Button>
+            <Button onClick={() => { onClose(); onEdit(question); }} disabled={loading} className="gap-2">
+              <Pencil className="size-4" /> Editar questão
+            </Button>
+          </DialogFooter>
+        </div>
+
+        <Button
+          type="button"
+          variant="secondary"
+          size="icon"
+          className="absolute left-2 top-1/2 z-20 size-10 -translate-y-1/2 rounded-full border bg-background/95 shadow-lg xl:-left-14 xl:size-12"
+          onClick={onPrevious}
+          disabled={loading || !canGoPrevious}
+          aria-label="Questão anterior"
+          title="Questão anterior"
+        >
+          <ChevronLeft className="size-5" />
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          size="icon"
+          className="absolute right-2 top-1/2 z-20 size-10 -translate-y-1/2 rounded-full border bg-background/95 shadow-lg xl:-right-14 xl:size-12"
+          onClick={onNext}
+          disabled={loading || !canGoNext}
+          aria-label="Próxima questão"
+          title="Próxima questão"
+        >
+          <ChevronRight className="size-5" />
+        </Button>
       </DialogContent>
     </Dialog>
   );
