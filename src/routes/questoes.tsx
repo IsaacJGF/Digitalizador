@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Search,
   Trash2,
@@ -205,13 +205,15 @@ function Page() {
   const [instituicoes, setInstituicoes] = useState<CatalogItem[]>([]);
   const [anos, setAnos] = useState<string[]>([]);
   const [savingEdit, setSavingEdit] = useState(false);
+  const loadRequestIdRef = useRef(0);
 
   const commitSelection = (next: Set<string>) => {
     setSel(next);
     saveSelectedQuestionIds([...next]);
   };
 
-  const load = async () => {
+  const load = useCallback(async () => {
+    const requestId = ++loadRequestIdRef.current;
     setLoading(true);
     try {
       const from = page * PAGE_SIZE;
@@ -222,6 +224,7 @@ function Page() {
       query = applySupabaseFilters(query, debouncedQuery, advancedFilters);
       query = query.order("created_at", { ascending: false }).range(from, to);
       const { data, count, error } = await query;
+      if (requestId !== loadRequestIdRef.current) return;
       if (error) {
         console.error(error);
         toast.error("Falha ao carregar questões.");
@@ -229,34 +232,53 @@ function Page() {
       }
       setItems(normalizeRows((data ?? []) as Partial<Q>[]));
       setTotalCount(count ?? 0);
+    } catch (error) {
+      if (requestId !== loadRequestIdRef.current) return;
+      console.error("Falha inesperada ao carregar questões:", error);
+      toast.error("Falha ao carregar questões. Verifique sua conexão e tente novamente.");
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestIdRef.current) setLoading(false);
     }
-  };
+  }, [advancedFilters, debouncedQuery, page]);
 
   useEffect(() => { setPage(0); }, [debouncedQuery, advancedFilters]);
-  useEffect(() => { load(); }, [page, debouncedQuery, advancedFilters]);
+  useEffect(() => {
+    void load();
+    return () => { loadRequestIdRef.current += 1; };
+  }, [load]);
 
   useEffect(() => {
-    (async () => {
+    let cancelled = false;
+    void (async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabase as any;
-      const tables = [
-        ["catalog_areas", setAreas],
-        ["catalog_conteudos", setCatalogConteudos],
-        ["catalog_subconteudos", setSubconteudos],
-        ["catalog_relacionados", setRelacionados],
-        ["catalog_tags", setTagsCat],
-        ["catalog_provas", setProvas],
-        ["catalog_instituicoes", setInstituicoes],
-      ] as const;
-      for (const [table, setter] of tables) {
-        const { data, error } = await db.from(table).select("*").order("nome");
-        if (!error) setter((data ?? []) as CatalogItem[]);
+      try {
+        const [areasResult, contentsResult, subcontentsResult, relatedResult, tagsResult, testsResult, institutionsResult, yearsResult] = await Promise.all([
+          db.from("catalog_areas").select("*").order("nome"),
+          db.from("catalog_conteudos").select("*").order("nome"),
+          db.from("catalog_subconteudos").select("*").order("nome"),
+          db.from("catalog_relacionados").select("*").order("nome"),
+          db.from("catalog_tags").select("*").order("nome"),
+          db.from("catalog_provas").select("*").order("nome"),
+          db.from("catalog_instituicoes").select("*").order("nome"),
+          db.from("questions").select("ano").not("ano", "is", null).limit(3000),
+        ]);
+        if (cancelled) return;
+        if (!areasResult.error) setAreas((areasResult.data ?? []) as CatalogItem[]);
+        if (!contentsResult.error) setCatalogConteudos((contentsResult.data ?? []) as CatalogItem[]);
+        if (!subcontentsResult.error) setSubconteudos((subcontentsResult.data ?? []) as CatalogItem[]);
+        if (!relatedResult.error) setRelacionados((relatedResult.data ?? []) as CatalogItem[]);
+        if (!tagsResult.error) setTagsCat((tagsResult.data ?? []) as CatalogItem[]);
+        if (!testsResult.error) setProvas((testsResult.data ?? []) as CatalogItem[]);
+        if (!institutionsResult.error) setInstituicoes((institutionsResult.data ?? []) as CatalogItem[]);
+        if (!yearsResult.error) setAnos(uniqueYears((yearsResult.data ?? []) as Array<{ ano?: string | null }>));
+      } catch (error) {
+        if (cancelled) return;
+        console.error("Falha ao carregar filtros de questões:", error);
+        toast.error("Alguns filtros não puderam ser carregados.");
       }
-      const { data: yearRows } = await db.from("questions").select("ano").not("ano", "is", null).limit(3000);
-      setAnos(uniqueYears((yearRows ?? []) as Array<{ ano?: string | null }>));
     })();
+    return () => { cancelled = true; };
   }, []);
 
   const activeFilterCount = useMemo(() => countActiveFilters(advancedFilters), [advancedFilters]);

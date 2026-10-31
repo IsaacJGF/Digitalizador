@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
   BarChart3,
@@ -98,6 +98,9 @@ const ANALYSIS_COLUMNS = [
 const DONUT_COLORS = ["#2563eb", "#16a34a", "#f59e0b", "#dc2626", "#7c3aed", "#0891b2", "#64748b"];
 const FILTER_STORAGE_KEY = "paper-to-word-wiz.analysis.filters";
 const FREQUENCY_PAGE_SIZE = 12;
+const ANALYSIS_PAGE_SIZE = 500;
+const ANALYSIS_REQUEST_BATCH_SIZE = 4;
+const MAX_ANALYSIS_QUESTIONS = 10_000;
 
 function Page() {
   const [filters, setFilters] = useState<AnalysisFilters>(EMPTY_FILTERS);
@@ -112,23 +115,38 @@ function Page() {
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterSearch, setFilterSearch] = useState("");
+  const analysisRequestIdRef = useRef(0);
+
+  useEffect(() => () => {
+    analysisRequestIdRef.current += 1;
+  }, []);
 
   useEffect(() => {
-    (async () => {
+    let cancelled = false;
+    void (async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabase as any;
-      const tables = [
-        ["catalog_areas", setAreas],
-        ["catalog_conteudos", setConteudos],
-        ["catalog_subconteudos", setSubconteudos],
-        ["catalog_provas", setProvas],
-        ["catalog_instituicoes", setInstituicoes],
-      ] as const;
-      for (const [table, setter] of tables) {
-        const { data, error } = await db.from(table).select("*").order("nome");
-        if (!error) setter((data ?? []) as CatalogItem[]);
+      try {
+        const [areasResult, contentsResult, subcontentsResult, testsResult, institutionsResult] = await Promise.all([
+          db.from("catalog_areas").select("*").order("nome"),
+          db.from("catalog_conteudos").select("*").order("nome"),
+          db.from("catalog_subconteudos").select("*").order("nome"),
+          db.from("catalog_provas").select("*").order("nome"),
+          db.from("catalog_instituicoes").select("*").order("nome"),
+        ]);
+        if (cancelled) return;
+        if (!areasResult.error) setAreas((areasResult.data ?? []) as CatalogItem[]);
+        if (!contentsResult.error) setConteudos((contentsResult.data ?? []) as CatalogItem[]);
+        if (!subcontentsResult.error) setSubconteudos((subcontentsResult.data ?? []) as CatalogItem[]);
+        if (!testsResult.error) setProvas((testsResult.data ?? []) as CatalogItem[]);
+        if (!institutionsResult.error) setInstituicoes((institutionsResult.data ?? []) as CatalogItem[]);
+      } catch (error) {
+        if (cancelled) return;
+        console.error("Falha ao carregar filtros da análise:", error);
+        toast.error("Alguns filtros da análise não puderam ser carregados.");
       }
     })();
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -160,6 +178,8 @@ function Page() {
   };
 
   const clearFilters = () => {
+    analysisRequestIdRef.current += 1;
+    setLoading(false);
     setFilters(EMPTY_FILTERS);
     setAppliedFilters(EMPTY_FILTERS);
     setSummary(null);
@@ -172,25 +192,25 @@ function Page() {
       toast.error("Confira o intervalo de anos antes de analisar.");
       return;
     }
+    const requestId = ++analysisRequestIdRef.current;
     setLoading(true);
     setHasAnalyzed(true);
     setAppliedFilters(normalizedFilters);
     setFilterOpen(false);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const db = supabase as any;
-      let query = db.from("questions").select(ANALYSIS_COLUMNS);
-      query = applyFiltersToQuery(query, normalizedFilters);
-      const { data, error } = await query.order("ano", { ascending: true }).order("created_at", { ascending: true });
-      if (error) {
-        console.error("Erro ao consultar questões para análise:", error);
-        toast.error("Não foi possível carregar as questões para análise.");
-        setSummary(null);
-        return;
+      const result = await fetchAnalysisQuestions(normalizedFilters, () => requestId === analysisRequestIdRef.current);
+      if (requestId !== analysisRequestIdRef.current) return;
+      setSummary(analyzeProvaQuestions(result.questions));
+      if (result.truncated) {
+        toast.warning(`A análise considerou as primeiras ${MAX_ANALYSIS_QUESTIONS.toLocaleString("pt-BR")} questões. Refine os filtros para analisar um conjunto menor.`);
       }
-      setSummary(analyzeProvaQuestions((data ?? []) as QuestionRow[]));
+    } catch (error) {
+      if (requestId !== analysisRequestIdRef.current) return;
+      console.error("Erro ao consultar questões para análise:", error);
+      toast.error("Não foi possível carregar as questões para análise.");
+      setSummary(null);
     } finally {
-      setLoading(false);
+      if (requestId === analysisRequestIdRef.current) setLoading(false);
     }
   };
 
@@ -1036,6 +1056,57 @@ function applyFiltersToQuery(query: any, filters: AnalysisFilters) {
   if (filters.subconteudoPrincipal) query = query.eq("subconteudo_principal", filters.subconteudoPrincipal);
   if (filters.tipo) query = query.eq("tipo", filters.tipo);
   return query;
+}
+
+async function fetchAnalysisQuestions(filters: AnalysisFilters, isCurrent: () => boolean) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+  const questions: QuestionRow[] = [];
+  let offset = 0;
+
+  while (offset < MAX_ANALYSIS_QUESTIONS && isCurrent()) {
+    const offsets = Array.from({ length: ANALYSIS_REQUEST_BATCH_SIZE }, (_, index) => offset + index * ANALYSIS_PAGE_SIZE)
+      .filter((pageOffset) => pageOffset < MAX_ANALYSIS_QUESTIONS);
+    const pages = await Promise.all(offsets.map(async (pageOffset) => {
+      const end = Math.min(pageOffset + ANALYSIS_PAGE_SIZE - 1, MAX_ANALYSIS_QUESTIONS - 1);
+      let query = db.from("questions").select(ANALYSIS_COLUMNS);
+      query = applyFiltersToQuery(query, filters);
+      const { data, error } = await query
+        .order("ano", { ascending: true })
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true })
+        .range(pageOffset, end);
+      if (error) throw error;
+      return { rows: (data ?? []) as QuestionRow[], requested: end - pageOffset + 1 };
+    }));
+    if (!isCurrent()) break;
+
+    let reachedEnd = false;
+    for (const page of pages) {
+      questions.push(...page.rows);
+      offset += page.rows.length;
+      if (page.rows.length < page.requested) {
+        reachedEnd = true;
+        break;
+      }
+      if (questions.length >= MAX_ANALYSIS_QUESTIONS) break;
+    }
+    if (reachedEnd || questions.length >= MAX_ANALYSIS_QUESTIONS) break;
+  }
+
+  let truncated = false;
+  if (questions.length >= MAX_ANALYSIS_QUESTIONS && isCurrent()) {
+    let probe = db.from("questions").select("id");
+    probe = applyFiltersToQuery(probe, filters);
+    const { data, error } = await probe
+      .order("ano", { ascending: true })
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(MAX_ANALYSIS_QUESTIONS, MAX_ANALYSIS_QUESTIONS);
+    if (error) throw error;
+    truncated = Boolean(data?.length);
+  }
+  return { questions, truncated };
 }
 
 function normalizeFilters(f: AnalysisFilters): AnalysisFilters {

@@ -22,7 +22,6 @@ export type SelectedImage = {
 
 export type PdfQueueResult = {
   draft: DraftDigitization;
-  imageDataUrl: string;
   imageSize: number;
   questionCount: number;
   processedAt: string;

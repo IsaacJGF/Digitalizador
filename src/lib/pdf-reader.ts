@@ -1,5 +1,7 @@
 import * as pdfjs from "pdfjs-dist";
+import type { PDFPageProxy } from "pdfjs-dist";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.mjs?url";
+import { assertImageCanvasSize, MAX_IMAGE_CANVAS_PIXELS } from "@/lib/image-limits";
 
 export type PdfPageSize = {
   width: number;
@@ -43,7 +45,10 @@ function configurePdfWorker() {
   workerConfigured = true;
 }
 
-export async function readPdfDocumentSummary(file: File, options: ReadPdfOptions): Promise<PdfDocumentSummary> {
+export async function readPdfDocumentSummary(
+  file: File,
+  options: ReadPdfOptions,
+): Promise<PdfDocumentSummary> {
   if (!isPdfFile(file)) {
     throw new Error("Envie um arquivo PDF válido.");
   }
@@ -85,10 +90,17 @@ export async function renderPdfPagesToImageDataUrl(
     throw new Error("Envie um arquivo PDF válido.");
   }
 
-  const scale = options.scale ?? 2;
-  const maxPageWidth = options.maxPageWidth ?? 1800;
-  const imageQuality = options.imageQuality ?? 0.9;
+  const requestedScale =
+    Number.isFinite(options.scale) && (options.scale ?? 0) > 0 ? options.scale! : 2;
+  const maxPageWidth =
+    Number.isFinite(options.maxPageWidth) && (options.maxPageWidth ?? 0) > 0
+      ? options.maxPageWidth!
+      : 1800;
+  const imageQuality = Number.isFinite(options.imageQuality)
+    ? Math.max(0.1, Math.min(1, options.imageQuality!))
+    : 0.9;
   const pdf = await openPdfDocument(file);
+  const openedPages: PDFPageProxy[] = [];
 
   try {
     const pages = normalizePageNumbers(pageNumbers, pdf.numPages);
@@ -96,69 +108,127 @@ export async function renderPdfPagesToImageDataUrl(
       throw new Error("Selecione ao menos uma página do PDF.");
     }
 
-    const renderedPages: Array<{ pageNumber: number; canvas: HTMLCanvasElement; width: number; height: number }> = [];
+    const pageInputs: Array<{ pageNumber: number; page: PDFPageProxy; widthAtScaleOne: number }> =
+      [];
     for (const pageNumber of pages) {
       const page = await pdf.getPage(pageNumber);
-      try {
-        const baseViewport = page.getViewport({ scale: 1 });
-        const finalScale = Math.min(scale, maxPageWidth / baseViewport.width);
-        const viewport = page.getViewport({ scale: finalScale });
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.ceil(viewport.width);
-        canvas.height = Math.ceil(viewport.height);
-        const ctx = canvas.getContext("2d");
-        if (!ctx) throw new Error("Não foi possível preparar o canvas para renderizar o PDF.");
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        await page.render({ canvasContext: ctx, viewport }).promise;
-        renderedPages.push({
-          pageNumber,
-          canvas,
-          width: canvas.width,
-          height: canvas.height,
-        });
-      } finally {
-        page.cleanup();
-      }
+      openedPages.push(page);
+      const baseViewport = page.getViewport({ scale: 1 });
+      pageInputs.push({ pageNumber, page, widthAtScaleOne: baseViewport.width });
     }
 
-    const labelHeight = renderedPages.length > 1 ? LABEL_HEIGHT : 0;
-    const canvasWidth = Math.max(...renderedPages.map((page) => page.width));
-    const canvasHeight = renderedPages.reduce(
-      (sum, page, index) => sum + labelHeight + page.height + (index < renderedPages.length - 1 ? PAGE_GAP : 0),
-      0,
-    );
+    let scaleFactor = 1;
+    let layouts = buildPageLayouts(pageInputs, requestedScale, maxPageWidth, scaleFactor);
+    let canvasSize = measureCombinedCanvas(layouts);
+    for (let attempt = 0; canvasSize.pixels > MAX_IMAGE_CANVAS_PIXELS && attempt < 4; attempt++) {
+      scaleFactor *= Math.sqrt(MAX_IMAGE_CANVAS_PIXELS / canvasSize.pixels);
+      layouts = buildPageLayouts(pageInputs, requestedScale, maxPageWidth, scaleFactor);
+      canvasSize = measureCombinedCanvas(layouts);
+    }
+    if (scaleFactor < 0.4 || canvasSize.pixels > MAX_IMAGE_CANVAS_PIXELS) {
+      throw new Error(
+        "A seleção exige muita memória para renderizar. Reduza a quantidade de páginas e tente novamente.",
+      );
+    }
+    assertImageCanvasSize(canvasSize.width, canvasSize.height);
+
+    const { width: canvasWidth, height: canvasHeight, labelHeight } = canvasSize;
     const combinedCanvas = document.createElement("canvas");
     combinedCanvas.width = canvasWidth;
     combinedCanvas.height = canvasHeight;
-    const combinedCtx = combinedCanvas.getContext("2d");
-    if (!combinedCtx) throw new Error("Não foi possível combinar as páginas renderizadas.");
+    try {
+      const combinedCtx = combinedCanvas.getContext("2d");
+      if (!combinedCtx) throw new Error("Não foi possível combinar as páginas renderizadas.");
 
-    combinedCtx.fillStyle = "#ffffff";
-    combinedCtx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
+      combinedCtx.fillStyle = "#ffffff";
+      combinedCtx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
 
-    let y = 0;
-    for (const page of renderedPages) {
-      if (labelHeight) {
-        combinedCtx.fillStyle = "#111827";
-        combinedCtx.font = "22px Arial";
-        combinedCtx.fillText(`Página ${page.pageNumber} de ${pdf.numPages}`, 12, y + 24);
-        y += labelHeight;
+      let y = 0;
+      for (const layout of layouts) {
+        if (labelHeight) {
+          combinedCtx.fillStyle = "#111827";
+          combinedCtx.font = "22px Arial";
+          combinedCtx.fillText(`Página ${layout.pageNumber} de ${pdf.numPages}`, 12, y + 24);
+          y += labelHeight;
+        }
+
+        const pageCanvas = document.createElement("canvas");
+        pageCanvas.width = layout.width;
+        pageCanvas.height = layout.height;
+        try {
+          const pageCtx = pageCanvas.getContext("2d");
+          if (!pageCtx)
+            throw new Error("Não foi possível preparar o canvas para renderizar o PDF.");
+          pageCtx.fillStyle = "#ffffff";
+          pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+          await layout.page.render({ canvasContext: pageCtx, viewport: layout.viewport }).promise;
+          const x = Math.round((canvasWidth - layout.width) / 2);
+          combinedCtx.drawImage(pageCanvas, x, y, layout.width, layout.height);
+        } finally {
+          pageCanvas.width = 0;
+          pageCanvas.height = 0;
+        }
+        y += layout.height + PAGE_GAP;
       }
-      const x = Math.round((canvasWidth - page.width) / 2);
-      combinedCtx.drawImage(page.canvas, x, y, page.width, page.height);
-      y += page.height + PAGE_GAP;
-    }
 
-    return {
-      imageDataUrl: combinedCanvas.toDataURL("image/jpeg", imageQuality),
-      pages,
-      width: combinedCanvas.width,
-      height: combinedCanvas.height,
-    };
+      return {
+        imageDataUrl: combinedCanvas.toDataURL("image/jpeg", imageQuality),
+        pages,
+        width: canvasWidth,
+        height: canvasHeight,
+      };
+    } finally {
+      combinedCanvas.width = 0;
+      combinedCanvas.height = 0;
+    }
   } finally {
+    openedPages.forEach((page) => {
+      try {
+        page.cleanup();
+      } catch {
+        // Continue releasing the remaining pages and document resources.
+      }
+    });
     await pdf.destroy();
   }
+}
+
+type PdfPageLayout = {
+  pageNumber: number;
+  page: PDFPageProxy;
+  viewport: ReturnType<PDFPageProxy["getViewport"]>;
+  width: number;
+  height: number;
+};
+
+function buildPageLayouts(
+  pages: Array<{ pageNumber: number; page: PDFPageProxy; widthAtScaleOne: number }>,
+  requestedScale: number,
+  maxPageWidth: number,
+  scaleFactor: number,
+): PdfPageLayout[] {
+  return pages.map(({ pageNumber, page, widthAtScaleOne }) => {
+    const scale = Math.min(requestedScale, maxPageWidth / widthAtScaleOne) * scaleFactor;
+    const viewport = page.getViewport({ scale });
+    return {
+      pageNumber,
+      page,
+      viewport,
+      width: Math.ceil(viewport.width),
+      height: Math.ceil(viewport.height),
+    };
+  });
+}
+
+function measureCombinedCanvas(layouts: PdfPageLayout[]) {
+  const labelHeight = layouts.length > 1 ? LABEL_HEIGHT : 0;
+  const width = Math.max(...layouts.map((layout) => layout.width));
+  const height = layouts.reduce(
+    (sum, layout, index) =>
+      sum + labelHeight + layout.height + (index < layouts.length - 1 ? PAGE_GAP : 0),
+    0,
+  );
+  return { width, height, labelHeight, pixels: width * height };
 }
 
 async function openPdfDocument(file: File) {
@@ -169,7 +239,16 @@ async function openPdfDocument(file: File) {
     stopAtErrors: false,
     isEvalSupported: false,
   });
-  return loadingTask.promise;
+  try {
+    return await loadingTask.promise;
+  } catch (error) {
+    try {
+      await loadingTask.destroy();
+    } catch {
+      // Preserve the original document loading error.
+    }
+    throw error;
+  }
 }
 
 function normalizePageNumbers(pageNumbers: number[], maxPages: number) {

@@ -6,6 +6,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { digitizeQuestion } from "@/lib/digitize.functions";
 import { saveDraft, type DraftDigitization, type DraftQuestion } from "@/lib/draft-store";
 import { formatFileSize, isPdfFile, pageRange, readPdfDocumentSummary, renderPdfPagesToImageDataUrl, type PdfDocumentSummary, type PdfRenderedImage } from "@/lib/pdf-reader";
+import { assertImageCanvasSize, MAX_DIGITIZE_IMAGE_DATA_URL_LENGTH, MAX_IMAGE_CANVAS_PIXELS } from "@/lib/image-limits";
 import { toast } from "sonner";
 import { ImageUploadPanel } from "./ImageUploadPanel";
 import { PdfUploadPanel } from "./PdfUploadPanel";
@@ -30,6 +31,7 @@ import {
   estimateDataUrlBytes,
   fileToDataURL,
   formatPages,
+  isPreparedImageWithinLimit,
   loadImage,
   mergeQueueJobsIntoDraft,
   pageInputToNumber,
@@ -57,25 +59,70 @@ export function DigitalizarPage() {
   const [pdfDigitizing, setPdfDigitizing] = useState(false);
   const [renderedPdfImage, setRenderedPdfImage] = useState<PdfRenderedImage | null>(null);
   const [pdfQueue, setPdfQueue] = useState<PdfQueueJob[]>([]);
+  const [pdfQueueReady, setPdfQueueReady] = useState(false);
   const [savedPdfMeta, setSavedPdfMeta] = useState<PdfFileMeta | null>(null);
   const [activeQueueJobId, setActiveQueueJobId] = useState<string | null>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
+  const activeQueueJobRef = useRef<string | null>(null);
+  const imageObjectUrlsRef = useRef(new Set<string>());
+  const pdfFileReadRequestIdRef = useRef(0);
+  const queuePersistenceChainRef = useRef(Promise.resolve());
+  const queueStorageWarningShownRef = useRef(false);
+  const queuePersistenceInitializedRef = useRef(false);
 
   useEffect(() => {
-    const savedQueue = loadPdfQueue();
-    const savedMeta = loadPdfFileMeta();
-    setPdfQueue(savedQueue);
-    setSavedPdfMeta(savedMeta);
-    if (savedQueue.length > 0) setMode("pdf");
+    let cancelled = false;
+    setSavedPdfMeta(loadPdfFileMeta());
+    void loadPdfQueue().then((savedQueue) => {
+      if (cancelled) return;
+      setPdfQueue(savedQueue);
+      if (savedQueue.length > 0) setMode("pdf");
+      setPdfQueueReady(true);
+    }).catch((error) => {
+      console.warn("Não foi possível recuperar a fila de PDF:", error);
+      if (!cancelled) setPdfQueueReady(true);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!pdfQueueReady) return;
+    if (!queuePersistenceInitializedRef.current) {
+      queuePersistenceInitializedRef.current = true;
+      return;
+    }
+    let cancelled = false;
+    const queueSnapshot = pdfQueue;
+    queuePersistenceChainRef.current = queuePersistenceChainRef.current
+      .catch(() => undefined)
+      .then(async () => {
+        const result = await persistPdfQueue(queueSnapshot);
+        if (cancelled) return;
+        if (!result.ok) {
+          toast.error("Não foi possível guardar a fila do PDF. Mantenha esta página aberta ou reduza a quantidade de páginas.");
+        } else if (result.compacted && !queueStorageWarningShownRef.current) {
+          queueStorageWarningShownRef.current = true;
+          toast.warning("A fila foi mantida, mas as imagens de origem foram removidas para caber no armazenamento. O texto continua disponível; para recuperar a imagem, limpe a fila e processe novamente as mesmas páginas.");
+        }
+      });
+    return () => { cancelled = true; };
+  }, [pdfQueue, pdfQueueReady]);
+
+  useEffect(() => () => {
+    imageObjectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    imageObjectUrlsRef.current.clear();
   }, []);
 
   const setAndStorePdfQueue = (updater: PdfQueueJob[] | ((current: PdfQueueJob[]) => PdfQueueJob[])) => {
     setPdfQueue((current) => {
-      const next = typeof updater === "function" ? updater(current) : updater;
-      persistPdfQueue(next);
-      return next;
+      return typeof updater === "function" ? updater(current) : updater;
     });
   };
+
+  const revokeImagePreview = useCallback((url: string) => {
+    if (!imageObjectUrlsRef.current.delete(url)) return;
+    URL.revokeObjectURL(url);
+  }, []);
 
   const saveDraftAndReview = (draft: DraftDigitization | DraftQuestion, successMessage?: string) => {
     const saved = saveDraft(draft);
@@ -102,35 +149,48 @@ export function DigitalizarPage() {
         toast.error(`Imagem acima de 10MB: ${f.name}`);
         continue;
       }
-      valid.push({ file: f, preview: URL.createObjectURL(f) });
+      const preview = URL.createObjectURL(f);
+      imageObjectUrlsRef.current.add(preview);
+      valid.push({ file: f, preview });
     }
 
     if (valid.length === 0) return;
     setImages((current) => {
       const room = MAX_FILES - current.length;
       if (room <= 0) {
-        valid.forEach((img) => URL.revokeObjectURL(img.preview));
+        valid.forEach((img) => revokeImagePreview(img.preview));
         toast.error(`Você pode enviar no máximo ${MAX_FILES} imagens por digitalização.`);
         return current;
       }
       const accepted = valid.slice(0, room);
-      valid.slice(room).forEach((img) => URL.revokeObjectURL(img.preview));
+      valid.slice(room).forEach((img) => revokeImagePreview(img.preview));
       if (valid.length > room) toast.warning(`Adicionei apenas ${room} imagem(ns), respeitando o limite de ${MAX_FILES}.`);
       return [...current, ...accepted];
     });
     setRotation(0);
-  }, []);
+  }, [revokeImagePreview]);
 
   const handlePdfFile = useCallback(async (list: FileList | File[] | undefined | null) => {
     const file = Array.from(list ?? [])[0];
     if (!file) return;
+    const requestId = ++pdfFileReadRequestIdRef.current;
+    if (!pdfQueueReady) {
+      toast.info("Aguarde a recuperação da fila anterior antes de enviar um PDF.");
+      setPdfLoading(false);
+      if (pdfInputRef.current) pdfInputRef.current.value = "";
+      return;
+    }
 
     if (!isPdfFile(file)) {
       toast.error("Use apenas arquivo PDF.");
+      setPdfLoading(false);
+      if (pdfInputRef.current) pdfInputRef.current.value = "";
       return;
     }
     if (file.size > MAX_PDF_SIZE) {
       toast.error(`PDF acima de ${formatFileSize(MAX_PDF_SIZE)}. Para começar, divida o arquivo em partes menores.`);
+      setPdfLoading(false);
+      if (pdfInputRef.current) pdfInputRef.current.value = "";
       return;
     }
 
@@ -141,6 +201,7 @@ export function DigitalizarPage() {
     setRenderedPdfImage(null);
     try {
       const summary = await readPdfDocumentSummary(file, { maxPages: MAX_PDF_PAGES });
+      if (requestId !== pdfFileReadRequestIdRef.current) return;
       const meta: PdfFileMeta = { fileName: summary.fileName, fileSize: summary.fileSize, pageCount: summary.pageCount };
       const matchesSaved = isSamePdfFile(savedPdfMeta, meta);
 
@@ -164,30 +225,35 @@ export function DigitalizarPage() {
         toast.success(`PDF lido: ${summary.pageCount} página${summary.pageCount > 1 ? "s" : ""}.`);
       }
     } catch (error) {
+      if (requestId !== pdfFileReadRequestIdRef.current) return;
       console.error(error);
       toast.error("Não foi possível ler o PDF. Verifique se o arquivo não está corrompido ou protegido.");
     } finally {
-      setPdfLoading(false);
-      if (pdfInputRef.current) pdfInputRef.current.value = "";
+      if (requestId === pdfFileReadRequestIdRef.current) {
+        setPdfLoading(false);
+        if (pdfInputRef.current) pdfInputRef.current.value = "";
+      }
     }
-  }, [savedPdfMeta, pdfQueue.length]);
+  }, [pdfQueue.length, pdfQueueReady, savedPdfMeta]);
 
   const removeImage = (index: number) => {
     setImages((current) => {
       const next = [...current];
       const [removed] = next.splice(index, 1);
-      if (removed) URL.revokeObjectURL(removed.preview);
+      if (removed) revokeImagePreview(removed.preview);
       return next;
     });
   };
 
   const resetImages = () => {
-    images.forEach((img) => URL.revokeObjectURL(img.preview));
+    images.forEach((img) => revokeImagePreview(img.preview));
     setImages([]);
     setRotation(0);
   };
 
   const resetPdf = () => {
+    pdfFileReadRequestIdRef.current += 1;
+    setPdfLoading(false);
     setPdfFile(null);
     setPdfInfo(null);
     setSelectedPdfPages(new Set());
@@ -266,7 +332,7 @@ export function DigitalizarPage() {
       return rendered;
     } catch (error) {
       console.error(error);
-      toast.error("Não foi possível renderizar as páginas selecionadas.");
+      toast.error(errorMessage(error));
       return null;
     } finally {
       setPdfRendering(false);
@@ -280,6 +346,10 @@ export function DigitalizarPage() {
       const dataUrl = images.length === 1
         ? await fileToDataURL(images[0].file, rotation)
         : await filesToSequentialDataURL(images, rotation);
+      if (!isPreparedImageWithinLimit(dataUrl, MAX_DIGITIZE_IMAGE_DATA_URL_LENGTH)) {
+        toast.error("A imagem preparada ficou muito grande para enviar. Reduza o número de páginas ou divida as imagens em partes menores.");
+        return;
+      }
       const result = await digitizeQuestion({ data: { imageDataUrl: dataUrl } });
       if (!result.ok) {
         toast.error(result.message);
@@ -312,6 +382,10 @@ export function DigitalizarPage() {
         ? renderedPdfImage
         : await renderSelectedPdfPages(false);
       if (!rendered) return;
+      if (!isPreparedImageWithinLimit(rendered.imageDataUrl, MAX_DIGITIZE_IMAGE_DATA_URL_LENGTH)) {
+        toast.error("A imagem preparada ficou muito grande para enviar. Reduza o número de páginas e tente novamente.");
+        return;
+      }
 
       const result = await digitizeQuestion({ data: { imageDataUrl: rendered.imageDataUrl } });
       if (!result.ok) {
@@ -322,7 +396,6 @@ export function DigitalizarPage() {
       saveDraftAndReview({
         ...result.data,
         imageDataUrl: rendered.imageDataUrl,
-        imageDataUrls: [rendered.imageDataUrl],
       }, `PDF digitalizado: página${pages.length > 1 ? "s" : ""} ${pages.join(", ")}.`);
     } catch (error) {
       console.error(error);
@@ -333,6 +406,10 @@ export function DigitalizarPage() {
   };
 
   const createPdfQueueFromSelection = () => {
+    if (!pdfQueueReady) {
+      toast.info("Aguarde a recuperação da fila anterior antes de criar outra.");
+      return;
+    }
     if (!pdfInfo) return;
     const pages = sortedPages(selectedPdfPages).filter((page) => page <= pdfInfo.readablePageCount);
     if (pages.length === 0) {
@@ -355,6 +432,7 @@ export function DigitalizarPage() {
   };
 
   const processNextQueueJob = () => {
+    if (!pdfQueueReady || activeQueueJobRef.current) return;
     const nextJob = pdfQueue.find((job) => job.status === "pending");
     if (!nextJob) {
       toast.info("Não há lotes pendentes na fila.");
@@ -364,13 +442,15 @@ export function DigitalizarPage() {
   };
 
   const processQueueJob = async (jobId: string) => {
+    if (!pdfQueueReady || activeQueueJobRef.current) return;
     if (!pdfFile) {
       toast.error("Envie novamente o PDF para continuar processando a fila.");
       return;
     }
     const job = pdfQueue.find((item) => item.id === jobId);
-    if (!job) return;
+    if (!job || job.status === "processing") return;
 
+    activeQueueJobRef.current = jobId;
     setActiveQueueJobId(jobId);
     setAndStorePdfQueue((current) => current.map((item) => item.id === jobId ? { ...item, status: "processing", error: undefined } : item));
     try {
@@ -381,6 +461,14 @@ export function DigitalizarPage() {
       });
       setRenderedPdfImage(rendered);
 
+      if (!isPreparedImageWithinLimit(rendered.imageDataUrl, MAX_DIGITIZE_IMAGE_DATA_URL_LENGTH)) {
+        toast.error("A imagem preparada ficou muito grande para enviar. Divida o lote em menos páginas e tente novamente.");
+        setAndStorePdfQueue((current) => current.map((item) => item.id === jobId
+          ? { ...item, status: "error", error: "A imagem preparada excede o limite de envio. Divida o lote e tente novamente." }
+          : item));
+        return;
+      }
+
       const result = await digitizeQuestion({ data: { imageDataUrl: rendered.imageDataUrl } });
       if (!result.ok) {
         setAndStorePdfQueue((current) => current.map((item) => item.id === jobId ? { ...item, status: "error", error: result.message } : item));
@@ -388,10 +476,9 @@ export function DigitalizarPage() {
         return;
       }
 
-      const draft: DraftDigitization = { ...result.data, imageDataUrl: rendered.imageDataUrl, imageDataUrls: [rendered.imageDataUrl] };
+      const draft: DraftDigitization = { ...result.data, imageDataUrl: rendered.imageDataUrl };
       const queueResult: PdfQueueResult = {
         draft,
-        imageDataUrl: rendered.imageDataUrl,
         imageSize: estimateDataUrlBytes(rendered.imageDataUrl),
         questionCount: draft.questoes.length,
         processedAt: new Date().toISOString(),
@@ -404,6 +491,7 @@ export function DigitalizarPage() {
       setAndStorePdfQueue((current) => current.map((item) => item.id === jobId ? { ...item, status: "error", error: errorMessage(error) } : item));
       showDigitizeError(error);
     } finally {
+      activeQueueJobRef.current = null;
       setActiveQueueJobId(null);
     }
   };
@@ -587,41 +675,69 @@ function buildPdfSteps({ hasFile, hasSelection, hasQueue, hasDone, isBusy }: { h
 }
 
 async function filesToSequentialDataURL(images: SelectedImage[], rotateDeg: number): Promise<string> {
-  const loaded = await Promise.all(images.map(async ({ file }, index) => {
-    const dataUrl = await fileToDataURL(file, rotateDeg);
-    const img = await loadImage(dataUrl);
-    return { img, index };
-  }));
-
-  const targetWidth = Math.min(1800, Math.max(...loaded.map(({ img }) => img.width)));
-  const parts = loaded.map(({ img, index }) => {
-    const scale = Math.min(1, targetWidth / img.width);
-    return { img, index, width: Math.round(img.width * scale), height: Math.round(img.height * scale) };
-  });
-  const labelHeight = images.length > 1 ? 36 : 0;
-  const canvasWidth = Math.max(...parts.map((part) => part.width));
-  const canvasHeight = parts.reduce((sum, part, index) => sum + labelHeight + part.height + (index < parts.length - 1 ? 36 : 0), 0);
-  const canvas = document.createElement("canvas");
-  canvas.width = canvasWidth;
-  canvas.height = canvasHeight;
-  const ctx = canvas.getContext("2d")!;
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  let y = 0;
-  for (const part of parts) {
-    if (labelHeight) {
-      ctx.fillStyle = "#111827";
-      ctx.font = "24px Arial";
-      ctx.fillText(`Parte ${part.index + 1} de ${parts.length}`, 12, y + 26);
-      y += labelHeight;
+  const loaded: Array<{ img: HTMLImageElement; index: number }> = [];
+  try {
+    for (const [index, { file }] of images.entries()) {
+      const dataUrl = await fileToDataURL(file, rotateDeg);
+      const img = await loadImage(dataUrl);
+      loaded.push({ img, index });
     }
-    const x = Math.round((canvasWidth - part.width) / 2);
-    ctx.drawImage(part.img, x, y, part.width, part.height);
-    y += part.height + 36;
-  }
 
-  return canvas.toDataURL("image/jpeg", 0.92);
+    const targetWidth = Math.min(1800, Math.max(...loaded.map(({ img }) => img.width)));
+    const baseParts = loaded.map(({ img, index }) => {
+      const scale = Math.min(1, targetWidth / img.width);
+      return { img, index, width: Math.round(img.width * scale), height: Math.round(img.height * scale) };
+    });
+    const labelHeight = images.length > 1 ? 36 : 0;
+    const scaleParts = (scaleFactor: number) => baseParts.map((part) => ({
+      ...part,
+      width: Math.max(1, Math.round(part.width * scaleFactor)),
+      height: Math.max(1, Math.round(part.height * scaleFactor)),
+    }));
+    let scaleFactor = 1;
+    let parts = scaleParts(scaleFactor);
+    let canvasWidth = Math.max(...parts.map((part) => part.width));
+    let canvasHeight = parts.reduce((sum, part, index) => sum + labelHeight + part.height + (index < parts.length - 1 ? 36 : 0), 0);
+    for (let attempt = 0; canvasWidth * canvasHeight > MAX_IMAGE_CANVAS_PIXELS && attempt < 4; attempt++) {
+      scaleFactor *= Math.sqrt(MAX_IMAGE_CANVAS_PIXELS / (canvasWidth * canvasHeight));
+      parts = scaleParts(scaleFactor);
+      canvasWidth = Math.max(...parts.map((part) => part.width));
+      canvasHeight = parts.reduce((sum, part, index) => sum + labelHeight + part.height + (index < parts.length - 1 ? 36 : 0), 0);
+    }
+    if (scaleFactor < 0.4) {
+      throw new Error("As imagens selecionadas exigem muita memória. Reduza a quantidade de imagens e tente novamente.");
+    }
+    assertImageCanvasSize(canvasWidth, canvasHeight);
+    const canvas = document.createElement("canvas");
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+    try {
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Não foi possível preparar as imagens para composição.");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      let y = 0;
+      for (const part of parts) {
+        if (labelHeight) {
+          ctx.fillStyle = "#111827";
+          ctx.font = "24px Arial";
+          ctx.fillText(`Parte ${part.index + 1} de ${parts.length}`, 12, y + 26);
+          y += labelHeight;
+        }
+        const x = Math.round((canvasWidth - part.width) / 2);
+        ctx.drawImage(part.img, x, y, part.width, part.height);
+        y += part.height + 36;
+      }
+
+      return canvas.toDataURL("image/jpeg", 0.92);
+    } finally {
+      canvas.width = 0;
+      canvas.height = 0;
+    }
+  } finally {
+    loaded.forEach(({ img }) => { img.removeAttribute("src"); });
+  }
 }
 
 function showDigitizeError(error: unknown) {
@@ -629,5 +745,6 @@ function showDigitizeError(error: unknown) {
   if (msg.includes("LOVABLE_API_KEY")) toast.error("Digitalização por IA não configurada. Configure a chave LOVABLE_API_KEY no ambiente do projeto.");
   else if (msg.includes("429")) toast.error("Limite de IA atingido. Aguarde alguns instantes.");
   else if (msg.includes("402")) toast.error("Créditos de IA esgotados. Adicione créditos no workspace.");
+  else if (msg.includes("muita memória") || msg.includes("limite de envio")) toast.error(msg);
   else toast.error("Falha ao digitalizar. Tente novamente.");
 }
