@@ -32,7 +32,7 @@ export function ImageCropDialog({ open, imageUrl, imageSources = [], onCancel, o
   const viewportRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const uploadRef = useRef<HTMLInputElement>(null);
-  const [uploadedSource, setUploadedSource] = useState<ImageCropSource | null>(null);
+  const [uploadedSources, setUploadedSources] = useState<ImageCropSource[]>([]);
   const [selectedSourceId, setSelectedSourceId] = useState("");
   const [rect, setRect] = useState<Rect | null>(null);
   const [interaction, setInteraction] = useState<CropInteraction | null>(null);
@@ -50,20 +50,31 @@ export function ImageCropDialog({ open, imageUrl, imageSources = [], onCancel, o
     return list;
   }, [imageSources, imageUrl]);
 
-  const sources = useMemo(() => uploadedSource ? [uploadedSource, ...baseSources] : baseSources, [baseSources, uploadedSource]);
+  const sources = useMemo(() => {
+    const list: ImageCropSource[] = [];
+    for (const source of [...uploadedSources, ...baseSources]) {
+      if (list.some((item) => item.url === source.url || item.id === source.id)) continue;
+      list.push(source);
+    }
+    return list;
+  }, [baseSources, uploadedSources]);
   const sourceSignature = baseSources.map((source) => `${source.id}:${source.url.length}`).join("|");
   const selectedSource = sources.find((source) => source.id === selectedSourceId) ?? sources[0];
   const selectedUrl = selectedSource?.url;
 
   useEffect(() => {
     if (!open) return;
-    setUploadedSource(null);
     setRect(null);
     setInteraction(null);
     setImgSize(null);
-    setSelectedSourceId(baseSources[0]?.id ?? "");
+    setSelectedSourceId((current) => {
+      const stillAvailable =
+        uploadedSources.some((source) => source.id === current) ||
+        baseSources.some((source) => source.id === current);
+      return stillAvailable ? current : uploadedSources[0]?.id ?? baseSources[0]?.id ?? "";
+    });
     if (viewportRef.current) viewportRef.current.scrollTop = 0;
-  }, [open, sourceSignature]);
+  }, [open, sourceSignature, uploadedSources]);
 
   useEffect(() => {
     if (!open || sources.length === 0) return;
@@ -214,8 +225,12 @@ export function ImageCropDialog({ open, imageUrl, imageSources = [], onCancel, o
     if (!file) return;
     if (!/^image\/(jpe?g|png|webp)$/i.test(file.type)) return;
     const dataUrl = await readFileAsDataUrl(file);
-    const source = { id: `upload-${Date.now()}`, label: file.name || "Imagem enviada", url: dataUrl };
-    setUploadedSource(source);
+    const source = {
+      id: `upload-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      label: file.name ? "Imagem original · " + file.name : "Imagem original enviada",
+      url: dataUrl,
+    };
+    setUploadedSources((current) => [source, ...current.filter((item) => item.url !== dataUrl)]);
     setSelectedSourceId(source.id);
     setRect(null);
   };
@@ -228,15 +243,15 @@ export function ImageCropDialog({ open, imageUrl, imageSources = [], onCancel, o
         <DialogHeader>
           <DialogTitle>{title ?? "Inserir imagem"}</DialogTitle>
           <DialogDescription>
-            Envie uma imagem do computador, escolha uma imagem existente ou recorte uma área da imagem selecionada.
+            Envie a imagem uma vez e reutilize o original para criar vários recortes enquanto esta edição estiver aberta.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
           <div className="space-y-3 rounded-lg border bg-muted/20 p-3">
             <div>
-              <p className="text-sm font-medium">Origem da imagem</p>
-              <p className="text-xs text-muted-foreground">A imagem escolhida será inserida no campo atual.</p>
+              <p className="text-sm font-medium">Fontes para recorte</p>
+              <p className="text-xs text-muted-foreground">As imagens originais enviadas ficam disponíveis nesta edição.</p>
             </div>
 
             <input
