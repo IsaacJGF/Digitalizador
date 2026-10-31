@@ -12,6 +12,7 @@ import {
   Sparkles,
   RotateCcw,
   RotateCw,
+  Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,7 @@ import {
 import { AppLayout } from "@/components/AppLayout";
 import { ImageCropDialog, type ImageCropSource } from "@/components/ImageCropDialog";
 import { ContentBlocksEditor, type ContentImageRequest } from "@/components/ContentBlocksEditor";
+import { QuestionPreviewDialog } from "@/components/QuestionPreviewDialog";
 import { ImageLayoutEditor } from "@/components/ImageLayoutEditor";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { CatalogSelect, CatalogMultiSelect } from "@/components/CatalogSelect";
@@ -69,6 +71,7 @@ function Page() {
   const [saving, setSaving] = useState(false);
   const [classificationDialogOpen, setClassificationDialogOpen] = useState(false);
   const [cropTarget, setCropTarget] = useState<CropTarget | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const [areas, setAreas] = useState<CatalogItem[]>([]);
   const [conteudos, setConteudos] = useState<CatalogItem[]>([]);
@@ -376,6 +379,9 @@ function Page() {
             <h1 className="text-xl sm:text-2xl font-bold">Revisar digitalização</h1>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setPreviewOpen(true)} className="gap-2">
+              <Eye className="size-4" /> Pré-visualizar
+            </Button>
             <Button variant="outline" onClick={onCancel}>Cancelar</Button>
             <Button onClick={requestSave} disabled={saving} className="gap-2">
               <Save className="size-4" /> {saving ? "Salvando..." : `Salvar ${draft.questoes.length} item${draft.questoes.length > 1 ? "s" : ""}`}
@@ -696,6 +702,16 @@ function Page() {
           }
           setCropTarget(null);
         }}
+      />
+      <QuestionPreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        question={active}
+        itemIndex={activeIndex}
+        itemCount={draft.questoes.length}
+        referenceText={referenceContent.text}
+        referenceImages={referenceContent.images}
+        referenceSource={draft.referencia_fonte}
       />
     </AppLayout>
   );
