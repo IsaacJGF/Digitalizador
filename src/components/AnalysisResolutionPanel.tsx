@@ -1,5 +1,5 @@
 import { useMemo, type ReactNode } from "react";
-import { BarChart3, CheckSquare, Image as ImageIcon, Sigma, TextSearch } from "lucide-react";
+import { BarChart3, ListChecks, Image as ImageIcon, Sigma, TextSearch } from "lucide-react";
 import type { FrequencyRow, ProvaAnalysisSummary } from "@/lib/prova-analysis";
 
 export function AnalysisResolutionPanel({ summary }: { summary: ProvaAnalysisSummary }) {
@@ -7,7 +7,7 @@ export function AnalysisResolutionPanel({ summary }: { summary: ProvaAnalysisSum
     { label: "Com texto-base", count: summary.withReference, icon: TextSearch },
     { label: "Com imagem", count: summary.withImage, icon: ImageIcon },
     { label: "Com equação", count: summary.withEquation, icon: Sigma },
-    { label: "Com alternativas", count: summary.withAlternatives, icon: CheckSquare },
+    { label: "Com alternativas", count: summary.withAlternatives, icon: ListChecks },
   ], [summary]);
 
   const tags = summary.tagFrequency.filter((row) => !row.value.toLocaleLowerCase("pt-BR").startsWith("sem "));
@@ -44,7 +44,7 @@ export function AnalysisResolutionPanel({ summary }: { summary: ProvaAnalysisSum
           rows={types}
           total={summary.total}
           emptyText="Nenhum tipo de questão foi registrado."
-          icon={<CheckSquare className="size-4 text-muted-foreground" />}
+          icon={<ListChecks className="size-4 text-muted-foreground" />}
         />
       </div>
 
