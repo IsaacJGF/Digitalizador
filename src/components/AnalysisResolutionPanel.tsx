@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { BarChart3, CheckSquare, Image as ImageIcon, Sigma, TextSearch } from "lucide-react";
 import type { FrequencyRow, ProvaAnalysisSummary } from "@/lib/prova-analysis";
 
@@ -55,7 +55,7 @@ export function AnalysisResolutionPanel({ summary }: { summary: ProvaAnalysisSum
   );
 }
 
-function MetricCard({ label, count, total, icon }: { label: string; count: number; total: number; icon: React.ReactNode }) {
+function MetricCard({ label, count, total, icon }: { label: string; count: number; total: number; icon: ReactNode }) {
   return (
     <div className="rounded-lg border bg-background p-3">
       <div className="flex items-center justify-between gap-2 text-xs font-medium text-muted-foreground">
@@ -74,7 +74,7 @@ function DistributionCard({ title, description, rows, total, emptyText, icon }: 
   rows: FrequencyRow[];
   total: number;
   emptyText: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
 }) {
   const max = Math.max(...rows.map((row) => row.count), 0);
   return (
