@@ -22,29 +22,26 @@ Quando você mandar uma questão no ChatGPT e pedir para registrá-la, o ChatGPT
 - um comentário oculto <!-- digitalizador-question:v1 -->;
 - um bloco JSON logo após o comentário.
 
-Exemplo de bloco:
+Exemplo de estrutura (os valores são ilustrativos e devem ser substituídos):
 
 ~~~json
 {
   "numero": "101",
-  "enunciado": "A corrente elétrica mencionada é induzida por",
+  "enunciado": "Texto do enunciado da questão",
   "alternativas": [
-    { "letra": "A", "texto": "radiação." },
-    { "letra": "B", "texto": "condução." },
-    { "letra": "C", "texto": "campo elétrico variável." },
-    { "letra": "D", "texto": "campo magnético variável." },
-    { "letra": "E", "texto": "ressonância eletromagnética." }
+    { "letra": "A", "texto": "Texto da alternativa A" },
+    { "letra": "B", "texto": "Texto da alternativa B" }
   ],
-  "resposta": "D",
-  "area_geral": "Magnetismo e Eletromagnetismo",
-  "conteudo_principal": "Indução eletromagnética",
-  "subconteudo_principal": "Variação do fluxo magnético",
-  "conteudos_relacionados": ["Corrente elétrica", "Efeito Joule"],
-  "tags_livres": ["Questão conceitual", "Sem cálculo"],
+  "resposta": "A",
+  "area_geral": "Área geral",
+  "conteudo_principal": "Conteúdo principal",
+  "subconteudo_principal": "Subconteúdo",
+  "conteudos_relacionados": ["Conteúdo relacionado"],
+  "tags_livres": ["Característica da questão"],
   "ano": "2023",
   "prova": "ENEM",
   "instituicao": "INEP",
-  "referencia_texto": "O fogão por indução funciona a partir do surgimento de uma corrente elétrica induzida no fundo da panela, com consequente transformação de energia elétrica em calor por efeito Joule. A principal vantagem desses fogões é a eficiência energética, que é substancialmente maior que a dos fogões convencionais.",
+  "referencia_texto": "Texto-base, quando houver.",
   "tem_equacao": false
 }
 ~~~
