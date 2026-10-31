@@ -15,6 +15,11 @@ const alternativeSchema = z
   })
   .strict();
 
+const referenceBlockSchema = z.discriminatedUnion("tipo", [
+  z.object({ tipo: z.literal("texto"), texto: z.string().max(40_000) }).strict(),
+  z.object({ tipo: z.literal("imagem") }).strict(),
+]);
+
 const questionSchema = z
   .object({
     numero: optionalText(40),
@@ -34,6 +39,7 @@ const questionSchema = z
     instituicao: optionalText(200),
     observacoes: optionalText(3_000),
     referencia_texto: optionalText(40_000),
+    referencia_blocos: z.array(referenceBlockSchema).max(41).optional(),
     referencia_fonte: optionalText(1_000),
     tem_equacao: z.boolean().optional(),
   })
@@ -53,6 +59,46 @@ const questionSchema = z
         path: ["resposta"],
         message: "A resposta precisa corresponder a uma alternativa.",
       });
+    }
+
+    const referenceBlocks = question.referencia_blocos;
+    if (referenceBlocks) {
+      const imageCount = referenceBlocks.filter((block) => block.tipo === "imagem").length;
+      const totalTextLength = referenceBlocks.reduce(
+        (total, block) => total + (block.tipo === "texto" ? block.texto.length : 0),
+        0,
+      );
+
+      if (imageCount > 20) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["referencia_blocos"],
+          message: "A referência pode conter no máximo 20 espaços para imagem.",
+        });
+      }
+      if (totalTextLength > 40_000) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["referencia_blocos"],
+          message: "O texto da referência excede 40.000 caracteres.",
+        });
+      }
+      if (question.referencia_texto?.trim()) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["referencia_texto"],
+          message: "Envie referencia_texto ou referencia_blocos, não os dois.",
+        });
+      }
+      if (referenceBlocks.some(
+        (block) => block.tipo === "texto" && /\[\[img:\d+\]\]/.test(block.texto),
+      )) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["referencia_blocos"],
+          message: "Use um bloco tipo imagem no lugar de marcadores escritos no texto.",
+        });
+      }
     }
   });
 
@@ -103,9 +149,25 @@ async function stableQuestionId(issueId: number): Promise<string> {
   ].join("-");
 }
 
+function toReferenceContent(question: Pick<Question, "referencia_texto" | "referencia_blocos">) {
+  if (!question.referencia_blocos) {
+    return { text: question.referencia_texto || null, images: [] as { url: string; pending: true }[] };
+  }
+
+  const images: { url: string; pending: true }[] = [];
+  const text = question.referencia_blocos.map((block) => {
+    if (block.tipo === "texto") return block.texto;
+    const imageNumber = images.push({ url: "", pending: true });
+    return `[[img:${imageNumber}]]`;
+  }).join("");
+
+  return { text: text || null, images };
+}
+
 function toQuestionRow(question: Question, id: string) {
   const related = question.conteudos_relacionados ?? [];
   const tags = question.tags_livres ?? [];
+  const reference = toReferenceContent(question);
 
   return {
     id,
@@ -128,16 +190,16 @@ function toQuestionRow(question: Question, id: string) {
     prova: question.prova || null,
     instituicao: question.instituicao || null,
     observacoes: question.observacoes || null,
-    referencia_texto: question.referencia_texto || null,
+    referencia_texto: reference.text,
     referencia_fonte: question.referencia_fonte || null,
     referencia_imagem: null,
     referencia_imagem_pos: null,
     referencia_imagem_layout: null,
     referencia_texto_apos: null,
-    referencia_imagens_extra: [],
+    referencia_imagens_extra: reference.images,
     grupo_id: null,
     tem_equacao: question.tem_equacao ?? false,
-    tem_imagem: false,
+    tem_imagem: reference.images.length > 0,
     imagem_original_url: null,
     enunciado_imagem: null,
     enunciado_imagem_pos: null,

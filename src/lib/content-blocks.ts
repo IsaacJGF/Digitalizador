@@ -56,7 +56,9 @@ export function serializeBlocks(blocks: ContentBlock[]): { text: string; images:
   const parts: string[] = [];
   for (const block of tidyBlocks(blocks)) {
     if (block.type === "image") {
-      images.push(block.image);
+      images.push(block.image.url
+        ? { ...block.image, pending: undefined }
+        : { ...block.image, pending: true });
       parts.push(`[[img:${images.length}]]`);
     } else if (block.value.length > 0) {
       parts.push(block.value);

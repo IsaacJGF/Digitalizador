@@ -41,12 +41,18 @@ Exemplo de estrutura (os valores são ilustrativos e devem ser substituídos):
   "ano": "2023",
   "prova": "ENEM",
   "instituicao": "INEP",
-  "referencia_texto": "Texto-base, quando houver.",
+  "referencia_blocos": [
+    { "tipo": "texto", "texto": "Texto-base antes da imagem." },
+    { "tipo": "imagem" },
+    { "tipo": "texto", "texto": "Continuação do texto-base depois da imagem." }
+  ],
   "tem_equacao": false
 }
 ~~~
 
 O fluxo aceita somente questões de múltipla escolha. O campo source não deve aparecer no Issue; o workflow acrescenta os metadados do GitHub automaticamente. A resposta correta é opcional, mas, quando enviada, deve corresponder a uma letra existente nas alternativas.
+
+Quando uma imagem ficar entre trechos do texto-base, use `referencia_blocos` no lugar de `referencia_texto`. Separe o texto antes e depois da imagem em blocos `texto` e coloque `{"tipo":"imagem"}` exatamente no ponto em que ela aparece. Não envie os dois campos ao mesmo tempo. O bloco de imagem cria um espaço reservado no sistema; o arquivo será enviado e recortado depois, na edição da questão. São aceitos até 20 espaços por referência.
 
 ## O que é gravado
 
@@ -63,7 +69,7 @@ O ID da questão é derivado do ID do Issue. Repetir o envio do mesmo Issue não
 ## Limites desta primeira versão
 
 - O repositório é público; Issues e seus textos também ficam públicos.
-- Esta primeira versão transporta texto e metadados. Ela não envia arquivos de imagem ao Supabase Storage. Questões com imagens devem ser completadas no app ou aguardam a etapa de upload de imagens.
+- O fluxo não envia arquivos de imagem ao Supabase Storage. Para imagens intercaladas no texto-base, `referencia_blocos` cria espaços reservados na ordem correta; abra a edição da questão no app para enviar e recortar cada imagem. Imagens do enunciado e das alternativas continuam sendo adicionadas no app.
 - O fluxo apenas insere. Editar um Issue depois de gravado não altera a linha existente; correções devem ser feitas no app.
 - O workflow só processa Issues novos com título iniciado por [DIGITALIZADOR], abertos pelo login autorizado definido no workflow e neste endpoint.
 

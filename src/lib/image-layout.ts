@@ -37,13 +37,16 @@ export type ExtraImage = {
   url: string;
   layout: ImagePlacementLayout;
   pos: ExtraImagePosition;
+  /** Slot sem arquivo, criado quando a imagem será adicionada durante a revisão. */
+  pending?: boolean;
 };
 
 export function normalizeExtraImage(value: unknown): ExtraImage | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const raw = value as Partial<ExtraImage> & { layout?: Partial<ImagePlacementLayout> | null };
   const url = typeof raw.url === "string" ? raw.url : "";
-  if (!url) return null;
+  const pending = raw.pending === true && !url;
+  if (!url && !pending) return null;
   return {
     url,
     layout: normalizeImagePlacementLayout({
@@ -52,6 +55,7 @@ export function normalizeExtraImage(value: unknown): ExtraImage | null {
       mode: "block",
     }),
     pos: raw.pos === "antes" || raw.pos === "entre" ? raw.pos : "depois",
+    ...(pending ? { pending: true } : {}),
   };
 }
 

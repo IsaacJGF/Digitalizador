@@ -170,34 +170,54 @@ export function ContentBlocksEditor({ label, text, images, placeholder, rows = 4
                 <Button type="button" size="icon" variant="outline" className="size-7" title="Descer" disabled={index >= blocks.length - 2 && (() => { const l = blocks[blocks.length - 1]; return l.type === "text" && !l.value.trim(); })()} onClick={() => moveImage(index, 1)}>
                   <ArrowDown className="size-3.5" />
                 </Button>
-                {onRequestImage && (
+                {onRequestImage && image.url && (
                   <Button type="button" size="sm" variant="outline" className="h-7 gap-1" onClick={() => requestImage({ replaceImage: number - 1, currentImage: image.url })}>
                     <Crop className="size-3.5" /> Recortar / trocar
                   </Button>
                 )}
-                <Button type="button" size="icon" variant="outline" className="size-7" title="Girar à esquerda" onClick={() => patchLayout(index, image, { rotation: layout.rotation - 15 })}>
-                  <RotateCcw className="size-3.5" />
-                </Button>
-                <Button type="button" size="icon" variant="outline" className="size-7" title="Girar à direita" onClick={() => patchLayout(index, image, { rotation: layout.rotation + 15 })}>
-                  <RotateCw className="size-3.5" />
-                </Button>
-                {alignBtn("left", <AlignLeft className="size-3.5" />, "Esquerda")}
-                {alignBtn("center", <AlignCenter className="size-3.5" />, "Centro")}
-                {alignBtn("right", <AlignRight className="size-3.5" />, "Direita")}
+                {image.url && (
+                  <>
+                    <Button type="button" size="icon" variant="outline" className="size-7" title="Girar à esquerda" onClick={() => patchLayout(index, image, { rotation: layout.rotation - 15 })}>
+                      <RotateCcw className="size-3.5" />
+                    </Button>
+                    <Button type="button" size="icon" variant="outline" className="size-7" title="Girar à direita" onClick={() => patchLayout(index, image, { rotation: layout.rotation + 15 })}>
+                      <RotateCw className="size-3.5" />
+                    </Button>
+                    {alignBtn("left", <AlignLeft className="size-3.5" />, "Esquerda")}
+                    {alignBtn("center", <AlignCenter className="size-3.5" />, "Centro")}
+                    {alignBtn("right", <AlignRight className="size-3.5" />, "Direita")}
+                  </>
+                )}
                 <Button type="button" size="sm" variant="ghost" className="ml-auto h-7 gap-1 text-destructive" onClick={() => commit(blocks.filter((_, i) => i !== index))}>
                   <Trash2 className="size-3.5" /> Remover
                 </Button>
               </div>
-              <div className={`flex ${alignClass} rounded-md bg-background p-2`}>
-                <div style={{ width: `${layout.width}%`, minWidth: 100, maxWidth: "100%" }}>
-                  <img src={image.url} alt={`Imagem ${number}`} className="max-h-72 w-full rounded object-contain" style={{ transform: `rotate(${layout.rotation}deg)` }} />
-                </div>
-              </div>
-              <div className="flex items-center gap-2 px-1">
-                <Label className="text-xs text-muted-foreground">Tamanho</Label>
-                <input type="range" min={15} max={95} step={1} value={layout.width} onChange={(e) => patchLayout(index, image, { width: Number(e.target.value) })} className="h-2 flex-1 accent-primary" />
-                <span className="w-10 text-right text-xs text-muted-foreground">{Math.round(layout.width)}%</span>
-              </div>
+              {image.url ? (
+                <>
+                  <div className={`flex ${alignClass} rounded-md bg-background p-2`}>
+                    <div style={{ width: `${layout.width}%`, minWidth: 100, maxWidth: "100%" }}>
+                      <img src={image.url} alt={`Imagem ${number}`} className="max-h-72 w-full rounded object-contain" style={{ transform: `rotate(${layout.rotation}deg)` }} />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 px-1">
+                    <Label className="text-xs text-muted-foreground">Tamanho</Label>
+                    <input type="range" min={15} max={95} step={1} value={layout.width} onChange={(e) => patchLayout(index, image, { width: Number(e.target.value) })} className="h-2 flex-1 accent-primary" />
+                    <span className="w-10 text-right text-xs text-muted-foreground">{Math.round(layout.width)}%</span>
+                  </div>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  className="flex min-h-32 w-full flex-col items-center justify-center gap-2 rounded-md border border-dashed bg-background px-4 py-6 text-center text-sm text-muted-foreground transition-colors hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-60"
+                  onClick={() => requestImage({ replaceImage: number - 1, currentImage: image.url })}
+                  disabled={!onRequestImage}
+                  aria-label={`Enviar imagem ${number}`}
+                >
+                  <ImagePlus className="size-6 text-primary" />
+                  <span className="font-medium text-foreground">Espaço reservado para imagem {number}</span>
+                  <span className="text-xs">Clique para enviar e recortar a imagem neste ponto do texto.</span>
+                </button>
+              )}
             </div>
           );
         })}
