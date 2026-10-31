@@ -12,7 +12,6 @@ import { AppLayout } from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CATALOG_LABEL, CATALOG_TABLE, type CatalogKind, countUsage, renameInQuestions } from "@/lib/catalogos";
-import { ensureDefaultCatalog } from "@/lib/default-catalog";
 
 // O cliente Supabase tipa `from(table)` por union — relaxamos para nomes dinâmicos de catálogo.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -87,13 +86,6 @@ function CatalogManager({ kind }: { kind: CatalogKind }) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    try {
-      await ensureDefaultCatalog();
-    } catch (e) {
-      console.error(e);
-      toast.error("Falha ao preparar catálogo padrão.");
-    }
-
     const { data, error } = await db.from(table).select("*").order("nome");
     if (error) toast.error("Falha ao carregar");
     else setItems((data ?? []) as unknown as Item[]);
