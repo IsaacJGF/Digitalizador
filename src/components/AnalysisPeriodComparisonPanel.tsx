@@ -223,6 +223,7 @@ function YearRange({ label, start, end, years, onStartChange, onEndChange }: {
         <div className="space-y-1">
           <Label htmlFor={idPrefix + "-start"} className="text-xs">De</Label>
           <select id={idPrefix + "-start"} value={start} onChange={(event) => onStartChange(event.target.value)} className="h-9 w-full rounded-md border bg-background px-2 text-sm">
+            <option value="">Selecione</option>
             {years.map((year) => <option key={year} value={year}>{year}</option>)}
           </select>
         </div>
