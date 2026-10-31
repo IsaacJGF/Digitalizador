@@ -1,9 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { callGeminiVision } from "./ai-gateway.server";
+import { MAX_DIGITIZE_IMAGE_DATA_URL_LENGTH } from "@/lib/image-limits";
 
 const Input = z.object({
-  imageDataUrl: z.string().min(20),
+  imageDataUrl: z.string()
+    .min(40)
+    .max(MAX_DIGITIZE_IMAGE_DATA_URL_LENGTH)
+    .regex(/^data:image\/(?:jpe?g|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/i),
 });
 
 export type Alternativa = { letra: string; texto: string };
@@ -53,28 +57,28 @@ Além de transcrever a questão, sugira automaticamente a classificação pedag�
 Retorne APENAS um objeto JSON válido com este formato exato:
 
 {
-  "referencia_texto": "texto-base, comando geral, tabela, descrição de imagem ou contexto comum aos itens; use \"\" se não houver",
-  "referencia_fonte": "fonte da referência, por exemplo Internet, ENEM, banca/ano; use \"\" se não houver",
+  "referencia_texto": "texto-base, comando geral, tabela, descrição de imagem ou contexto comum aos itens; use "" se não houver",
+  "referencia_fonte": "fonte da referência, por exemplo Internet, ENEM, banca/ano; use "" se não houver",
   "questoes": [
     {
-      "numero": "string (ex: \"1\", \"86\" ou \"\" se não houver)",
+      "numero": "string (ex: "1", "86" ou "" se não houver)",
       "enunciado": "texto específico do item/questão, sem repetir a referência comum",
       "alternativas": [{"letra": "A", "texto": "..."}, ...],
       "tipo": "multipla_escolha" | "certo_errado" | "numerica" | "discursiva",
-      "resposta": "string (gabarito se visível, senão \"\")",
-      "fonte": "string (instituição/prova/ano se visível, senão \"\")",
+      "resposta": "string (gabarito se visível, senão "")",
+      "fonte": "string (instituição/prova/ano se visível, senão "")",
       "tem_equacao": boolean,
       "tem_imagem": boolean,
       "baixa_confianca": ["trechos com baixa confiança de leitura"],
-      "area_geral": "sugestão de área geral; use \"\" se não houver segurança",
-      "conteudo_principal": "sugestão de conteúdo principal; use \"\" se não houver segurança",
-      "subconteudo_principal": "sugestão de subconteúdo principal; use \"\" se não houver segurança",
+      "area_geral": "sugestão de área geral; use "" se não houver segurança",
+      "conteudo_principal": "sugestão de conteúdo principal; use "" se não houver segurança",
+      "subconteudo_principal": "sugestão de subconteúdo principal; use "" se não houver segurança",
       "conteudos_relacionados": ["assuntos relacionados observados na questão"],
       "tags_livres": ["tags de abordagem, recurso, tipo ou contexto"],
-      "ano": "ano da prova se visível ou inferível pela fonte; senão \"\"",
-      "prova": "nome da prova se visível, por exemplo ENEM, PAS, PAS 1, Vestibular UnB; senão \"\"",
-      "instituicao": "instituição/banca se visível, por exemplo INEP, UnB, CEBRASPE; senão \"\"",
-      "observacoes": "comentário curto sobre a sugestão de classificação, principalmente se houver incerteza; senão \"\""
+      "ano": "ano da prova se visível ou inferível pela fonte; senão """,
+      "prova": "nome da prova se visível, por exemplo ENEM, PAS, PAS 1, Vestibular UnB; senão """,
+      "instituicao": "instituição/banca se visível, por exemplo INEP, UnB, CEBRASPE; senão """,
+      "observacoes": "comentário curto sobre a sugestão de classificação, principalmente se houver incerteza; senão """
     }
   ]
 }
@@ -147,7 +151,7 @@ export const digitizeQuestion = createServerFn({ method: "POST" })
         const parsed = extractJSON(raw) as DigitalizacaoExtraida | QuestaoExtraida;
         return { ok: true, data: normalizeDigitization(parsed) };
       } catch (e) {
-        console.error("Falha ao parsear resposta da IA:", raw, e);
+        console.error("Falha ao parsear resposta da IA:", e, { responseLength: raw.length });
         return digitizeFailure("invalid_response", "A IA retornou um formato inválido. Tente novamente com uma imagem mais nítida.");
       }
     } catch (error) {

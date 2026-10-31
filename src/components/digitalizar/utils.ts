@@ -1,38 +1,65 @@
 import type { DraftDigitization, DraftQuestion } from "@/lib/draft-store";
 import type { PdfQueueJob } from "./types";
+import { assertImageCanvasSize, MAX_IMAGE_CANVAS_DIMENSION, MAX_IMAGE_CANVAS_PIXELS } from "@/lib/image-limits";
 
 export async function fileToDataURL(file: File, rotateDeg: number): Promise<string> {
-  return new Promise((resolve, reject) => {
+  const originalDataUrl = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      if (!rotateDeg) return resolve(dataUrl);
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const rad = (rotateDeg * Math.PI) / 180;
-        const sin = Math.abs(Math.sin(rad));
-        const cos = Math.abs(Math.cos(rad));
-        canvas.width = img.width * cos + img.height * sin;
-        canvas.height = img.width * sin + img.height * cos;
-        const ctx = canvas.getContext("2d")!;
-        ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.rotate(rad);
-        ctx.drawImage(img, -img.width / 2, -img.height / 2);
-        resolve(canvas.toDataURL("image/jpeg", 0.9));
-      };
-      img.onerror = reject;
-      img.src = dataUrl;
-    };
+    reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("Não foi possível ler a imagem."));
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+
+  const img = await loadImage(originalDataUrl);
+  try {
+    const rad = (rotateDeg * Math.PI) / 180;
+    const sin = Math.abs(Math.sin(rad));
+    const cos = Math.abs(Math.cos(rad));
+    const rotatedAreaAtScaleOne = img.width * img.height * (sin + cos) ** 2;
+    const shouldTransform = rotateDeg !== 0
+      || Math.max(img.width, img.height) > 1800
+      || Math.max(img.width, img.height) > MAX_IMAGE_CANVAS_DIMENSION
+      || img.width * img.height > MAX_IMAGE_CANVAS_PIXELS;
+    if (!shouldTransform) return originalDataUrl;
+
+    const scale = Math.min(
+      1,
+      1800 / Math.max(img.width, img.height),
+      Math.sqrt(MAX_IMAGE_CANVAS_PIXELS / rotatedAreaAtScaleOne),
+    );
+    const width = Math.max(1, Math.round(img.width * scale));
+    const height = Math.max(1, Math.round(img.height * scale));
+    const canvasWidth = Math.ceil(width * cos + height * sin);
+    const canvasHeight = Math.ceil(width * sin + height * cos);
+    assertImageCanvasSize(canvasWidth, canvasHeight);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+    try {
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Não foi possível preparar a imagem para rotação.");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(rad);
+      ctx.drawImage(img, -width / 2, -height / 2, width, height);
+      return canvas.toDataURL("image/jpeg", 0.9);
+    } finally {
+      canvas.width = 0;
+      canvas.height = 0;
+    }
+  } finally {
+    img.removeAttribute("src");
+  }
 }
 
 export function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.onload = () => resolve(img);
+    img.onload = () => img.naturalWidth > 0 && img.naturalHeight > 0
+      ? resolve(img)
+      : reject(new Error("O arquivo não contém uma imagem válida."));
     img.onerror = reject;
     img.src = src;
   });
@@ -89,13 +116,17 @@ export function estimateDataUrlBytes(dataUrl: string) {
   return Math.round((base64.length * 3) / 4);
 }
 
+export function isPreparedImageWithinLimit(dataUrl: string, maxLength: number) {
+  return dataUrl.length <= maxLength;
+}
+
 export function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
 
 export function mergeQueueJobsIntoDraft(jobs: PdfQueueJob[]): DraftDigitization {
   const completedJobs = jobs.filter((job) => job.result);
-  const imageDataUrls = completedJobs.map((job) => job.result?.imageDataUrl).filter((url): url is string => Boolean(url));
+  const imageDataUrls = completedJobs.map((job) => job.result?.draft.imageDataUrl).filter((url): url is string => Boolean(url));
   const allQuestions = completedJobs.flatMap((job, jobIndex) => {
     const draft = job.result!.draft;
     return draft.questoes.map((question, questionIndex) => withBatchMetadata(question, job.pages, jobIndex, questionIndex));
