@@ -1,0 +1,123 @@
+name: Importar questão pelo ChatGPT
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  importar-questao:
+    if: github.event.issue.user.login == 'IsaacJGFerreira' && startsWith(github.event.issue.title, '[DIGITALIZADOR]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    concurrency:
+      group: importar-questao-${{ github.event.issue.id }}
+      cancel-in-progress: false
+    steps:
+      - name: Validar e enviar questão
+        uses: actions/github-script@v7
+        env:
+          QUESTION_INGEST_URL: ${{ vars.QUESTION_INGEST_URL }}
+          QUESTION_INGEST_TOKEN: ${{ secrets.QUESTION_INGEST_TOKEN }}
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const marker = "<!-- digitalizador-question:v1 -->";
+
+            const fail = async (message) => {
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: issue.number,
+                body: "Não consegui registrar esta questão. " + message,
+              });
+              core.setFailed(message);
+            };
+
+            if (!issue.body || !issue.body.includes(marker)) {
+              await fail("O corpo precisa conter o marcador e o bloco JSON documentados em docs/chatgpt-question-ingestion.md.");
+              return;
+            }
+
+            const markerIndex = issue.body.indexOf(marker);
+            const followingText = issue.body.slice(markerIndex + marker.length);
+            const fence = String.fromCharCode(96).repeat(3);
+            const pattern = new RegExp("^\\s*" + fence + "json\\s*([\\s\\S]*?)\\s*" + fence, "i");
+            const match = followingText.match(pattern);
+
+            if (!match) {
+              await fail("Não encontrei um bloco JSON válido depois do marcador.");
+              return;
+            }
+
+            let question;
+            try {
+              question = JSON.parse(match[1]);
+            } catch {
+              await fail("O bloco JSON está malformado.");
+              return;
+            }
+
+            const endpoint = process.env.QUESTION_INGEST_URL;
+            const token = process.env.QUESTION_INGEST_TOKEN;
+
+            if (!endpoint || !token) {
+              await fail("Faltam configurar QUESTION_INGEST_URL ou QUESTION_INGEST_TOKEN nas configurações do GitHub Actions.");
+              return;
+            }
+
+            let endpointUrl;
+            try {
+              endpointUrl = new URL(endpoint);
+            } catch {
+              await fail("QUESTION_INGEST_URL não contém uma URL válida.");
+              return;
+            }
+
+            if (endpointUrl.protocol !== "https:") {
+              await fail("QUESTION_INGEST_URL precisa usar HTTPS.");
+              return;
+            }
+
+            let response;
+            try {
+              response = await fetch(endpointUrl, {
+                method: "POST",
+                headers: {
+                  "content-type": "application/json",
+                  authorization: "Bearer " + token,
+                },
+                body: JSON.stringify({
+                  question,
+                  source: {
+                    repository: context.repo.owner + "/" + context.repo.repo,
+                    issue_number: issue.number,
+                    issue_id: issue.id,
+                    issue_url: issue.html_url,
+                    author: issue.user.login,
+                  },
+                }),
+                signal: AbortSignal.timeout(20_000),
+              });
+            } catch {
+              await fail("O endpoint do Digitalizador não respondeu. Confirme a URL e se o app está publicado.");
+              return;
+            }
+
+            const result = await response.json().catch(() => null);
+            if (!response.ok || !result?.ok) {
+              const details = Array.isArray(result?.details) ? " " + result.details.join("; ") : "";
+              await fail((result?.error || "O endpoint rejeitou os dados.") + details);
+              return;
+            }
+
+            const status = result.status === "already_inserted"
+              ? "já tinha sido gravada (envio repetido)"
+              : "foi gravada";
+
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: issue.number,
+              body: "Questão " + status + " no Digitalizador. ID: " + result.id + ".",
+            });
