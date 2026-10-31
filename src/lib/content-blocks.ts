@@ -14,16 +14,17 @@ import {
 export const IMAGE_MARKER_RE = /\[\[img:(\d+)\]\]/g;
 export const MAX_CONTENT_IMAGES = 20;
 
-export type ContentBlock =
-  | { type: "text"; value: string }
-  | { type: "image"; image: ExtraImage };
+export type ContentBlock = { type: "text"; value: string } | { type: "image"; image: ExtraImage };
 
 export function hasImageMarkers(text?: string | null) {
   return Boolean(text && /\[\[img:\d+\]\]/.test(text));
 }
 
 export function stripImageMarkers(text?: string | null) {
-  return (text ?? "").replace(IMAGE_MARKER_RE, " ").replace(/[ \t]{2,}/g, " ").trim();
+  return (text ?? "")
+    .replace(IMAGE_MARKER_RE, " ")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
 }
 
 /** Converte texto marcado + imagens em blocos, garantindo um bloco de texto entre imagens. */
@@ -35,14 +36,13 @@ export function parseBlocks(text: string, images: ExtraImage[]): ContentBlock[] 
   for (const match of source.matchAll(IMAGE_MARKER_RE)) {
     const idx = Number(match[1]) - 1;
     const image = images[idx];
-    blocks.push({ type: "text", value: trimEdges(source.slice(last, match.index)) });
-    if (image && !used.has(idx)) {
-      used.add(idx);
-      blocks.push({ type: "image", image });
-    }
+    if (!image || used.has(idx)) continue;
+    blocks.push({ type: "text", value: source.slice(last, match.index) });
+    used.add(idx);
+    blocks.push({ type: "image", image });
     last = (match.index ?? 0) + match[0].length;
   }
-  blocks.push({ type: "text", value: trimEdges(source.slice(last)) });
+  blocks.push({ type: "text", value: source.slice(last) });
   // Imagens sem marcador vão para o final.
   images.forEach((image, idx) => {
     if (!used.has(idx)) blocks.push({ type: "image", image }, { type: "text", value: "" });
@@ -58,11 +58,11 @@ export function serializeBlocks(blocks: ContentBlock[]): { text: string; images:
     if (block.type === "image") {
       images.push(block.image);
       parts.push(`[[img:${images.length}]]`);
-    } else if (block.value.trim()) {
+    } else if (block.value.length > 0) {
       parts.push(block.value);
     }
   }
-  return { text: parts.join("\n"), images };
+  return { text: parts.join(""), images };
 }
 
 /** Junta textos adjacentes e garante texto antes/depois/entre imagens (para o editor). */
@@ -72,23 +72,21 @@ export function tidyBlocks(blocks: ContentBlock[]): ContentBlock[] {
     const prev = out[out.length - 1];
     if (block.type === "text") {
       if (prev?.type === "text") {
-        prev.value = [prev.value, block.value].filter((v) => v.trim()).join("\n");
+        if (prev.value.length > 0 && block.value.length > 0) prev.value += `\n\n${block.value}`;
+        else prev.value += block.value;
       } else out.push({ ...block });
     } else {
       if (!prev || prev.type === "image") out.push({ type: "text", value: "" });
       out.push(block);
     }
   }
-  if (out.length === 0 || out[out.length - 1].type === "image") out.push({ type: "text", value: "" });
+  if (out.length === 0 || out[out.length - 1].type === "image")
+    out.push({ type: "text", value: "" });
   return out;
 }
 
 export function newContentImage(url: string): ExtraImage {
   return normalizeExtraImage({ url, pos: "depois" }) as ExtraImage;
-}
-
-function trimEdges(value: string) {
-  return value.replace(/^\s*\n/, "").replace(/\n\s*$/, "");
 }
 
 function marker(images: ExtraImage[], image: ExtraImage) {
@@ -100,7 +98,11 @@ function blockImage(url: string, layout?: Partial<ImagePlacementLayout> | null):
   return {
     url,
     pos: "depois",
-    layout: normalizeImagePlacementLayout({ ...DEFAULT_REFERENCE_IMAGE_BLOCK_LAYOUT, ...(layout ?? {}), mode: "block" }),
+    layout: normalizeImagePlacementLayout({
+      ...DEFAULT_REFERENCE_IMAGE_BLOCK_LAYOUT,
+      ...(layout ?? {}),
+      mode: "block",
+    }),
   };
 }
 
@@ -122,7 +124,10 @@ export function legacyStatementToContent(input: {
     target.push(marker(images, blockImage(input.mainImage, input.mainLayout)));
   }
   extras.forEach((image) => (image.pos === "antes" ? before : after).push(marker(images, image)));
-  return { text: [...before, input.text ?? "", ...after].filter((p) => p.trim()).join("\n"), images };
+  return {
+    text: [...before, input.text ?? "", ...after].filter((part) => part.length > 0).join(""),
+    images,
+  };
 }
 
 /** Converte o formato antigo da referência (texto antes/depois + imagem principal + extras) para texto marcado. */
@@ -135,16 +140,27 @@ export function legacyReferenceToContent(input: {
   extras?: unknown;
 }): { text: string; images: ExtraImage[] } {
   const extras = normalizeExtraImages(input.extras);
-  if (hasImageMarkers(input.text) && !input.textAfter?.trim()) return { text: input.text, images: extras };
+  if (hasImageMarkers(input.text) && !input.textAfter?.trim())
+    return { text: input.text, images: extras };
   const images: ExtraImage[] = [];
   const before: string[] = [];
   const between: string[] = [];
   const after: string[] = [];
-  const pick = (pos?: string | null) => (pos === "antes" ? before : pos === "entre" ? between : after);
-  if (input.mainImage) pick(input.mainPos).push(marker(images, blockImage(input.mainImage, input.mainLayout)));
+  const pick = (pos?: string | null) =>
+    pos === "antes" ? before : pos === "entre" ? between : after;
+  if (input.mainImage)
+    pick(input.mainPos).push(marker(images, blockImage(input.mainImage, input.mainLayout)));
   extras.forEach((image) => pick(image.pos).push(marker(images, image)));
+  const parts = [
+    ...before,
+    input.text ?? "",
+    ...between,
+    ...(input.text?.trim() && input.textAfter?.trim() && between.length === 0 ? ["\n\n"] : []),
+    input.textAfter ?? "",
+    ...after,
+  ];
   return {
-    text: [...before, input.text ?? "", ...between, input.textAfter ?? "", ...after].filter((p) => p.trim()).join("\n"),
+    text: parts.filter((part) => part.length > 0).join(""),
     images,
   };
 }
