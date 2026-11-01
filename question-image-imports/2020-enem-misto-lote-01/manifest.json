@@ -1,0 +1,223 @@
+{
+  "versao": 1,
+  "questoes": [
+    {
+      "identificacao": {
+        "ano": "2020",
+        "prova": "ENEM",
+        "numero": "93",
+        "id": "d4dfdbcb-0b97-45cf-8505-8ead8f4fb3bf"
+      },
+      "referencia_imagens": [
+        {
+          "slot": 1,
+          "arquivo": "imagens/ppl-q093-referencia.png"
+        }
+      ]
+    },
+    {
+      "identificacao": {
+        "ano": "2020",
+        "prova": "ENEM",
+        "numero": "96",
+        "id": "0ff2058f-c8b7-4179-9683-18042964f6b6"
+      },
+      "referencia_imagens": [
+        {
+          "slot": 1,
+          "arquivo": "imagens/ppl-q096-referencia.png"
+        }
+      ]
+    },
+    {
+      "identificacao": {
+        "ano": "2020",
+        "prova": "ENEM",
+        "numero": "113",
+        "id": "08933dd3-0d27-4a89-ac44-e194ee12afa5"
+      },
+      "referencia_imagens": [
+        {
+          "slot": 1,
+          "arquivo": "imagens/ppl-q113-referencia.png"
+        }
+      ]
+    },
+    {
+      "identificacao": {
+        "ano": "2020",
+        "prova": "ENEM",
+        "numero": "131",
+        "id": "1a30271e-45a9-4104-83ab-5fd574a639af"
+      },
+      "referencia_imagens": [
+        {
+          "slot": 1,
+          "arquivo": "imagens/ppl-q131-referencia.png"
+        }
+      ]
+    },
+    {
+      "identificacao": {
+        "ano": "2020",
+        "prova": "ENEM",
+        "numero": "96",
+        "id": "19100071-32c1-4cd9-8ef5-d63658df7ebd"
+      },
+      "referencia_imagens": [
+        {
+          "slot": 1,
+          "arquivo": "imagens/regular-q096-referencia.png"
+        }
+      ]
+    },
+    {
+      "identificacao": {
+        "ano": "2020",
+        "prova": "ENEM",
+        "numero": "106",
+        "id": "94d413d9-c3f7-4810-b4d4-a6c569535414"
+      },
+      "alternativas_imagens": [
+        {
+          "letra": "A",
+          "arquivo": "imagens/regular-q106-alternativa-a.png"
+        },
+        {
+          "letra": "B",
+          "arquivo": "imagens/regular-q106-alternativa-b.png"
+        },
+        {
+          "letra": "C",
+          "arquivo": "imagens/regular-q106-alternativa-c.png"
+        },
+        {
+          "letra": "D",
+          "arquivo": "imagens/regular-q106-alternativa-d.png"
+        },
+        {
+          "letra": "E",
+          "arquivo": "imagens/regular-q106-alternativa-e.png"
+        }
+      ]
+    },
+    {
+      "identificacao": {
+        "ano": "2020",
+        "prova": "ENEM",
+        "numero": "108",
+        "id": "bcbed3f0-7d43-4b8b-99c7-c062c7831aab"
+      },
+      "alternativas_imagens": [
+        {
+          "letra": "A",
+          "arquivo": "imagens/regular-q108-alternativa-a.png"
+        },
+        {
+          "letra": "B",
+          "arquivo": "imagens/regular-q108-alternativa-b.png"
+        },
+        {
+          "letra": "C",
+          "arquivo": "imagens/regular-q108-alternativa-c.png"
+        },
+        {
+          "letra": "D",
+          "arquivo": "imagens/regular-q108-alternativa-d.png"
+        },
+        {
+          "letra": "E",
+          "arquivo": "imagens/regular-q108-alternativa-e.png"
+        }
+      ]
+    },
+    {
+      "identificacao": {
+        "ano": "2020",
+        "prova": "ENEM",
+        "numero": "113",
+        "id": "1e31f45f-16c0-4d87-8c86-23747a60a9fb"
+      },
+      "referencia_imagens": [
+        {
+          "slot": 1,
+          "arquivo": "imagens/regular-q113-referencia.png"
+        }
+      ]
+    },
+    {
+      "identificacao": {
+        "ano": "2020",
+        "prova": "ENEM",
+        "numero": "122",
+        "id": "01552429-9ef4-4423-8656-ce50464bfab0"
+      },
+      "referencia_imagens": [
+        {
+          "slot": 1,
+          "arquivo": "imagens/regular-q122-referencia.png"
+        }
+      ]
+    },
+    {
+      "identificacao": {
+        "ano": "2020",
+        "prova": "ENEM",
+        "numero": "125",
+        "id": "dbf73589-580c-42ed-baa6-ff53dc587fb7"
+      },
+      "referencia_imagens": [
+        {
+          "slot": 1,
+          "arquivo": "imagens/regular-q125-referencia.png"
+        }
+      ]
+    },
+    {
+      "identificacao": {
+        "ano": "2020",
+        "prova": "ENEM",
+        "numero": "131",
+        "id": "c69216f1-9f0d-4401-a463-fb3d33a511d0"
+      },
+      "referencia_imagens": [
+        {
+          "slot": 1,
+          "arquivo": "imagens/regular-q131-referencia.png"
+        }
+      ]
+    },
+    {
+      "identificacao": {
+        "ano": "2020",
+        "prova": "ENEM",
+        "numero": "134",
+        "id": "960c6a82-0729-4097-9194-b3c15149347c"
+      },
+      "referencia_imagens": [
+        {
+          "slot": 1,
+          "arquivo": "imagens/regular-q134-referencia-1.png"
+        },
+        {
+          "slot": 2,
+          "arquivo": "imagens/regular-q134-referencia-2.png"
+        }
+      ]
+    },
+    {
+      "identificacao": {
+        "ano": "2020",
+        "prova": "ENEM",
+        "numero": "135",
+        "id": "86abc7bf-49fb-404e-8f34-8eb35125e72e"
+      },
+      "referencia_imagens": [
+        {
+          "slot": 1,
+          "arquivo": "imagens/regular-q135-referencia.png"
+        }
+      ]
+    }
+  ]
+}
