@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Search,
+  Check,
   Trash2,
   Copy,
   FileText,
@@ -29,6 +30,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import {
   Dialog,
   DialogContent,
@@ -110,9 +114,9 @@ type AdvancedFilters = {
   conteudo_principal: string;
   subconteudo_principal: string;
   conteudos_relacionados: string[];
-  prova: string;
-  instituicao: string;
-  ano: string;
+  prova: string[];
+  instituicao: string[];
+  ano: string[];
 };
 type EditDraft = {
   numero: string;
@@ -164,9 +168,9 @@ const EMPTY_ADVANCED_FILTERS: AdvancedFilters = {
   conteudo_principal: "",
   subconteudo_principal: "",
   conteudos_relacionados: [],
-  prova: "",
-  instituicao: "",
-  ano: "",
+  prova: [],
+  instituicao: [],
+  ano: [],
 };
 const LIST_COLUMNS = [
   "id",
@@ -798,44 +802,172 @@ function AdvancedFiltersDialog({ open, onOpenChange, filters, onFiltersChange, a
   const conteudoOptions = area ? conteudos.filter((item) => item.area_id === area.id) : [];
   const conteudo = conteudoOptions.find((item) => item.nome === filters.conteudo_principal);
   const subconteudoOptions = conteudo ? subconteudos.filter((item) => item.conteudo_id === conteudo.id) : [];
+  const yearOptions = anos.map((ano) => ({ id: "ano-" + ano, nome: ano, ativo: true }));
   const update = (patch: Partial<AdvancedFilters>) => onFiltersChange({ ...filters, ...patch });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="left-auto right-0 top-0 h-screen max-h-screen w-full max-w-md translate-x-0 translate-y-0 gap-0 overflow-hidden rounded-none p-0 sm:rounded-none">
-        <DialogHeader className="border-b p-4 pr-12">
-          <DialogTitle>Filtro avançado</DialogTitle>
-          <DialogDescription>{activeCount > 0 ? `${activeCount} filtro${activeCount > 1 ? "s" : ""} ativo${activeCount > 1 ? "s" : ""}.` : "Combine filtros do catálogo com a busca principal."}</DialogDescription>
+      <DialogContent className="left-auto right-0 top-0 flex h-screen max-h-screen w-full max-w-md translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none p-0 sm:rounded-l-2xl">
+        <DialogHeader className="shrink-0 border-b bg-muted/20 p-5 pr-14">
+          <div className="flex items-start gap-3">
+            <div aria-hidden="true" className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Filter className="size-4" />
+            </div>
+            <div className="min-w-0 flex-1 space-y-1">
+              <DialogTitle className="text-base">Filtro avançado</DialogTitle>
+              <DialogDescription>
+                Em cada seleção múltipla, basta uma correspondência. Área, conteúdo e subconteúdo continuam sendo combinados.
+              </DialogDescription>
+            </div>
+            <Badge variant={activeCount > 0 ? "secondary" : "outline"} className="shrink-0 rounded-full px-2.5 py-1">
+              {activeCount} {activeCount === 1 ? "filtro ativo" : "filtros ativos"}
+            </Badge>
+          </div>
         </DialogHeader>
-        <div className="space-y-4 overflow-y-auto p-4">
-          <FilterBlock label="Área geral"><FilterSelect id="filtro-area" value={filters.area_geral} onChange={(value) => update({ area_geral: value, conteudo_principal: "", subconteudo_principal: "" })} options={areas} placeholder="Todas as áreas" /></FilterBlock>
-          <FilterBlock label="Conteúdo principal"><FilterSelect id="filtro-conteudo" value={filters.conteudo_principal} onChange={(value) => update({ conteudo_principal: value, subconteudo_principal: "" })} options={conteudoOptions} placeholder={filters.area_geral ? "Todos os conteúdos" : "Selecione uma área primeiro"} disabled={!filters.area_geral} /></FilterBlock>
-          <FilterBlock label="Subconteúdo principal"><FilterSelect id="filtro-subconteudo" value={filters.subconteudo_principal} onChange={(value) => update({ subconteudo_principal: value })} options={subconteudoOptions} placeholder={filters.conteudo_principal ? "Todos os subconteúdos" : "Selecione um conteúdo primeiro"} disabled={!filters.conteudo_principal} /></FilterBlock>
-          <FilterBlock label="Conteúdos relacionados"><CatalogMultiSelect values={filters.conteudos_relacionados} onChange={(values) => update({ conteudos_relacionados: values })} options={relacionados} placeholder="Buscar e adicionar conteúdos" /></FilterBlock>
-          <FilterBlock label="Prova"><FilterSelect id="filtro-prova" value={filters.prova} onChange={(value) => update({ prova: value })} options={provas} placeholder="Todas as provas" /></FilterBlock>
-          <FilterBlock label="Instituição"><FilterSelect id="filtro-instituicao" value={filters.instituicao} onChange={(value) => update({ instituicao: value })} options={instituicoes} placeholder="Todas as instituições" /></FilterBlock>
-          <div className="space-y-2"><Label htmlFor="filtro-ano">Ano</Label><Input id="filtro-ano" list="anos-questoes" value={filters.ano} onChange={(event) => update({ ano: event.target.value })} placeholder="Digite ou selecione o ano" /><datalist id="anos-questoes">{anos.map((ano) => <option key={ano} value={ano} />)}</datalist></div>
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
+          <FilterBlock label="Área geral">
+            <FilterSelect id="filtro-area" value={filters.area_geral} onChange={(value) => update({ area_geral: value, conteudo_principal: "", subconteudo_principal: "" })} options={areas} placeholder="Todas as áreas" />
+          </FilterBlock>
+          <FilterBlock label="Conteúdo principal">
+            <FilterSelect id="filtro-conteudo" value={filters.conteudo_principal} onChange={(value) => update({ conteudo_principal: value, subconteudo_principal: "" })} options={conteudoOptions} placeholder={filters.area_geral ? "Todos os conteúdos" : "Selecione uma área primeiro"} disabled={!filters.area_geral} />
+          </FilterBlock>
+          <FilterBlock label="Subconteúdo principal">
+            <FilterSelect id="filtro-subconteudo" value={filters.subconteudo_principal} onChange={(value) => update({ subconteudo_principal: value })} options={subconteudoOptions} placeholder={filters.conteudo_principal ? "Todos os subconteúdos" : "Selecione um conteúdo primeiro"} disabled={!filters.conteudo_principal} />
+          </FilterBlock>
+          <FilterBlock label="Conteúdos relacionados" hint="A questão aparece quando contém pelo menos um dos conteúdos selecionados.">
+            <FilterMultiSelect id="filtro-relacionados" label="Conteúdos relacionados" values={filters.conteudos_relacionados} onChange={(values) => update({ conteudos_relacionados: values })} options={relacionados} placeholder="Todos os conteúdos relacionados" emptyMessage="Nenhum conteúdo relacionado encontrado." />
+          </FilterBlock>
+          <FilterBlock label="Prova">
+            <FilterMultiSelect id="filtro-prova" label="Provas" values={filters.prova} onChange={(values) => update({ prova: values })} options={provas} placeholder="Todas as provas" emptyMessage="Nenhuma prova encontrada." />
+          </FilterBlock>
+          <FilterBlock label="Instituição">
+            <FilterMultiSelect id="filtro-instituicao" label="Instituições" values={filters.instituicao} onChange={(values) => update({ instituicao: values })} options={instituicoes} placeholder="Todas as instituições" emptyMessage="Nenhuma instituição encontrada." />
+          </FilterBlock>
+          <FilterBlock label="Ano">
+            <FilterMultiSelect id="filtro-ano" label="Anos" values={filters.ano} onChange={(values) => update({ ano: values })} options={yearOptions} placeholder="Todos os anos" emptyMessage="Nenhum ano encontrado." />
+          </FilterBlock>
         </div>
-        <DialogFooter className="gap-2 border-t p-4 sm:justify-between sm:space-x-0">
+        <DialogFooter className="shrink-0 gap-2 border-t bg-background p-4 sm:justify-between sm:space-x-0">
           <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Fechar</Button>
-          <div className="flex gap-2"><Button type="button" variant="outline" onClick={onClear}>Limpar filtros</Button><Button type="button" onClick={onApply}>Aplicar filtros</Button></div>
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" onClick={onClear}>Limpar filtros</Button>
+            <Button type="button" onClick={onApply}>Aplicar filtros</Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-function FilterBlock({ label, children }: { label: string; children: ReactNode }) {
-  return <div className="space-y-2"><Label>{label}</Label>{children}</div>;
+function FilterBlock({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
+  return (
+    <div className="space-y-2">
+      <Label className="text-sm font-semibold">{label}</Label>
+      {children}
+      {hint && <p className="text-xs leading-5 text-muted-foreground">{hint}</p>}
+    </div>
+  );
 }
+
+const FILTER_EMPTY_VALUE = "__digitalizador_filter_empty__";
 
 function FilterSelect({ id, value, onChange, options, placeholder, disabled }: { id: string; value: string; onChange: (value: string) => void; options: CatalogItem[]; placeholder: string; disabled?: boolean }) {
   const visibleOptions = options.filter((item) => item.ativo || item.nome === value);
   return (
-    <select id={id} value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)} className="h-10 w-full rounded-md border bg-card px-3 text-sm disabled:cursor-not-allowed disabled:opacity-60">
-      <option value="">{placeholder}</option>
-      {visibleOptions.map((item) => <option key={item.id} value={item.nome}>{item.nome}{item.ativo ? "" : " (inativo)"}</option>)}
-    </select>
+    <Select value={value || FILTER_EMPTY_VALUE} onValueChange={(nextValue) => onChange(nextValue === FILTER_EMPTY_VALUE ? "" : nextValue)} disabled={disabled}>
+      <SelectTrigger id={id} aria-label={placeholder} className="h-11 w-full rounded-xl border-border/70 bg-background shadow-sm transition-colors hover:border-primary/40">
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent position="popper" className="max-h-72 rounded-xl border-border shadow-lg">
+        <SelectItem value={FILTER_EMPTY_VALUE}>{placeholder}</SelectItem>
+        {visibleOptions.map((item) => (
+          <SelectItem key={item.id} value={item.nome}>
+            {item.nome}{item.ativo ? "" : " (inativo)"}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function FilterMultiSelect({ id, label, values, onChange, options, placeholder, emptyMessage }: {
+  id: string;
+  label: string;
+  values: string[];
+  onChange: (values: string[]) => void;
+  options: CatalogItem[];
+  placeholder: string;
+  emptyMessage: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const selected = values.filter(Boolean);
+  const visibleOptions = options.filter((item) => item.ativo || selected.includes(item.nome));
+  const preview = selected.slice(0, 2);
+  const toggle = (nome: string) => {
+    onChange(selected.includes(nome) ? selected.filter((value) => value !== nome) : [...selected, nome]);
+  };
+
+  return (
+    <div className="flex w-full items-center gap-2">
+      <Popover open={open} onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (!nextOpen) setSearch("");
+      }}>
+        <PopoverTrigger asChild>
+          <Button
+            id={id}
+            type="button"
+            variant="outline"
+            aria-expanded={open}
+            aria-label={label + ": " + (selected.length > 0 ? selected.length + " itens selecionados" : placeholder)}
+            className="h-11 min-w-0 flex-1 justify-between rounded-xl border-border/70 bg-background px-3 text-left font-normal shadow-sm transition-colors hover:border-primary/40 hover:bg-muted/30"
+          >
+            <span className="flex min-w-0 items-center gap-2">
+              {selected.length === 0 ? (
+                <span className="truncate text-muted-foreground">{placeholder}</span>
+              ) : (
+                <>
+                  <Badge variant="secondary" className="shrink-0 rounded-full px-2">
+                    {selected.length} {selected.length === 1 ? "item" : "itens"}
+                  </Badge>
+                  <span className="truncate text-sm text-muted-foreground">
+                    {preview.join(", ")}{selected.length > preview.length ? " +" + (selected.length - preview.length) : ""}
+                  </span>
+                </>
+              )}
+            </span>
+            <ChevronDown className="ml-2 size-4 shrink-0 text-muted-foreground" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" sideOffset={6} className="w-[var(--radix-popover-trigger-width)] p-0 shadow-xl">
+          <Command>
+            <CommandInput placeholder="Buscar nas opções..." value={search} onValueChange={setSearch} />
+            <CommandList id={id + "-options"} className="max-h-64">
+              <CommandEmpty>{emptyMessage}</CommandEmpty>
+              <CommandGroup>
+                {visibleOptions.map((item) => {
+                  const isSelected = selected.includes(item.nome);
+                  return (
+                    <CommandItem key={item.id} value={item.nome} onSelect={() => toggle(item.nome)} aria-label={item.nome + (isSelected ? ", selecionado" : "")} className="px-3 py-2.5">
+                      <span aria-hidden="true" className={"flex size-4 shrink-0 items-center justify-center rounded border " + (isSelected ? "border-primary bg-primary text-primary-foreground" : "border-input bg-background")}>
+                        {isSelected && <Check className="size-3" />}
+                      </span>
+                      <span className="truncate">{item.nome}{item.ativo ? "" : " (inativo)"}</span>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      {selected.length > 0 && (
+        <Button type="button" variant="ghost" size="icon" title="Limpar seleção" aria-label={"Limpar seleção de " + label} onClick={() => onChange([])} className="size-10 shrink-0 rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground">
+          <X className="size-4" />
+        </Button>
+      )}
+    </div>
   );
 }
 
@@ -1297,10 +1429,10 @@ function applySupabaseFilters(query: any, search: string, filters: AdvancedFilte
   if (filters.area_geral) query = query.eq("area_geral", filters.area_geral);
   if (filters.conteudo_principal) query = query.eq("conteudo_principal", filters.conteudo_principal);
   if (filters.subconteudo_principal) query = query.eq("subconteudo_principal", filters.subconteudo_principal);
-  if (filters.conteudos_relacionados.length > 0) query = query.contains("conteudos_relacionados", filters.conteudos_relacionados);
-  if (filters.prova) query = query.eq("prova", filters.prova);
-  if (filters.instituicao) query = query.eq("instituicao", filters.instituicao);
-  if (filters.ano) query = query.eq("ano", filters.ano);
+  if (filters.conteudos_relacionados.length > 0) query = query.overlaps("conteudos_relacionados", filters.conteudos_relacionados);
+  if (filters.prova.length > 0) query = query.in("prova", filters.prova);
+  if (filters.instituicao.length > 0) query = query.in("instituicao", filters.instituicao);
+  if (filters.ano.length > 0) query = query.in("ano", filters.ano);
   return query;
 }
 
@@ -1344,7 +1476,7 @@ function normalizeRow(row: Partial<Q>): Q {
   };
 }
 function listProjection(q: Q): Q { return { ...q, alternativas: [], referencia_imagem: null, enunciado_imagem: null, imagem_original_url: null }; }
-function cloneAdvancedFilters(filters: AdvancedFilters): AdvancedFilters { return { ...filters, conteudos_relacionados: [...filters.conteudos_relacionados] }; }
+function cloneAdvancedFilters(filters: AdvancedFilters): AdvancedFilters { return { ...filters, conteudos_relacionados: [...filters.conteudos_relacionados], prova: [...filters.prova], instituicao: [...filters.instituicao], ano: [...filters.ano] }; }
 function countActiveFilters(filters: AdvancedFilters) { return Object.entries(filters).filter(([, value]) => Array.isArray(value) ? value.length > 0 : Boolean(value)).length; }
 function uniqueYears(rows: Array<{ ano?: string | null }>) { return Array.from(new Set(rows.map((row) => row.ano).filter((ano): ano is string => Boolean(ano)))).sort((a, b) => b.localeCompare(a, "pt-BR")); }
 function safeDate(value: string) { try { return new Date(value).toLocaleDateString("pt-BR"); } catch { return "sem data"; } }
