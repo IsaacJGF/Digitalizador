@@ -1,0 +1,53 @@
+name: Importar imagens de questões
+
+on:
+  pull_request:
+    paths:
+      - "question-image-imports/**/manifest.json"
+  push:
+    branches: [main]
+    paths:
+      - "question-image-imports/**/manifest.json"
+
+permissions:
+  contents: read
+
+jobs:
+  validar-lote:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Baixar o lote da PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validar manifesto e recortes
+        run: node scripts/import-question-images.mjs validate
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+
+  importar-lote:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    concurrency:
+      group: importar-imagens-${{ github.sha }}
+      cancel-in-progress: false
+    steps:
+      - name: Baixar o lote mesclado
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Enviar todos os recortes em um lote
+        run: node scripts/import-question-images.mjs import
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+          QUESTION_INGEST_URL: ${{ vars.QUESTION_INGEST_URL }}
+          QUESTION_INGEST_TOKEN: ${{ secrets.QUESTION_INGEST_TOKEN }}

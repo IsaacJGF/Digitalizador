@@ -69,7 +69,7 @@ O ID da questão é derivado do ID do Issue. Repetir o envio do mesmo Issue não
 ## Limites desta primeira versão
 
 - O repositório é público; Issues e seus textos também ficam públicos.
-- O fluxo não envia arquivos de imagem ao Supabase Storage. Para imagens intercaladas no texto-base, `referencia_blocos` cria espaços reservados na ordem correta; abra a edição da questão no app para enviar e recortar cada imagem. Imagens do enunciado e das alternativas continuam sendo adicionadas no app.
+- O fluxo de texto continua criando espaços reservados. Para importar recortes em lote em questões já cadastradas, use o procedimento de `docs/question-image-import.md`; ele aceita imagens de referência, enunciado e alternativas.
 - O fluxo apenas insere. Editar um Issue depois de gravado não altera a linha existente; correções devem ser feitas no app.
 - O workflow só processa Issues novos com título iniciado por [DIGITALIZADOR], abertos pelo login autorizado definido no workflow e neste endpoint.
 
