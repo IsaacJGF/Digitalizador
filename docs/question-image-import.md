@@ -63,7 +63,8 @@ A identificação usa ano, prova e número exatamente como estão cadastrados. `
 Para `referencia_imagens` e `enunciado_imagens`, use uma destas opções:
 
 - `slot`: preenche um espaço reservado já existente; a contagem começa em 1.
-- `inserir_depois`: insere a imagem depois do trecho de texto indicado, que deve aparecer exatamente uma vez. Use texto vazio (`""`) para colocar a imagem no final.
+- `inserir_depois`: insere a imagem depois do trecho indicado, que deve aparecer exatamente uma vez. Use texto vazio (`""`) para colocá-la no final.
+- `inserir_antes`: insere a imagem antes de um trecho não vazio que deve aparecer exatamente uma vez. Isso também posiciona imagens no início do texto.
 
 Para `alternativas_imagens`, informe a letra da alternativa. Uma imagem já existente só é substituída quando `substituir: true` está explícito.
 
@@ -73,6 +74,6 @@ Para `alternativas_imagens`, informe a letra da alternativa. Uma imagem já exis
 - A ação valida os arquivos na PR. Após a mesclagem, envia um único pedido por manifesto. O banco aplica o lote inteiro ou rejeita o lote inteiro.
 - Questões sem correspondência, seletores ambíguos, slots inexistentes e âncoras ausentes ou repetidas são rejeitados; a automação não escolhe uma questão por aproximação.
 - As imagens permanecem no GitHub público e são gravadas como data URLs PNG nos campos já usados pelo app e pela exportação.
-- A ação não faz o recorte visual. O assistente prepara e revisa os recortes antes de abrir a PR; lotes maiores que os limites devem ser divididos em mais de uma PR.
+- A ação não faz o recorte visual. O assistente prepara e revisa os recortes antes de abrir a PR. São aceitos PNGs de até 16.384 pixels por lado e 18 milhões de pixels no total; lotes maiores que os limites devem ser divididos em mais de uma PR.
 
 O fluxo depende da migração e da rota de servidor estarem publicadas e de o secret/variable do GitHub estar configurado. Uma falha na execução do Actions aparece no próprio commit mesclado e pode ser corrigida com uma nova PR de importação.

@@ -71,7 +71,12 @@ function readPng(batchDirectory, relativeFile, budget) {
   if (path.extname(resolved).toLowerCase() !== ".png") fail("Os arquivos de imagem precisam usar PNG.");
   const bytes = readFileSync(resolved);
   if (bytes.length === 0 || bytes.length > MAX_IMAGE_BYTES) fail("Cada recorte deve ter até 6 MiB.");
-  if (!bytes.subarray(0, 8).equals(PNG_SIGNATURE)) fail("O arquivo informado não é um PNG válido.");
+  if (!bytes.subarray(0, 8).equals(PNG_SIGNATURE) || bytes.length < 24) fail("O arquivo informado não é um PNG válido.");
+  const width = bytes.readUInt32BE(16);
+  const height = bytes.readUInt32BE(20);
+  if (width === 0 || height === 0 || width > 16_384 || height > 16_384 || width * height > 18_000_000) {
+    fail("O recorte excede os limites de dimensão ou de pixels aceitos pelo app.");
+  }
   budget.bytes += bytes.length;
   budget.count += 1;
   if (budget.bytes > MAX_BATCH_IMAGE_BYTES) fail("Um lote pode conter até 12 MiB de imagens.");
@@ -100,18 +105,24 @@ function normalizeExtraImages(images, batchDirectory, budget, questionIndex, bat
   if (images === undefined) return [];
   if (!Array.isArray(images) || images.length > 20) fail(field + " precisa ser uma lista de até 20 imagens.");
   return images.map((image, index) => {
-    object(image, field + "[" + index + "]", ["slot", "inserir_depois", "arquivo", "substituir", "layout"]);
+    object(image, field + "[" + index + "]", ["slot", "inserir_depois", "inserir_antes", "arquivo", "substituir", "layout"]);
     const hasSlot = Number.isInteger(image.slot) && image.slot >= 1 && image.slot <= 20;
-    const hasAnchor = typeof image.inserir_depois === "string" && image.inserir_depois.length <= 40_000;
-    if (hasSlot === hasAnchor) fail(field + "[" + index + "] precisa informar slot ou inserir_depois.");
+    const hasAfter = typeof image.inserir_depois === "string" && image.inserir_depois.length <= 40_000;
+    const hasBefore = typeof image.inserir_antes === "string" && image.inserir_antes.length > 0 && image.inserir_antes.length <= 40_000;
+    const placementCount = [image.slot !== undefined, image.inserir_depois !== undefined, image.inserir_antes !== undefined]
+      .filter(Boolean).length;
+    if (placementCount !== 1) fail(field + "[" + index + "] precisa informar somente uma posição.");
     if (image.slot !== undefined && !hasSlot) fail(field + "[" + index + "].slot precisa ser um inteiro de 1 a 20.");
-    if (image.inserir_depois !== undefined && !hasAnchor) fail(field + "[" + index + "].inserir_depois precisa ser texto.");
+    if (image.inserir_depois !== undefined && !hasAfter) fail(field + "[" + index + "].inserir_depois precisa ser texto.");
+    if (image.inserir_antes !== undefined && !hasBefore) fail(field + "[" + index + "].inserir_antes precisa ser um trecho de texto não vazio.");
     if (image.substituir !== undefined && typeof image.substituir !== "boolean") {
       fail(field + "[" + index + "].substituir precisa ser booleano.");
     }
     validateLayout(image.layout, field + "[" + index + "].layout");
     return {
-      ...(image.slot === undefined ? { inserir_depois: image.inserir_depois } : { slot: image.slot }),
+      ...(image.slot !== undefined ? { slot: image.slot } : {}),
+      ...(image.inserir_depois !== undefined ? { inserir_depois: image.inserir_depois } : {}),
+      ...(image.inserir_antes !== undefined ? { inserir_antes: image.inserir_antes } : {}),
       ...(image.substituir === undefined ? {} : { substituir: image.substituir }),
       ...(image.layout === undefined ? {} : { layout: image.layout }),
       url: readPng(batchDirectory, image.arquivo, budget),

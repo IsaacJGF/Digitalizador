@@ -23,6 +23,7 @@ DECLARE
   v_url text;
   v_import_id text;
   v_anchor text;
+  v_before boolean;
   v_marker text;
   v_layout jsonb;
   v_slot integer;
@@ -58,8 +59,12 @@ BEGIN
 
     v_replace := coalesce((v_attachment->>'substituir')::boolean, false);
 
-    IF (v_attachment ? 'slot') = (v_attachment ? 'inserir_depois') THEN
-      RAISE EXCEPTION USING MESSAGE = 'QUESTION_IMAGE_INGEST: informe slot ou inserir_depois.';
+    IF num_nonnulls(
+      CASE WHEN v_attachment ? 'slot' THEN 1 END,
+      CASE WHEN v_attachment ? 'inserir_depois' THEN 1 END,
+      CASE WHEN v_attachment ? 'inserir_antes' THEN 1 END
+    ) <> 1 THEN
+      RAISE EXCEPTION USING MESSAGE = 'QUESTION_IMAGE_INGEST: informe somente uma posição para a imagem.';
     END IF;
 
     IF v_attachment ? 'slot' THEN
@@ -94,7 +99,8 @@ BEGIN
       CONTINUE;
     END IF;
 
-    v_anchor := v_attachment->>'inserir_depois';
+    v_before := v_attachment ? 'inserir_antes';
+    v_anchor := coalesce(v_attachment->>'inserir_depois', v_attachment->>'inserir_antes');
     v_found_slot := NULL;
 
     IF jsonb_array_length(v_images) > 0 THEN
@@ -150,7 +156,16 @@ BEGIN
 
     v_marker := '[[img:' || v_slot::text || ']]';
     IF position(v_marker IN coalesce(v_text, '')) = 0 THEN
-      IF v_anchor = '' THEN
+      IF v_before THEN
+        IF v_anchor = '' OR v_text IS NULL THEN
+          RAISE EXCEPTION USING MESSAGE = 'QUESTION_IMAGE_INGEST: inserir_antes exige uma âncora não vazia e texto existente.';
+        END IF;
+        v_occurrences := (length(v_text) - length(replace(v_text, v_anchor, ''))) / length(v_anchor);
+        IF v_occurrences <> 1 THEN
+          RAISE EXCEPTION USING MESSAGE = 'QUESTION_IMAGE_INGEST: a âncora precisa aparecer exatamente uma vez no texto.';
+        END IF;
+        v_text := replace(v_text, v_anchor, v_marker || v_anchor);
+      ELSIF v_anchor = '' THEN
         v_text := coalesce(v_text, '') || v_marker;
       ELSE
         IF v_text IS NULL THEN

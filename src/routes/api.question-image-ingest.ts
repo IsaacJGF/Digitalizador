@@ -13,7 +13,11 @@ const imageDataUrlSchema = z
   .regex(/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/)
   .refine((value) => {
     const encoded = value.slice("data:image/png;base64,".length);
-    return Buffer.from(encoded, "base64").subarray(0, 8).equals(PNG_SIGNATURE);
+    const header = Buffer.from(encoded.slice(0, 32), "base64");
+    if (!header.subarray(0, 8).equals(PNG_SIGNATURE) || header.length < 24) return false;
+    const width = header.readUInt32BE(16);
+    const height = header.readUInt32BE(20);
+    return width > 0 && height > 0 && width <= 16_384 && height <= 16_384 && width * height <= 18_000_000;
   }, "Envie uma imagem PNG válida.");
 
 const imageLayoutSchema = z
@@ -32,6 +36,7 @@ const extraImageSchema = z
   .object({
     slot: z.number().int().min(1).max(20).optional(),
     inserir_depois: z.string().max(40_000).optional(),
+    inserir_antes: z.string().min(1).max(40_000).optional(),
     url: imageDataUrlSchema,
     import_id: z.string().regex(/^[a-z0-9][a-z0-9._:-]{1,179}$/),
     substituir: z.boolean().optional(),
@@ -39,10 +44,15 @@ const extraImageSchema = z
   })
   .strict()
   .superRefine((image, context) => {
-    if ((image.slot === undefined) === (image.inserir_depois === undefined)) {
+    const placementCount = [
+      image.slot !== undefined,
+      image.inserir_depois !== undefined,
+      image.inserir_antes !== undefined,
+    ].filter(Boolean).length;
+    if (placementCount !== 1) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Informe slot ou inserir_depois, mas não os dois.",
+        message: "Informe somente um entre slot, inserir_depois e inserir_antes.",
       });
     }
   });
