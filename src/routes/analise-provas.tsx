@@ -1111,7 +1111,7 @@ function buildContentYearMatrix(summary: ProvaAnalysisSummary) {
 }
 
 function buildDonutGradient(rows: FrequencyRow[], total: number) {
-  if (rows.length === 0 || total === 0) return "#e5e7eb";
+  if (rows.length === 0 || total === 0) return "var(--muted)";
   let current = 0;
   const parts: string[] = [];
   rows.forEach((row, i) => {
@@ -1120,12 +1120,12 @@ function buildDonutGradient(rows: FrequencyRow[], total: number) {
     parts.push(`${DONUT_COLORS[i % DONUT_COLORS.length]} ${start}% ${end}%`);
     current = end;
   });
-  if (current < 100) parts.push(`#e5e7eb ${current}% 100%`);
+  if (current < 100) parts.push(`var(--muted) ${current}% 100%`);
   return `conic-gradient(${parts.join(", ")})`;
 }
 
 function heatmapCellColor(value: number, max: number) {
-  if (!value || !max) return "hsl(var(--muted))";
+  if (!value || !max) return "var(--muted)";
   const opacity = 0.15 + (value / max) * 0.65;
   return `rgba(37, 99, 235, ${opacity})`;
 }

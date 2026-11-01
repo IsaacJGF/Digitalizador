@@ -1,8 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ScanLine, Library, FileText, BookMarked, BarChart3, Save } from "lucide-react";
+import { ScanLine, Library, FileText, BookMarked, BarChart3, Save, Moon, Sun } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/components/ThemeProvider";
 
 const tabs = [
   { to: "/", label: "Digitalizar", icon: ScanLine },
@@ -15,6 +16,7 @@ const tabs = [
 export function AppLayout({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isReviewPage = pathname === "/revisar";
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -43,6 +45,18 @@ export function AppLayout({ children }: { children: ReactNode }) {
               );
             })}
           </nav>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="shrink-0"
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Ativar tema claro" : "Ativar tema escuro"}
+            title={theme === "dark" ? "Ativar tema claro" : "Ativar tema escuro"}
+            aria-pressed={theme === "dark"}
+          >
+            {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+          </Button>
         </div>
         <nav className="sm:hidden flex border-t overflow-x-auto">
           {tabs.map((t) => {
