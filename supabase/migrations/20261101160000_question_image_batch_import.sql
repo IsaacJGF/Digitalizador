@@ -216,8 +216,8 @@ BEGIN
   IF jsonb_typeof(_items) IS DISTINCT FROM 'array' THEN
     RAISE EXCEPTION USING MESSAGE = 'QUESTION_IMAGE_INGEST: questions precisa ser uma lista.';
   END IF;
-  IF jsonb_array_length(_items) < 1 OR jsonb_array_length(_items) > 25 THEN
-    RAISE EXCEPTION USING MESSAGE = 'QUESTION_IMAGE_INGEST: o lote precisa conter de 1 a 25 questões.';
+  IF jsonb_array_length(_items) < 1 OR jsonb_array_length(_items) > 35 THEN
+    RAISE EXCEPTION USING MESSAGE = 'QUESTION_IMAGE_INGEST: o lote precisa conter de 1 a 35 questões.';
   END IF;
 
   FOR v_item IN SELECT value FROM jsonb_array_elements(_items) LOOP
