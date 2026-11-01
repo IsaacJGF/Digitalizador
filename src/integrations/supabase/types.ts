@@ -333,6 +333,10 @@ export type Database = {
         Args: { _kind: string; _name: string }
         Returns: number
       }
+      import_question_images_batch: {
+        Args: { _items: Json }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
