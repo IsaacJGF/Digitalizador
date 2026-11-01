@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 
 const REPOSITORY = "IsaacJGF/Digitalizador";
-const MAX_QUESTIONS = 25;
+const MAX_QUESTIONS = 35;
 const MAX_IMAGES = 40;
 const MAX_IMAGE_BYTES = 6 * 1024 * 1024 - 64;
 const MAX_BATCH_IMAGE_BYTES = 12 * 1024 * 1024;
@@ -161,7 +161,7 @@ function loadManifest(manifestPath, commitSha) {
   object(raw, manifestPath, ["versao", "questoes"]);
   if (raw.versao !== 1) fail(manifestPath + ": versao precisa ser 1.");
   if (!Array.isArray(raw.questoes) || raw.questoes.length < 1 || raw.questoes.length > MAX_QUESTIONS) {
-    fail(manifestPath + ": questoes precisa conter de 1 a 25 itens.");
+    fail(manifestPath + ": questoes precisa conter de 1 a 35 itens.");
   }
 
   const budget = { bytes: 0, count: 0 };

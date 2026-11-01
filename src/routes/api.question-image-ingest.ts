@@ -130,7 +130,7 @@ const requestSchema = z
         batch: z.string().regex(/^[a-z0-9][a-z0-9-]{0,79}$/),
       })
       .strict(),
-    questions: z.array(questionSchema).min(1).max(25),
+    questions: z.array(questionSchema).min(1).max(35),
   })
   .strict()
   .superRefine((request, context) => {

@@ -70,7 +70,7 @@ Para `alternativas_imagens`, informe a letra da alternativa. Uma imagem já exis
 
 ## Limites e comportamento
 
-- Até 25 questões, 40 imagens e 18 MiB por manifesto; cada PNG pode ter até 6 MiB.
+- Até 35 questões, 40 imagens e 18 MiB por manifesto; cada PNG pode ter até 6 MiB.
 - A ação valida os arquivos na PR. Após a mesclagem, envia um único pedido por manifesto. O banco aplica o lote inteiro ou rejeita o lote inteiro.
 - Questões sem correspondência, seletores ambíguos, slots inexistentes e âncoras ausentes ou repetidas são rejeitados; a automação não escolhe uma questão por aproximação.
 - As imagens permanecem no GitHub público e são gravadas como data URLs PNG nos campos já usados pelo app e pela exportação.
