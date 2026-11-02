@@ -161,6 +161,7 @@ type EditCropTarget =
   | { kind: "alt"; index: number; currentImage?: string };
 
 const PAGE_SIZE = 18;
+const SELECT_ALL_BATCH_SIZE = 500;
 const LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H"];
 const EMPTY_ADVANCED_FILTERS: AdvancedFilters = {
   area_geral: "",
@@ -222,6 +223,7 @@ function Page() {
   const [q, setQ] = useState("");
   const debouncedQuery = useDebouncedValue(q, 450);
   const [sel, setSel] = useState<Set<string>>(() => new Set(loadSelectedQuestionIds()));
+  const [selectingAllFiltered, setSelectingAllFiltered] = useState(false);
   const [editing, setEditing] = useState<Q | null>(null);
   const [editDraft, setEditDraft] = useState<EditDraft | null>(null);
   const [expanded, setExpanded] = useState<Q | null>(null);
@@ -351,6 +353,55 @@ function Page() {
     const next = new Set(sel);
     if (next.has(id)) next.delete(id); else next.add(id);
     commitSelection(next);
+  };
+
+  const selectAllFiltered = async () => {
+    if (activeFilterCount === 0 || selectingAllFiltered) return;
+    const searchSnapshot = debouncedQuery;
+    const filtersSnapshot = cloneAdvancedFilters(advancedFilters);
+    setSelectingAllFiltered(true);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabase as any;
+      const ids: string[] = [];
+      for (let from = 0; ; from += SELECT_ALL_BATCH_SIZE) {
+        let query = db.from("questions").select("id");
+        query = applySupabaseFilters(query, searchSnapshot, filtersSnapshot);
+        const { data, error } = await query
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: true })
+          .range(from, from + SELECT_ALL_BATCH_SIZE - 1);
+        if (error) throw error;
+        const batch = ((data ?? []) as Array<{ id?: string | null }>)
+          .flatMap((row) => row.id ? [row.id] : []);
+        ids.push(...batch);
+        if (batch.length < SELECT_ALL_BATCH_SIZE) break;
+      }
+
+      if (ids.length === 0) {
+        toast("Nenhuma questão encontrada para os filtros atuais.");
+        return;
+      }
+
+      const next = new Set(loadSelectedQuestionIds());
+      let added = 0;
+      for (const id of ids) {
+        if (next.has(id)) continue;
+        next.add(id);
+        added += 1;
+      }
+      if (added > 0) commitSelection(next);
+      toast.success(
+        added === 0
+          ? "Todas as questões filtradas já estavam selecionadas."
+          : `${added} questão${added === 1 ? "" : "ões"} adicionada${added === 1 ? "" : "s"} à seleção.`,
+      );
+    } catch (error) {
+      console.error("Falha ao selecionar questões filtradas:", error);
+      toast.error("Não foi possível selecionar todas as questões filtradas.");
+    } finally {
+      setSelectingAllFiltered(false);
+    }
   };
 
   const fetchFullQuestion = async (id: string): Promise<Q | null> => {
@@ -710,7 +761,24 @@ function Page() {
                 <span className="text-muted-foreground">Nenhum filtro avançado selecionado.</span>
               )}
             </div>
-            <span className="shrink-0 text-muted-foreground">Página {Math.min(page + 1, totalPages)} de {totalPages}</span>
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+              {activeFilterCount > 0 && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 gap-1.5 px-2 text-xs"
+                  aria-label={`Selecionar todas as ${totalCount} questões dos filtros avançados`}
+                  title="Seleciona os resultados filtrados em todas as páginas."
+                  disabled={loading || selectingAllFiltered || totalCount === 0 || q.trim() !== debouncedQuery.trim()}
+                  onClick={() => void selectAllFiltered()}
+                >
+                  {selectingAllFiltered ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
+                  {selectingAllFiltered ? "Selecionando..." : `Selecionar tudo (${totalCount})`}
+                </Button>
+              )}
+              <span className="text-muted-foreground">Página {Math.min(page + 1, totalPages)} de {totalPages}</span>
+            </div>
           </div>
         </div>
 
