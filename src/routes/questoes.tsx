@@ -320,6 +320,7 @@ function Page() {
   }, []);
 
   const activeFilterCount = useMemo(() => countActiveFilters(advancedFilters), [advancedFilters]);
+  const activeFilterSummary = useMemo(() => summarizeAdvancedFilters(advancedFilters), [advancedFilters]);
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   const toggle = (id: string) => {
@@ -665,9 +666,23 @@ function Page() {
               {activeFilterCount > 0 ? `Filtro avançado • ${activeFilterCount}` : "Filtro avançado"}
             </Button>
           </div>
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-            <span>Lista otimizada: imagens, alternativas e referências completas são carregadas apenas ao abrir detalhes, editar ou ver itens da mesma referência.</span>
-            <span>Página {Math.min(page + 1, totalPages)} de {totalPages}</span>
+          <div className="mt-2 flex flex-wrap items-start justify-between gap-2 text-xs">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5" aria-label="Filtros avançados selecionados" aria-live="polite">
+              {activeFilterSummary.length > 0 ? (
+                <>
+                  <span className="mr-0.5 text-muted-foreground">Filtros:</span>
+                  {activeFilterSummary.map((filter) => (
+                    <Badge key={filter.label + "-" + filter.value} variant="secondary" className="max-w-full gap-1 rounded-md border border-border/60 px-2 py-0.5 text-xs font-normal">
+                      <span className="text-muted-foreground">{filter.label}:</span>
+                      <span className="max-w-64 truncate" title={filter.value}>{filter.value}</span>
+                    </Badge>
+                  ))}
+                </>
+              ) : (
+                <span className="text-muted-foreground">Nenhum filtro avançado selecionado.</span>
+              )}
+            </div>
+            <span className="shrink-0 text-muted-foreground">Página {Math.min(page + 1, totalPages)} de {totalPages}</span>
           </div>
         </div>
 
@@ -1424,7 +1439,7 @@ function applySupabaseFilters(query: any, search: string, filters: AdvancedFilte
   const term = search.trim();
   if (term) {
     const escaped = term.replace(/[%_]/g, "");
-    query = query.or(`enunciado.ilike.%${escaped}%,fonte.ilike.%${escaped}%,prova.ilike.%${escaped}%,instituicao.ilike.%${escaped}%,conteudo_principal.ilike.%${escaped}%,subconteudo_principal.ilike.%${escaped}%`);
+    query = query.or(`enunciado.ilike.%${escaped}%,referencia_texto.ilike.%${escaped}%,referencia_texto_apos.ilike.%${escaped}%,referencia_fonte.ilike.%${escaped}%,fonte.ilike.%${escaped}%,prova.ilike.%${escaped}%,instituicao.ilike.%${escaped}%,conteudo_principal.ilike.%${escaped}%,subconteudo_principal.ilike.%${escaped}%`);
   }
   if (filters.area_geral) query = query.eq("area_geral", filters.area_geral);
   if (filters.conteudo_principal) query = query.eq("conteudo_principal", filters.conteudo_principal);
@@ -1477,6 +1492,17 @@ function normalizeRow(row: Partial<Q>): Q {
 }
 function listProjection(q: Q): Q { return { ...q, alternativas: [], referencia_imagem: null, enunciado_imagem: null, imagem_original_url: null }; }
 function cloneAdvancedFilters(filters: AdvancedFilters): AdvancedFilters { return { ...filters, conteudos_relacionados: [...filters.conteudos_relacionados], prova: [...filters.prova], instituicao: [...filters.instituicao], ano: [...filters.ano] }; }
+function summarizeAdvancedFilters(filters: AdvancedFilters) {
+  const summary: { label: string; value: string }[] = [];
+  if (filters.area_geral) summary.push({ label: "Área geral", value: filters.area_geral });
+  if (filters.conteudo_principal) summary.push({ label: "Conteúdo principal", value: filters.conteudo_principal });
+  if (filters.subconteudo_principal) summary.push({ label: "Subconteúdo", value: filters.subconteudo_principal });
+  filters.conteudos_relacionados.forEach((value) => summary.push({ label: "Relacionado", value }));
+  filters.prova.forEach((value) => summary.push({ label: "Prova", value }));
+  filters.instituicao.forEach((value) => summary.push({ label: "Instituição", value }));
+  filters.ano.forEach((value) => summary.push({ label: "Ano", value }));
+  return summary;
+}
 function countActiveFilters(filters: AdvancedFilters) { return Object.entries(filters).filter(([, value]) => Array.isArray(value) ? value.length > 0 : Boolean(value)).length; }
 function uniqueYears(rows: Array<{ ano?: string | null }>) { return Array.from(new Set(rows.map((row) => row.ano).filter((ano): ano is string => Boolean(ano)))).sort((a, b) => b.localeCompare(a, "pt-BR")); }
 function safeDate(value: string) { try { return new Date(value).toLocaleDateString("pt-BR"); } catch { return "sem data"; } }
