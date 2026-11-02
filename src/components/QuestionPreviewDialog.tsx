@@ -37,9 +37,10 @@ type PreviewContentProps = {
   referenceText: string;
   referenceImages: ExtraImage[];
   referenceSource?: string | null;
+  questionNumberPosition?: "top" | "section";
 };
 
-type Props = Omit<PreviewContentProps, "question"> & {
+type Props = Omit<PreviewContentProps, "question" | "questionNumberPosition"> & {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   question: DraftQuestion;
@@ -84,6 +85,7 @@ export function QuestionPreviewContent({
   referenceText,
   referenceImages,
   referenceSource,
+  questionNumberPosition = "section",
 }: PreviewContentProps) {
   const referenceHasContent = Boolean(referenceText.trim() || referenceImages.length);
   const statementExtras = normalizeExtraImages(question.enunciado_imagens_extra);
@@ -103,6 +105,13 @@ export function QuestionPreviewContent({
 
   return (
     <article className="mx-auto w-full max-w-3xl space-y-5 rounded-md border bg-white p-5 text-gray-950 shadow-sm sm:p-8">
+      {questionNumberPosition === "top" && (
+        <div className="flex flex-wrap items-baseline justify-between gap-2 border-b pb-2">
+          <h2 className="font-semibold">Questão {questionNumber}</h2>
+          <span className="text-xs text-gray-600">{typeLabel}</span>
+        </div>
+      )}
+
       {referenceHasContent && (
         <section className="border-b pb-4">
           <h2 className="mb-3 text-center text-sm font-semibold uppercase tracking-wide text-gray-600">
@@ -122,13 +131,17 @@ export function QuestionPreviewContent({
       )}
 
       <section>
-        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2 border-b pb-2">
-          <h2 className="font-semibold">Questão {questionNumber}</h2>
-          <span className="text-xs text-gray-600">
-            {itemCount > 1 ? "Item " + (itemIndex + 1) + " de " + itemCount + " · " : ""}
-            {typeLabel}
-          </span>
-        </div>
+        {questionNumberPosition === "top" ? (
+          <h2 className="mb-3 border-b pb-2 font-semibold">Enunciado</h2>
+        ) : (
+          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2 border-b pb-2">
+            <h2 className="font-semibold">Questão {questionNumber}</h2>
+            <span className="text-xs text-gray-600">
+              {itemCount > 1 ? "Item " + (itemIndex + 1) + " de " + itemCount + " · " : ""}
+              {typeLabel}
+            </span>
+          </div>
+        )}
 
         {extraImagesBefore.map((image, index) => (
           <BlockImage

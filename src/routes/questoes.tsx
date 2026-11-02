@@ -777,8 +777,6 @@ function Page() {
         <QuestionDetailsDialog
           question={expanded}
           loading={expandedLoading}
-          position={expandedPosition}
-          totalCount={totalCount}
           canGoPrevious={expandedPosition !== null && expandedPosition > 0}
           canGoNext={expandedPosition !== null && expandedPosition < totalCount - 1}
           onPrevious={() => void moveQuestionDetails(-1)}
@@ -1389,11 +1387,9 @@ function EditQuestionDialog({ question, draft, saving, areas, conteudos, subcont
     </Dialog>
   );
 }
-function QuestionDetailsDialog({ question, loading, position, totalCount, canGoPrevious, canGoNext, onPrevious, onNext, onClose, onEdit }: {
+function QuestionDetailsDialog({ question, loading, canGoPrevious, canGoNext, onPrevious, onNext, onClose, onEdit }: {
   question: Q | null;
   loading: boolean;
-  position: number | null;
-  totalCount: number;
   canGoPrevious: boolean;
   canGoNext: boolean;
   onPrevious: () => void;
@@ -1410,17 +1406,24 @@ function QuestionDetailsDialog({ question, loading, position, totalCount, canGoP
     mainLayout: question.referencia_imagem_layout,
     extras: question.referencia_imagens_extra,
   });
+  const catalogEntries = getPedagogicalEntries(question);
 
   return (
     <Dialog open={!!question} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[92vh] max-w-5xl overflow-visible p-0">
         <div className="max-h-[92vh] overflow-y-auto rounded-lg bg-background p-6">
-          <DialogHeader>
-            <DialogTitle>{formatQuestionSource(question) || "Questão"}</DialogTitle>
-            <DialogDescription>
-              {position !== null && totalCount > 0 ? "Questão " + (position + 1) + " de " + totalCount + " · " : ""}
-              {loading ? "Carregando dados completos..." : formatTipo(question.tipo) + (question.numero ? " · Item " + question.numero : "")}
-            </DialogDescription>
+          <DialogHeader className="space-y-3">
+            <div>
+              <DialogTitle>{formatQuestionSource(question) || "Questão"}</DialogTitle>
+              <DialogDescription className="sr-only">Classificação pedagógica da questão.</DialogDescription>
+            </div>
+            <div className="flex flex-wrap gap-1.5" aria-label="Catálogo da questão">
+              {catalogEntries.length > 0 ? catalogEntries.map((entry, index) => (
+                <Badge key={`${entry.label}-${entry.value}-${index}`} variant="secondary" className="font-normal">
+                  <span className="mr-1 text-muted-foreground">{entry.label}:</span>{entry.value}
+                </Badge>
+              )) : <span className="text-sm text-muted-foreground">Sem classificação de catálogo.</span>}
+            </div>
           </DialogHeader>
 
           {loading ? (
@@ -1436,17 +1439,13 @@ function QuestionDetailsDialog({ question, loading, position, totalCount, canGoP
                 referenceText={reference.text}
                 referenceImages={reference.images}
                 referenceSource={question.referencia_fonte}
+                questionNumberPosition="top"
               />
-              <section className="grid gap-2 rounded-lg border bg-muted/20 p-3 text-xs sm:grid-cols-2">
-                <p><strong>Área geral:</strong> {question.area_geral || "—"}</p>
-                <p><strong>Conteúdo principal:</strong> {question.conteudo_principal || "—"}</p>
-                <p><strong>Subconteúdo principal:</strong> {question.subconteudo_principal || "—"}</p>
-                <p><strong>Conteúdos relacionados:</strong> {(question.conteudos_relacionados ?? []).join(", ") || "—"}</p>
-                <p><strong>Tags:</strong> {(question.tags_livres ?? question.tags ?? []).join(", ") || "—"}</p>
-                <p><strong>Prova:</strong> {question.prova || "—"}</p>
-                <p><strong>Instituição:</strong> {question.instituicao || "—"}</p>
-                <p><strong>Ano:</strong> {question.ano || "—"}</p>
-                <p><strong>Observações:</strong> {question.observacoes || "—"}</p>
+              <section className="w-full rounded-lg border bg-muted/20 p-4">
+                <h3 className="mb-2 text-sm font-semibold">Observações</h3>
+                <p className="min-h-16 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+                  {question.observacoes?.trim() || "—"}
+                </p>
               </section>
             </div>
           )}
@@ -1583,7 +1582,7 @@ function safeDate(value: string) { try { return new Date(value).toLocaleDateStri
 function formatQuestionSource(q: Pick<Q, "prova" | "instituicao" | "ano" | "fonte">) { return [q.prova, q.instituicao, q.ano].filter(Boolean).join(" - ") || q.fonte || ""; }
 function formatTipo(tipo: string | null | undefined) { const labels: Record<string, string> = { multipla_escolha: "Múltipla escolha", certo_errado: "Certo ou errado", numerica: "Numérica", discursiva: "Discursiva" }; return labels[tipo ?? ""] ?? (tipo || "Sem tipo"); }
 function getCardChips(q: Q) { return [q.area_geral, q.conteudo_principal, q.subconteudo_principal, ...(q.tags_livres ?? q.tags ?? [])].filter((value): value is string => Boolean(value)); }
-function getPedagogicalEntries(q: Q) { return [["Área", q.area_geral], ["Conteúdo", q.conteudo_principal], ["Subconteúdo", q.subconteudo_principal], ...(q.conteudos_relacionados ?? []).map((value) => ["Relacionado", value]), ...(q.tags_livres ?? q.tags ?? []).map((value) => ["Tag", value])].filter(([, value]) => Boolean(value)).map(([label, value]) => ({ label: label as string, value: value as string })); }
+function getPedagogicalEntries(q: Q) { return [["Área geral", q.area_geral], ["Conteúdo principal", q.conteudo_principal], ["Subconteúdo principal", q.subconteudo_principal], ...(q.conteudos_relacionados ?? []).map((value) => ["Relacionado", value]), ...(q.tags_livres?.length ? q.tags_livres : q.tags ?? []).map((value) => ["Tag", value])].filter(([, value]) => Boolean(value)).map(([label, value]) => ({ label: label as string, value: value as string })); }
 function metadataTooltip(q: Q) { const lines = getPedagogicalEntries(q).map((entry) => `${entry.label}: ${entry.value}`); if (q.resposta) lines.push(`Gabarito: ${q.resposta}`); return lines.join("\n"); }
 function compareReferenceItems(a: Q, b: Q) { return String(a.numero ?? "").localeCompare(String(b.numero ?? ""), "pt-BR", { numeric: true }); }
 function toEditDraft(q: Q): EditDraft {
