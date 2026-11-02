@@ -23,6 +23,7 @@ import {
   ImagePlus,
   RotateCcw,
   RotateCw,
+  Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,7 +47,7 @@ import { RichText } from "@/components/RichText";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { ContentBlocksEditor, type ContentImageRequest } from "@/components/ContentBlocksEditor";
 import { QuestionReferenceContent } from "@/components/QuestionReferenceContent";
-import { QuestionPreviewContent } from "@/components/QuestionPreviewDialog";
+import { QuestionPreviewContent, type PreviewQuestion } from "@/components/QuestionPreviewDialog";
 import { ImageCropDialog, type ImageCropSource } from "@/components/ImageCropDialog";
 import { ImageLayoutEditor } from "@/components/ImageLayoutEditor";
 import { ExtraImagesEditor } from "@/components/ExtraImagesEditor";
@@ -511,6 +512,10 @@ function Page() {
       const ns = new Set(sel);
       ns.delete(id);
       commitSelection(ns);
+      if (editing?.id === id) {
+        setEditing(null);
+        setEditDraft(null);
+      }
     }
   };
 
@@ -783,7 +788,7 @@ function Page() {
         />
         <ReferenceViewDialog state={referenceDialog} onClose={() => setReferenceDialog(null)} onDraftChange={(patch) => setReferenceDialog((current) => current ? { ...current, draft: { ...current.draft, ...patch } } : current)} onStartEdit={() => setReferenceDialog((current) => current ? { ...current, editing: true } : current)} onCancelEdit={() => setReferenceDialog((current) => current ? { ...current, draft: toReferenceDraft(current.question), editing: false } : current)} onSave={saveReferenceEdit} />
         <ReferenceGroupDialog group={referenceGroup?.items ?? []} selectedIds={referenceGroup?.selected ?? new Set()} assessmentIds={sel} onToggle={toggleReferenceGroupItem} onSelectAll={selectAllReferenceGroupItems} onClear={clearReferenceGroupItems} onAdd={addReferenceGroupSelection} onClose={() => setReferenceGroup(null)} />
-        <EditQuestionDialog question={editing} draft={editDraft} saving={savingEdit} areas={areas} conteudos={catalogConteudos} subconteudos={subconteudos} relacionados={relacionados} tags={tagsCat} provas={provas} instituicoes={instituicoes} onDraftChange={setEditDraft} onClose={() => { setEditing(null); setEditDraft(null); }} onSave={saveQuestionEdit} />
+        <EditQuestionDialog question={editing} draft={editDraft} saving={savingEdit} areas={areas} conteudos={catalogConteudos} subconteudos={subconteudos} relacionados={relacionados} tags={tagsCat} provas={provas} instituicoes={instituicoes} onDraftChange={setEditDraft} onClose={() => { setEditing(null); setEditDraft(null); }} onSave={saveQuestionEdit} onDelete={onDelete} />
 
         {sel.size > 0 && (
           <div className="fixed bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-center gap-4 rounded-full bg-primary px-5 py-3 text-primary-foreground shadow-lg">
@@ -1063,7 +1068,36 @@ function ReferenceViewDialog({ state, onClose, onDraftChange, onStartEdit, onCan
   );
 }
 
-function EditQuestionDialog({ question, draft, saving, areas, conteudos, subconteudos, relacionados, tags, provas, instituicoes, onDraftChange, onClose, onSave }: {
+function EditQuestionActionBar({ saving, deleting, onCancel, onPreview, onDelete, onSave }: {
+  saving: boolean;
+  deleting: boolean;
+  onCancel: () => void;
+  onPreview: () => void;
+  onDelete: () => void;
+  onSave: () => void;
+}) {
+  const busy = saving || deleting;
+  return (
+    <div className="flex w-full flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/20 p-3">
+      <Button type="button" variant="destructive" onClick={onDelete} disabled={busy} className="gap-2">
+        {deleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+        {deleting ? "Excluindo..." : "Excluir questão"}
+      </Button>
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <Button type="button" variant="outline" onClick={onPreview} disabled={busy} className="gap-2">
+          <Eye className="size-4" /> Pré-visualizar
+        </Button>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={busy}>Cancelar</Button>
+        <Button type="button" onClick={onSave} disabled={busy} className="gap-2">
+          {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+          {saving ? "Salvando..." : "Salvar edição"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function EditQuestionDialog({ question, draft, saving, areas, conteudos, subconteudos, relacionados, tags, provas, instituicoes, onDraftChange, onClose, onSave, onDelete }: {
   question: Q | null;
   draft: EditDraft | null;
   saving: boolean;
@@ -1077,8 +1111,11 @@ function EditQuestionDialog({ question, draft, saving, areas, conteudos, subcont
   onDraftChange: (draft: EditDraft | null) => void;
   onClose: () => void;
   onSave: () => void;
+  onDelete: (id: string) => Promise<void>;
 }) {
   const [cropTarget, setCropTarget] = useState<EditCropTarget | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   if (!question || !draft) return null;
 
   const area = areas.find((item) => item.nome === draft.area_geral);
@@ -1086,11 +1123,33 @@ function EditQuestionDialog({ question, draft, saving, areas, conteudos, subcont
   const conteudo = conteudoOptions.find((item) => item.nome === draft.conteudo_principal);
   const subOptions = conteudo ? subconteudos.filter((item) => item.conteudo_id === conteudo.id) : [];
   const statementExtras = normalizeExtraImages(draft.enunciado_imagens_extra);
+  const referenceImages = normalizeExtraImages(draft.referencia_imagens_extra);
+  const previewQuestion: PreviewQuestion = {
+    numero: draft.numero,
+    tipo: draft.tipo,
+    enunciado: draft.enunciado,
+    enunciado_imagem: draft.enunciado_imagem || null,
+    enunciado_imagem_pos: draft.enunciado_imagem_pos || null,
+    enunciado_imagem_layout: draft.enunciado_imagem_layout,
+    enunciado_imagens_extra: statementExtras,
+    alternativas: draft.alternativas,
+    resposta: draft.resposta,
+    fonte: draft.fonte,
+  };
   const cropSources = getEditImageSources(question, draft, cropTarget);
   const patch = (partial: Partial<EditDraft>) => onDraftChange({ ...draft, ...partial });
   const closeDialog = () => {
     setCropTarget(null);
+    setPreviewOpen(false);
     onClose();
+  };
+  const deleteQuestion = async () => {
+    setDeleting(true);
+    try {
+      await onDelete(question.id);
+    } finally {
+      setDeleting(false);
+    }
   };
   const updateAlt = (index: number, partial: Partial<EditDraft["alternativas"][number]>) => {
     const next = [...draft.alternativas];
@@ -1132,8 +1191,10 @@ function EditQuestionDialog({ question, draft, saving, areas, conteudos, subcont
       <DialogContent className="max-h-[94vh] max-w-5xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar questão</DialogTitle>
-          <DialogDescription>Edite o texto-base, enunciado, alternativas, gabarito, classificação e imagens nesta mesma tela.</DialogDescription>
+          <DialogDescription>Edite o texto-base, enunciado, alternativas, gabarito, classificação e imagens nesta mesma tela. Use a prévia geral para conferir o resultado.</DialogDescription>
         </DialogHeader>
+
+        <EditQuestionActionBar saving={saving} deleting={deleting} onCancel={closeDialog} onPreview={() => setPreviewOpen(true)} onDelete={() => void deleteQuestion()} onSave={onSave} />
 
         <section className="space-y-3 rounded-lg border bg-card p-4">
           <ContentBlocksEditor
@@ -1204,6 +1265,7 @@ function EditQuestionDialog({ question, draft, saving, areas, conteudos, subcont
               rows={8}
               placeholder="Enunciado da questão"
               className="text-sm"
+              showPreview={false}
             />
             <div className="mt-3">
               <ExtraImagesEditor
@@ -1232,7 +1294,7 @@ function EditQuestionDialog({ question, draft, saving, areas, conteudos, subcont
                   <div key={index} className="flex items-start gap-2 rounded-md border bg-background p-2">
                     <Input value={alt.letra} onChange={(event) => updateAlt(index, { letra: event.target.value })} className="mt-1 w-14 text-center font-bold" />
                     <div className="min-w-0 flex-1 space-y-2">
-                      <RichTextEditor value={alt.texto} onChange={(value) => updateAlt(index, { texto: value })} rows={2} placeholder={"Texto da alternativa " + alt.letra} className="text-sm" />
+                      <RichTextEditor value={alt.texto} onChange={(value) => updateAlt(index, { texto: value })} rows={2} placeholder={"Texto da alternativa " + alt.letra} className="text-sm" showPreview={false} />
                       {alt.imagem ? (
                         <div className="flex items-center gap-2 rounded-md border bg-muted/30 p-1.5">
                           <img src={alt.imagem} alt={"Imagem da alternativa " + alt.letra} className="h-16 max-w-40 rounded object-contain" />
@@ -1290,14 +1352,26 @@ function EditQuestionDialog({ question, draft, saving, areas, conteudos, subcont
         </div>
         <FilterBlock label="Observações"><Textarea value={draft.observacoes} onChange={(event) => patch({ observacoes: event.target.value })} rows={3} /></FilterBlock>
 
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={closeDialog} disabled={saving}>Cancelar</Button>
-          <Button type="button" onClick={onSave} disabled={saving} className="gap-2">
-            {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-            {saving ? "Salvando..." : "Salvar edição"}
-          </Button>
+        <DialogFooter className="mt-2 sm:justify-start">
+          <EditQuestionActionBar saving={saving} deleting={deleting} onCancel={closeDialog} onPreview={() => setPreviewOpen(true)} onDelete={() => void deleteQuestion()} onSave={onSave} />
         </DialogFooter>
       </DialogContent>
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-h-[92vh] max-w-4xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Pré-visualização da questão</DialogTitle>
+            <DialogDescription>Confira texto-base, enunciado, imagens, alternativas e gabarito antes de salvar.</DialogDescription>
+          </DialogHeader>
+          <QuestionPreviewContent
+            question={previewQuestion}
+            itemIndex={0}
+            itemCount={1}
+            referenceText={draft.referencia_texto}
+            referenceImages={referenceImages}
+            referenceSource={draft.referencia_fonte}
+          />
+        </DialogContent>
+      </Dialog>
       <ImageCropDialog
         open={!!cropTarget}
         imageUrl={cropTarget?.currentImage ?? draft.imagem_original_url ?? question.imagem_original_url ?? undefined}
