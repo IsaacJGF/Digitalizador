@@ -6,7 +6,6 @@ import {
   Trash2,
   Copy,
   FileText,
-  Image as ImageIcon,
   Sigma,
   Loader2,
   ScanLine,
@@ -14,7 +13,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  ListChecks,
   Layers,
   Filter,
   Save,
@@ -217,6 +215,7 @@ const DETAIL_COLUMNS = [
 function Page() {
   const navigate = useNavigate();
   const [items, setItems] = useState<Q[]>([]);
+  const [referenceGroupCounts, setReferenceGroupCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(0);
@@ -285,6 +284,30 @@ function Page() {
     void load();
     return () => { loadRequestIdRef.current += 1; };
   }, [load]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const groupIds = [...new Set(items.map((item) => item.grupo_id?.trim()).filter((id): id is string => Boolean(id)))];
+    setReferenceGroupCounts({});
+    if (groupIds.length > 0) {
+      void (async () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const db = supabase as any;
+        const { data, error } = await db.from("questions").select("grupo_id").in("grupo_id", groupIds);
+        if (cancelled) return;
+        if (error) {
+          console.error("Falha ao contar itens por referência:", error);
+          return;
+        }
+        const counts: Record<string, number> = {};
+        for (const row of data ?? []) {
+          if (row.grupo_id) counts[row.grupo_id] = (counts[row.grupo_id] ?? 0) + 1;
+        }
+        setReferenceGroupCounts(counts);
+      })();
+    }
+    return () => { cancelled = true; };
+  }, [items]);
 
   useEffect(() => {
     let cancelled = false;
@@ -704,20 +727,15 @@ function Page() {
             {items.map((it) => {
               const isSel = sel.has(it.id);
               const source = formatQuestionSource(it) || "Fonte não informada";
-              const hasImagem = Boolean(it.tem_imagem || it.enunciado_imagem || it.referencia_imagem || normalizeExtraImages(it.referencia_imagens_extra).length > 0);
-              const hasAlternativas = it.tipo === "multipla_escolha" || (it.alternativas?.length ?? 0) > 0;
               const chips = getCardChips(it).slice(0, 4);
-              const hasReferenceGroup = Boolean(it.grupo_id || it.referencia_texto || it.referencia_texto_apos);
+              const referenceGroupId = it.grupo_id?.trim();
+              const hasReferenceGroup = Boolean(referenceGroupId && (referenceGroupCounts[referenceGroupId] ?? 0) > 1);
               return (
                 <div key={it.id} className={`group relative flex flex-col rounded-xl border bg-card p-3 transition-all hover:shadow-md ${isSel ? "ring-2 ring-primary" : ""} ${hasReferenceGroup ? "border-primary/30" : ""}`}>
                   <div className="flex items-start gap-2">
                     <Checkbox checked={isSel} onCheckedChange={() => toggle(it.id)} className="mt-0.5 shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                        <span className="font-mono">#{it.id.slice(0, 6)}</span>
-                        {it.numero && <span>· Q{it.numero}</span>}
-                      </div>
-                      <p className="mt-0.5 truncate text-xs font-semibold text-foreground">{source}</p>
+                      <p className="truncate text-xs font-semibold text-foreground">{source}</p>
                     </div>
                     <div className="flex shrink-0 -mr-1 -mt-1 opacity-0 transition-opacity group-hover:opacity-100">
                       <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openQuestionEditor(it)} title="Editar questão"><Pencil className="size-3.5" /></Button>
@@ -734,12 +752,11 @@ function Page() {
 
                   <p className="mt-2 line-clamp-3 min-h-[3.75rem] text-sm text-foreground/90">{plainText(it.enunciado) || "Sem enunciado cadastrado."}</p>
 
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {hasImagem && <span title="Possui imagem" className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"><ImageIcon className="size-3" />Imagem</span>}
-                    {it.tem_equacao && <span title="Possui fórmula" className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"><Sigma className="size-3" />Fórmula</span>}
-                    {hasAlternativas && <span title="Possui alternativas" className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"><ListChecks className="size-3" />Alternativas</span>}
-                    {hasReferenceGroup && <span title="Possui referência ou grupo" className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"><Layers className="size-3" />Referência</span>}
-                  </div>
+                  {it.tem_equacao && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      <span title="Possui fórmula" className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"><Sigma className="size-3" />Fórmula</span>
+                    </div>
+                  )}
 
                   {hasReferenceGroup && (
                     <div className="mt-2 flex flex-wrap gap-2">
