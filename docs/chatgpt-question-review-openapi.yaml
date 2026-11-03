@@ -248,7 +248,7 @@ components:
         referencia_imagem_pos:
           type: [string, "null"]
         referencia_imagem_layout:
-          type: object
+          type: [object, "null"]
           description: Posicionamento atual da imagem, somente leitura.
           additionalProperties: true
         referencia_imagens_extra:
@@ -262,7 +262,7 @@ components:
         enunciado_imagem_pos:
           type: [string, "null"]
         enunciado_imagem_layout:
-          type: object
+          type: [object, "null"]
           description: Posicionamento atual da imagem, somente leitura.
           additionalProperties: true
         enunciado_imagens_extra:
