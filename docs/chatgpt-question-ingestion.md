@@ -66,11 +66,14 @@ O endpoint mapeia os campos para o modelo atual da tabela questions:
 
 O ID da questão é derivado do ID do Issue. Repetir o envio do mesmo Issue não cria outra linha. A automação deixa um comentário no Issue com o resultado e o ID gravado.
 
+## Revisar uma questão já cadastrada
+
+Este fluxo de GitHub Issue apenas insere questões; editar o Issue depois do cadastro não altera a linha existente. Para consultar, revisar e gravar correções pelo GPT, use o caminho separado descrito em [chatgpt-question-review.md](chatgpt-question-review.md).
+
 ## Limites desta primeira versão
 
 - O repositório é público; Issues e seus textos também ficam públicos.
 - O fluxo de texto continua criando espaços reservados. Para importar recortes em lote em questões já cadastradas, use o procedimento de `docs/question-image-import.md`; ele aceita imagens de referência, enunciado e alternativas.
-- O fluxo apenas insere. Editar um Issue depois de gravado não altera a linha existente; correções devem ser feitas no app.
 - O workflow só processa Issues novos com título iniciado por [DIGITALIZADOR], abertos pelo login autorizado definido no workflow e neste endpoint.
 
 A migração/exportação de dados para Firebase é um trabalho separado e não faz parte deste fluxo.
