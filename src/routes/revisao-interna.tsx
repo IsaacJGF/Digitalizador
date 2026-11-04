@@ -13,7 +13,6 @@ import {
 import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CatalogMultiSelect } from "@/components/CatalogSelect";
 import { QuestionReviewPdfPanel } from "@/components/QuestionReviewPdfPanel";
@@ -877,6 +876,22 @@ function ReviewWorkspace() {
   );
 }
 
+function ReviewStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-xl border bg-card px-4 py-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
+    </div>
+  );
+}
+
+function formatReviewDate(value: string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? value
+    : new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(date);
+}
+
 function MetadataGroup({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="rounded-lg border bg-muted/20 p-3">
@@ -918,6 +933,13 @@ function normalizeListItem(row: Partial<ReviewListItem>): ReviewListItem {
     conteudo_principal: row.conteudo_principal ?? null,
     subconteudo_principal: row.subconteudo_principal ?? null,
     grupo_id: row.grupo_id ?? null,
+    total_criteria: Number(row.total_criteria ?? 8),
+    completed_criteria: Number(row.completed_criteria ?? 0),
+    pending_criteria: Number(row.pending_criteria ?? 8),
+    attention_criteria: Number(row.attention_criteria ?? 0),
+    is_complete: Boolean(row.is_complete),
+    adjustment_count: Number(row.adjustment_count ?? 0),
+    last_adjustment_at: row.last_adjustment_at ?? null,
   };
 }
 
