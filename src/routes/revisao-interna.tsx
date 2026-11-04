@@ -308,22 +308,26 @@ function ReviewWorkspace() {
     if (!question) return;
     const packet = {
       id: question.id,
+      tipo: question.tipo,
       prova: question.prova,
       instituicao: question.instituicao,
       ano: question.ano,
       numero: question.numero,
+      fonte: question.fonte,
       referencia: {
         texto: question.referencia_texto,
         texto_apos: question.referencia_texto_apos,
         fonte: question.referencia_fonte,
         imagem: question.referencia_imagem,
         imagem_pos: question.referencia_imagem_pos,
+        imagem_layout: question.referencia_imagem_layout,
         imagens_adicionais: question.referencia_imagens_extra,
       },
       enunciado: {
         texto: question.enunciado,
         imagem: question.enunciado_imagem,
         imagem_pos: question.enunciado_imagem_pos,
+        imagem_layout: question.enunciado_imagem_layout,
         imagens_adicionais: question.enunciado_imagens_extra,
       },
       alternativas: question.alternativas,
@@ -337,7 +341,10 @@ function ReviewWorkspace() {
         dificuldade: question.dificuldade,
       },
       observacoes: question.observacoes,
+      imagem_original_url: question.imagem_original_url,
       tem_equacao: question.tem_equacao,
+      tem_imagem: question.tem_imagem,
+      created_at: question.created_at,
       updated_at: question.updated_at,
     };
     try {
