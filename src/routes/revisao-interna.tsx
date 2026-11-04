@@ -516,6 +516,25 @@ function ReviewWorkspace() {
       tem_imagem: question.tem_imagem,
       created_at: question.created_at,
       updated_at: question.updated_at,
+      revisao_interna: {
+        criterios: REVIEW_CRITERIA.map(({ id, label }) => {
+          const check = reviewChecks.find((item) => item.criterio === id);
+          return {
+            criterio: label,
+            status: check?.status ?? "pendente",
+            status_label: check ? REVIEW_STATUS_LABELS[check.status] : "Pendente",
+            observacao: check?.observacao ?? "",
+          };
+        }),
+        historico_recente: reviewHistory.slice(0, 30).map((event) => ({
+          criterio: REVIEW_CRITERIA.find((item) => item.id === event.criterio)?.label ?? event.criterio,
+          de: event.status_anterior ? REVIEW_STATUS_LABELS[event.status_anterior] : null,
+          para: REVIEW_STATUS_LABELS[event.status_novo],
+          motivo: event.motivo,
+          observacao: event.observacao,
+          em: event.changed_at,
+        })),
+      },
     };
     try {
       await navigator.clipboard.writeText(JSON.stringify(packet, null, 2));
