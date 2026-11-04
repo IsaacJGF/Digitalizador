@@ -178,6 +178,7 @@ function ReviewWorkspace() {
   const preferredQuestionId = useRef("");
   const selectedIdRef = useRef("");
   const filterChangeInitialized = useRef(false);
+  const reviewMetadataRequestIdRef = useRef(0);
 
   selectedIdRef.current = selectedId;
 
@@ -345,6 +346,7 @@ function ReviewWorkspace() {
   }, [selectedId, loadQuestion]);
 
   const loadReviewMetadata = useCallback(async (id: string) => {
+    const requestId = ++reviewMetadataRequestIdRef.current;
     setReviewMetadataLoading(true);
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -355,23 +357,26 @@ function ReviewWorkspace() {
       ]);
       if (checksResult.error) throw checksResult.error;
       if (historyResult.error) throw historyResult.error;
+      if (requestId !== reviewMetadataRequestIdRef.current) return;
       const checks = (checksResult.data ?? []) as ReviewCheck[];
       setReviewChecks(checks);
       setNoteDrafts(Object.fromEntries(checks.map((check) => [check.criterio, check.observacao ?? ""])));
       setReviewHistory((historyResult.data ?? []) as ReviewHistoryEntry[]);
     } catch (error) {
+      if (requestId !== reviewMetadataRequestIdRef.current) return;
       console.error("Falha ao carregar o histórico da revisão:", error);
       toast.error("Não foi possível carregar o checklist. Verifique se a migração da revisão foi aplicada.");
       setReviewChecks([]);
       setReviewHistory([]);
       setNoteDrafts({});
     } finally {
-      setReviewMetadataLoading(false);
+      if (requestId === reviewMetadataRequestIdRef.current) setReviewMetadataLoading(false);
     }
   }, []);
 
   useEffect(() => {
     if (!selectedId) {
+      reviewMetadataRequestIdRef.current += 1;
       setReviewChecks([]);
       setReviewHistory([]);
       setNoteDrafts({});
