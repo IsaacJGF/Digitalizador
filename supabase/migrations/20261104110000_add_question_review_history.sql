@@ -1,7 +1,4 @@
 -- Internal question review checklist and audit trail.
-ALTER TABLE public.questions
-  ADD COLUMN IF NOT EXISTS grupo_revisao_placeholder text;
-
 CREATE TABLE IF NOT EXISTS public.question_review_checks (
   question_id UUID NOT NULL REFERENCES public.questions(id) ON DELETE CASCADE,
   criterio TEXT NOT NULL CHECK (criterio IN (
@@ -16,6 +13,11 @@ CREATE TABLE IF NOT EXISTS public.question_review_checks (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (question_id, criterio)
 );
+
+DROP TRIGGER IF EXISTS question_review_checks_touch_updated_at ON public.question_review_checks;
+CREATE TRIGGER question_review_checks_touch_updated_at
+BEFORE UPDATE ON public.question_review_checks
+FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
 
 CREATE TABLE IF NOT EXISTS public.question_review_history (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
