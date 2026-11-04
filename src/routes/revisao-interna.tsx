@@ -13,7 +13,9 @@ import {
 import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CatalogMultiSelect } from "@/components/CatalogSelect";
+import { QuestionReviewPdfPanel } from "@/components/QuestionReviewPdfPanel";
 import { QuestionPreviewContent } from "@/components/QuestionPreviewDialog";
 import type { PreviewQuestion } from "@/components/QuestionPreviewDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,10 +36,46 @@ const SUMMARY_COLUMNS = [
   "conteudo_principal",
   "subconteudo_principal",
   "grupo_id",
+  "fonte",
+  "referencia_texto",
+  "referencia_texto_apos",
+  "referencia_fonte",
+  "total_criteria",
+  "completed_criteria",
+  "pending_criteria",
+  "attention_criteria",
+  "is_complete",
+  "adjustment_count",
+  "last_adjustment_at",
 ].join(",");
 
 type CatalogOption = { id: string; nome: string; ativo: boolean };
 type ReviewFilters = { anos: string[]; provas: string[]; instituicoes: string[] };
+type ReviewCriterion =
+  | "texto_base" | "enunciado" | "alternativas" | "gabarito"
+  | "imagens" | "formatacao" | "dados_prova" | "classificacao";
+type ReviewStatus =
+  | "pendente" | "precisa_ajuste" | "ajustado_pendente_conferencia"
+  | "conferido_ok" | "nao_se_aplica" | "duvida";
+type ReviewQueueMode = "pending" | "changed" | "all";
+type ReviewCheck = {
+  question_id: string;
+  criterio: ReviewCriterion;
+  status: ReviewStatus;
+  observacao: string;
+  updated_at: string;
+};
+type ReviewHistoryEntry = {
+  id: string;
+  question_id: string;
+  criterio: ReviewCriterion;
+  status_anterior: ReviewStatus | null;
+  status_novo: ReviewStatus;
+  observacao: string;
+  motivo: "manual" | "questao_editada";
+  changed_at: string;
+};
+type ReviewStats = { total: number; completed: number; pending: number; changed: number };
 type ReviewListItem = {
   id: string;
   numero: string | null;
@@ -49,6 +87,13 @@ type ReviewListItem = {
   conteudo_principal: string | null;
   subconteudo_principal: string | null;
   grupo_id: string | null;
+  total_criteria: number;
+  completed_criteria: number;
+  pending_criteria: number;
+  attention_criteria: number;
+  is_complete: boolean;
+  adjustment_count: number;
+  last_adjustment_at: string | null;
 };
 type ReviewQuestion = PreviewQuestion & {
   id: string;
@@ -78,6 +123,27 @@ type ReviewQuestion = PreviewQuestion & {
 };
 
 const EMPTY_FILTERS: ReviewFilters = { anos: [], provas: [], instituicoes: [] };
+const REVIEW_CRITERIA: Array<{ id: ReviewCriterion; label: string }> = [
+  { id: "texto_base", label: "Texto-base" },
+  { id: "enunciado", label: "Enunciado" },
+  { id: "alternativas", label: "Alternativas" },
+  { id: "gabarito", label: "Gabarito" },
+  { id: "imagens", label: "Imagens" },
+  { id: "formatacao", label: "Formatação" },
+  { id: "dados_prova", label: "Dados da prova" },
+  { id: "classificacao", label: "Classificação" },
+];
+const REVIEW_STATUSES: Array<{ value: ReviewStatus; label: string }> = [
+  { value: "pendente", label: "Pendente" },
+  { value: "precisa_ajuste", label: "Precisa de ajuste" },
+  { value: "ajustado_pendente_conferencia", label: "Ajuste feito — falta conferir" },
+  { value: "conferido_ok", label: "Conferido — OK" },
+  { value: "nao_se_aplica", label: "Não se aplica" },
+  { value: "duvida", label: "Dúvida" },
+];
+const REVIEW_STATUS_LABELS = Object.fromEntries(
+  REVIEW_STATUSES.map((status) => [status.value, status.label]),
+) as Record<ReviewStatus, string>;
 
 export const Route = createFileRoute("/revisao-interna")({
   head: () => ({ meta: [{ title: "Revisão interna de questões" }] }),
@@ -100,11 +166,19 @@ function ReviewWorkspace() {
   const [loadingQuestion, setLoadingQuestion] = useState(false);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
+  const [queueMode, setQueueMode] = useState<ReviewQueueMode>("pending");
+  const [reviewChecks, setReviewChecks] = useState<ReviewCheck[]>([]);
+  const [reviewHistory, setReviewHistory] = useState<ReviewHistoryEntry[]>([]);
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
+  const [reviewMetadataLoading, setReviewMetadataLoading] = useState(false);
+  const [reviewRefreshKey, setReviewRefreshKey] = useState(0);
+  const [stats, setStats] = useState<ReviewStats>({ total: 0, completed: 0, pending: 0, changed: 0 });
   const [copied, setCopied] = useState(false);
   const pendingPageDirection = useRef<"first" | "last" | null>(null);
   const preferredQuestionId = useRef("");
   const selectedIdRef = useRef("");
   const filterChangeInitialized = useRef(false);
+  const reviewMetadataRequestIdRef = useRef(0);
 
   selectedIdRef.current = selectedId;
 
@@ -174,7 +248,7 @@ function ReviewWorkspace() {
     preferredQuestionId.current = "";
     setPage(0);
     setSelectedId("");
-  }, [debouncedQuery, filterKey, initialized]);
+  }, [debouncedQuery, filterKey, initialized, queueMode]);
 
   useEffect(() => {
     if (!initialized) return;
@@ -184,7 +258,9 @@ function ReviewWorkspace() {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const db = supabase as any;
-        let request = db.from("questions").select(SUMMARY_COLUMNS, { count: "exact" });
+        let request = db.from("question_review_queue").select(SUMMARY_COLUMNS, { count: "exact" });
+        if (queueMode === "pending") request = request.eq("is_complete", false);
+        if (queueMode === "changed") request = request.gt("adjustment_count", 0);
         const term = debouncedQuery.trim().replace(/[^a-zA-ZÀ-ÿ0-9\s-]/g, " ").replace(/\s+/g, " ").trim();
         if (term) {
           request = request.or(
@@ -211,6 +287,10 @@ function ReviewWorkspace() {
         }
 
         const rows = ((data ?? []) as Array<Partial<ReviewListItem>>).map(normalizeListItem);
+        if (rows.length === 0 && (count ?? 0) > 0 && page > 0) {
+          setPage(Math.max(0, Math.ceil((count ?? 0) / PAGE_SIZE) - 1));
+          return;
+        }
         setItems(rows);
         setTotal(count ?? 0);
         const preferred = preferredQuestionId.current;
@@ -233,7 +313,7 @@ function ReviewWorkspace() {
       }
     })();
     return () => { cancelled = true; };
-  }, [initialized, page, debouncedQuery, filters]);
+  }, [initialized, page, debouncedQuery, filters, queueMode, reviewRefreshKey]);
 
   const loadQuestion = useCallback(async (id: string) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -264,6 +344,104 @@ function ReviewWorkspace() {
       .finally(() => { if (!cancelled) setLoadingQuestion(false); });
     return () => { cancelled = true; };
   }, [selectedId, loadQuestion]);
+
+  const loadReviewMetadata = useCallback(async (id: string) => {
+    const requestId = ++reviewMetadataRequestIdRef.current;
+    setReviewMetadataLoading(true);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabase as any;
+      const [checksResult, historyResult] = await Promise.all([
+        db.from("question_review_checks").select("*").eq("question_id", id).order("criterio"),
+        db.from("question_review_history").select("*").eq("question_id", id).order("changed_at", { ascending: false }).limit(60),
+      ]);
+      if (checksResult.error) throw checksResult.error;
+      if (historyResult.error) throw historyResult.error;
+      if (requestId !== reviewMetadataRequestIdRef.current) return;
+      const checks = (checksResult.data ?? []) as ReviewCheck[];
+      setReviewChecks(checks);
+      setNoteDrafts(Object.fromEntries(checks.map((check) => [check.criterio, check.observacao ?? ""])));
+      setReviewHistory((historyResult.data ?? []) as ReviewHistoryEntry[]);
+    } catch (error) {
+      if (requestId !== reviewMetadataRequestIdRef.current) return;
+      console.error("Falha ao carregar o histórico da revisão:", error);
+      toast.error("Não foi possível carregar o checklist. Verifique se a migração da revisão foi aplicada.");
+      setReviewChecks([]);
+      setReviewHistory([]);
+      setNoteDrafts({});
+    } finally {
+      if (requestId === reviewMetadataRequestIdRef.current) setReviewMetadataLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!selectedId) {
+      reviewMetadataRequestIdRef.current += 1;
+      setReviewMetadataLoading(false);
+      setReviewChecks([]);
+      setReviewHistory([]);
+      setNoteDrafts({});
+      return;
+    }
+    void loadReviewMetadata(selectedId);
+  }, [selectedId, loadReviewMetadata]);
+
+  useEffect(() => {
+    let cancelled = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+    const count = async (filter?: (query: any) => any) => {
+      let request = db.from("question_review_summary").select("question_id", { count: "exact", head: true });
+      if (filter) request = filter(request);
+      const result = await request;
+      if (result.error) throw result.error;
+      return result.count ?? 0;
+    };
+    void Promise.all([
+      count(),
+      count((request) => request.eq("is_complete", true)),
+      count((request) => request.eq("is_complete", false)),
+      count((request) => request.gt("adjustment_count", 0)),
+    ]).then(([totalCount, completedCount, pendingCount, changedCount]) => {
+      if (!cancelled) setStats({ total: totalCount, completed: completedCount, pending: pendingCount, changed: changedCount });
+    }).catch((error) => {
+      if (!cancelled) console.error("Falha ao carregar resumo da revisão:", error);
+    });
+    return () => { cancelled = true; };
+  }, [reviewRefreshKey]);
+
+  const updateReviewCheck = async (criterion: ReviewCriterion, status?: ReviewStatus, note?: string) => {
+    if (!question) return;
+    const current = reviewChecks.find((check) => check.criterio === criterion);
+    if (!current) {
+      toast.error("O critério ainda não foi inicializado. Verifique a migração da revisão.");
+      return;
+    }
+    const questionId = question.id;
+    const nextStatus = status ?? current.status;
+    const nextNote = note ?? noteDrafts[criterion] ?? current.observacao;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
+      .from("question_review_checks")
+      .update({ status: nextStatus, observacao: nextNote })
+      .eq("question_id", questionId)
+      .eq("criterio", criterion)
+      .select("*")
+      .single();
+    if (error) {
+      console.error("Falha ao salvar checklist:", error);
+      toast.error("Não foi possível salvar este critério.");
+      return;
+    }
+    const updated = data as ReviewCheck;
+    if (selectedIdRef.current === questionId) {
+      setReviewChecks((currentChecks) => currentChecks.map((check) => check.criterio === criterion ? updated : check));
+      setNoteDrafts((currentNotes) => ({ ...currentNotes, [criterion]: updated.observacao ?? "" }));
+      await loadReviewMetadata(questionId);
+    }
+    setReviewRefreshKey((value) => value + 1);
+    toast.success("Critério de revisão atualizado.");
+  };
 
   const selectedIndex = items.findIndex((item) => item.id === selectedId);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -346,6 +524,25 @@ function ReviewWorkspace() {
       tem_imagem: question.tem_imagem,
       created_at: question.created_at,
       updated_at: question.updated_at,
+      revisao_interna: {
+        criterios: REVIEW_CRITERIA.map(({ id, label }) => {
+          const check = reviewChecks.find((item) => item.criterio === id);
+          return {
+            criterio: label,
+            status: check?.status ?? "pendente",
+            status_label: check ? REVIEW_STATUS_LABELS[check.status] : "Pendente",
+            observacao: check?.observacao ?? "",
+          };
+        }),
+        historico_recente: reviewHistory.slice(0, 30).map((event) => ({
+          criterio: REVIEW_CRITERIA.find((item) => item.id === event.criterio)?.label ?? event.criterio,
+          de: event.status_anterior ? REVIEW_STATUS_LABELS[event.status_anterior] : null,
+          para: REVIEW_STATUS_LABELS[event.status_novo],
+          motivo: event.motivo,
+          observacao: event.observacao,
+          em: event.changed_at,
+        })),
+      },
     };
     try {
       await navigator.clipboard.writeText(JSON.stringify(packet, null, 2));
@@ -382,7 +579,28 @@ function ReviewWorkspace() {
           </Button>
         </header>
 
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumo das revisões">
+          <ReviewStat label="Questões cadastradas" value={stats.total} />
+          <ReviewStat label="Conferidas por completo" value={stats.completed} />
+          <ReviewStat label="Com pendências" value={stats.pending} />
+          <ReviewStat label="Alteradas após conferência" value={stats.changed} />
+        </section>
+
         <section className="space-y-3 rounded-xl border bg-card p-3" aria-label="Filtros da revisão">
+          <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="Fila de revisão">
+            <Button type="button" size="sm" variant={queueMode === "pending" ? "default" : "outline"} onClick={() => setQueueMode("pending")}>
+              Pendentes ({stats.pending})
+            </Button>
+            <Button type="button" size="sm" variant={queueMode === "changed" ? "default" : "outline"} onClick={() => setQueueMode("changed")}>
+              Alteradas ({stats.changed})
+            </Button>
+            <Button type="button" size="sm" variant={queueMode === "all" ? "default" : "outline"} onClick={() => setQueueMode("all")}>
+              Todas ({stats.total})
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              A fila abre em Pendentes e pula questões concluídas.
+            </span>
+          </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -426,16 +644,18 @@ function ReviewWorkspace() {
             </Button>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-2 text-sm text-muted-foreground">
-            <p>{total} questão{total === 1 ? "" : "ões"} para revisar</p>
+            <p>{total} questão{total === 1 ? "" : "ões"} {queueMode === "pending" ? "pendente" : queueMode === "changed" ? "alterada" : "encontrada"}{total === 1 ? "" : "s"}</p>
             <p>Página {Math.min(page + 1, totalPages)} de {totalPages}</p>
           </div>
         </section>
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(260px,340px)_minmax(0,1fr)]">
+        <div className="grid gap-4 xl:grid-cols-[minmax(250px,300px)_minmax(0,1.2fr)_minmax(320px,0.8fr)]">
           <aside className="flex min-h-[360px] flex-col overflow-hidden rounded-xl border bg-card">
             <div className="border-b px-4 py-3">
               <h2 className="font-semibold">Fila</h2>
-              <p className="text-xs text-muted-foreground">Selecione uma questão para conferir.</p>
+              <p className="text-xs text-muted-foreground">
+                {queueMode === "pending" ? "Questões com algum critério não concluído." : queueMode === "changed" ? "Questões editadas depois de uma conferência." : "Histórico completo de questões."}
+              </p>
             </div>
             <div className="max-h-[70vh] flex-1 overflow-y-auto p-2">
               {loadingList && items.length === 0 ? (
@@ -464,7 +684,12 @@ function ReviewWorkspace() {
                           </span>
                         </div>
                         <p className="mt-1 line-clamp-3 text-sm text-foreground">{excerpt || "Enunciado não preenchido."}</p>
-                        {item.area_geral && <span className="mt-2 inline-block text-[11px] text-muted-foreground">{item.area_geral}</span>}
+                        <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] text-muted-foreground">
+                          <span>{item.completed_criteria}/{item.total_criteria} critérios concluídos</span>
+                          {item.pending_criteria > 0 && <span>· {item.pending_criteria} pendentes</span>}
+                          {item.attention_criteria > 0 && <span className="text-amber-600 dark:text-amber-400">· {item.attention_criteria} precisam de atenção</span>}
+                          {item.adjustment_count > 0 && <span className="text-primary">· {item.adjustment_count} ajuste(s) após revisão</span>}
+                        </div>
                       </button>
                     );
                   })}
@@ -556,6 +781,91 @@ function ReviewWorkspace() {
                     </MetadataGroup>
                   </div>
                 </section>
+
+                <section className="space-y-3 rounded-xl border bg-card p-4" aria-label="Checklist de revisão">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <h2 className="font-semibold">Checklist da questão</h2>
+                      <p className="text-xs text-muted-foreground">
+                        Marque cada critério. Questões com itens incompletos continuam na fila de pendentes.
+                      </p>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {reviewChecks.filter((check) => check.status === "conferido_ok" || check.status === "nao_se_aplica").length}/8 concluídos
+                    </span>
+                  </div>
+                  {reviewMetadataLoading ? (
+                    <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+                      <Loader2 className="size-4 animate-spin" /> Carregando checklist e histórico...
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {REVIEW_CRITERIA.map(({ id, label }) => {
+                        const check = reviewChecks.find((item) => item.criterio === id);
+                        const status = check?.status ?? "pendente";
+                        return (
+                          <div key={id} className="grid gap-2 rounded-lg border p-3 md:grid-cols-[minmax(130px,0.7fr)_minmax(210px,1fr)_minmax(180px,1fr)] md:items-center">
+                            <div>
+                              <p className="text-sm font-medium">{label}</p>
+                              {check?.updated_at && <p className="text-[10px] text-muted-foreground">Atualizado {formatReviewDate(check.updated_at)}</p>}
+                            </div>
+                            <Select
+                              value={status}
+                              onValueChange={(value) => void updateReviewCheck(id, value as ReviewStatus)}
+                              disabled={!check}
+                            >
+                              <SelectTrigger aria-label={"Estado de revisão: " + label}><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {REVIEW_STATUSES.map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Input
+                              value={noteDrafts[id] ?? check?.observacao ?? ""}
+                              placeholder={status === "duvida" ? "Descreva a dúvida..." : "Anotação interna (opcional)"}
+                              aria-label={"Anotação interna: " + label}
+                              disabled={!check}
+                              onChange={(event) => setNoteDrafts((currentNotes) => ({ ...currentNotes, [id]: event.target.value }))}
+                              onBlur={() => {
+                                const note = noteDrafts[id] ?? check?.observacao ?? "";
+                                if (check && note !== check.observacao) void updateReviewCheck(id, undefined, note);
+                              }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+
+                <details className="rounded-xl border bg-card p-4">
+                  <summary className="cursor-pointer font-semibold">
+                    Histórico desta questão ({reviewHistory.length}{reviewHistory.length === 60 ? "+" : ""})
+                  </summary>
+                  {reviewHistory.length === 0 ? (
+                    <p className="mt-3 text-sm text-muted-foreground">Ainda não há alterações de checklist registradas.</p>
+                  ) : (
+                    <ol className="mt-3 space-y-2">
+                      {reviewHistory.map((event) => (
+                        <li key={event.id} className="rounded-md bg-muted/40 px-3 py-2 text-sm">
+                          <div className="flex flex-wrap items-baseline justify-between gap-2">
+                            <span className="font-medium">
+                              {REVIEW_CRITERIA.find((item) => item.id === event.criterio)?.label ?? event.criterio}
+                              {event.status_anterior ? " · " + REVIEW_STATUS_LABELS[event.status_anterior] : ""}
+                              {" → " + REVIEW_STATUS_LABELS[event.status_novo]}
+                            </span>
+                            <time className="text-xs text-muted-foreground">{formatReviewDate(event.changed_at)}</time>
+                          </div>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {event.motivo === "questao_editada" ? "Edição da questão" : "Atualização do checklist"}
+                            {event.observacao ? " · " + event.observacao : ""}
+                          </p>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </details>
               </>
             ) : (
               <div className="flex min-h-[300px] items-center justify-center rounded-xl border border-dashed bg-card p-8 text-center text-sm text-muted-foreground">
@@ -563,10 +873,32 @@ function ReviewWorkspace() {
               </div>
             )}
           </main>
+
+          <QuestionReviewPdfPanel
+            questionId={question?.id ?? selectedId}
+            year={question?.ano ?? items.find((item) => item.id === selectedId)?.ano ?? null}
+            number={question?.numero ?? items.find((item) => item.id === selectedId)?.numero ?? null}
+          />
         </div>
       </div>
     </AppLayout>
   );
+}
+
+function ReviewStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-xl border bg-card px-4 py-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
+    </div>
+  );
+}
+
+function formatReviewDate(value: string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? value
+    : new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(date);
 }
 
 function MetadataGroup({ title, children }: { title: string; children: ReactNode }) {
@@ -610,6 +942,13 @@ function normalizeListItem(row: Partial<ReviewListItem>): ReviewListItem {
     conteudo_principal: row.conteudo_principal ?? null,
     subconteudo_principal: row.subconteudo_principal ?? null,
     grupo_id: row.grupo_id ?? null,
+    total_criteria: Number(row.total_criteria ?? 8),
+    completed_criteria: Number(row.completed_criteria ?? 0),
+    pending_criteria: Number(row.pending_criteria ?? 8),
+    attention_criteria: Number(row.attention_criteria ?? 0),
+    is_complete: Boolean(row.is_complete),
+    adjustment_count: Number(row.adjustment_count ?? 0),
+    last_adjustment_at: row.last_adjustment_at ?? null,
   };
 }
 
