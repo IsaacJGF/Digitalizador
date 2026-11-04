@@ -571,7 +571,28 @@ function ReviewWorkspace() {
           </Button>
         </header>
 
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumo das revisões">
+          <ReviewStat label="Questões cadastradas" value={stats.total} />
+          <ReviewStat label="Conferidas por completo" value={stats.completed} />
+          <ReviewStat label="Com pendências" value={stats.pending} />
+          <ReviewStat label="Alteradas após conferência" value={stats.changed} />
+        </section>
+
         <section className="space-y-3 rounded-xl border bg-card p-3" aria-label="Filtros da revisão">
+          <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="Fila de revisão">
+            <Button type="button" size="sm" variant={queueMode === "pending" ? "default" : "outline"} onClick={() => setQueueMode("pending")}>
+              Pendentes ({stats.pending})
+            </Button>
+            <Button type="button" size="sm" variant={queueMode === "changed" ? "default" : "outline"} onClick={() => setQueueMode("changed")}>
+              Alteradas ({stats.changed})
+            </Button>
+            <Button type="button" size="sm" variant={queueMode === "all" ? "default" : "outline"} onClick={() => setQueueMode("all")}>
+              Todas ({stats.total})
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              A fila abre em Pendentes e pula questões concluídas.
+            </span>
+          </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -615,16 +636,18 @@ function ReviewWorkspace() {
             </Button>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-2 text-sm text-muted-foreground">
-            <p>{total} questão{total === 1 ? "" : "ões"} para revisar</p>
+            <p>{total} questão{total === 1 ? "" : "ões"} {queueMode === "pending" ? "pendente" : queueMode === "changed" ? "alterada" : "encontrada"}{total === 1 ? "" : "s"}</p>
             <p>Página {Math.min(page + 1, totalPages)} de {totalPages}</p>
           </div>
         </section>
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(260px,340px)_minmax(0,1fr)]">
+        <div className="grid gap-4 xl:grid-cols-[minmax(250px,300px)_minmax(0,1.2fr)_minmax(320px,0.8fr)]">
           <aside className="flex min-h-[360px] flex-col overflow-hidden rounded-xl border bg-card">
             <div className="border-b px-4 py-3">
               <h2 className="font-semibold">Fila</h2>
-              <p className="text-xs text-muted-foreground">Selecione uma questão para conferir.</p>
+              <p className="text-xs text-muted-foreground">
+                {queueMode === "pending" ? "Questões com algum critério não concluído." : queueMode === "changed" ? "Questões editadas depois de uma conferência." : "Histórico completo de questões."}
+              </p>
             </div>
             <div className="max-h-[70vh] flex-1 overflow-y-auto p-2">
               {loadingList && items.length === 0 ? (
@@ -653,7 +676,12 @@ function ReviewWorkspace() {
                           </span>
                         </div>
                         <p className="mt-1 line-clamp-3 text-sm text-foreground">{excerpt || "Enunciado não preenchido."}</p>
-                        {item.area_geral && <span className="mt-2 inline-block text-[11px] text-muted-foreground">{item.area_geral}</span>}
+                        <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] text-muted-foreground">
+                          <span>{item.completed_criteria}/{item.total_criteria} critérios concluídos</span>
+                          {item.pending_criteria > 0 && <span>· {item.pending_criteria} pendentes</span>}
+                          {item.attention_criteria > 0 && <span className="text-amber-600 dark:text-amber-400">· {item.attention_criteria} precisam de atenção</span>}
+                          {item.adjustment_count > 0 && <span className="text-primary">· {item.adjustment_count} ajuste(s) após revisão</span>}
+                        </div>
                       </button>
                     );
                   })}
@@ -745,6 +773,91 @@ function ReviewWorkspace() {
                     </MetadataGroup>
                   </div>
                 </section>
+
+                <section className="space-y-3 rounded-xl border bg-card p-4" aria-label="Checklist de revisão">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <h2 className="font-semibold">Checklist da questão</h2>
+                      <p className="text-xs text-muted-foreground">
+                        Marque cada critério. Questões com itens incompletos continuam na fila de pendentes.
+                      </p>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {reviewChecks.filter((check) => check.status === "conferido_ok" || check.status === "nao_se_aplica").length}/8 concluídos
+                    </span>
+                  </div>
+                  {reviewMetadataLoading ? (
+                    <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+                      <Loader2 className="size-4 animate-spin" /> Carregando checklist e histórico...
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {REVIEW_CRITERIA.map(({ id, label }) => {
+                        const check = reviewChecks.find((item) => item.criterio === id);
+                        const status = check?.status ?? "pendente";
+                        return (
+                          <div key={id} className="grid gap-2 rounded-lg border p-3 md:grid-cols-[minmax(130px,0.7fr)_minmax(210px,1fr)_minmax(180px,1fr)] md:items-center">
+                            <div>
+                              <p className="text-sm font-medium">{label}</p>
+                              {check?.updated_at && <p className="text-[10px] text-muted-foreground">Atualizado {formatReviewDate(check.updated_at)}</p>}
+                            </div>
+                            <Select
+                              value={status}
+                              onValueChange={(value) => void updateReviewCheck(id, value as ReviewStatus)}
+                              disabled={!check}
+                            >
+                              <SelectTrigger aria-label={"Estado de revisão: " + label}><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {REVIEW_STATUSES.map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Input
+                              value={noteDrafts[id] ?? check?.observacao ?? ""}
+                              placeholder={status === "duvida" ? "Descreva a dúvida..." : "Anotação interna (opcional)"}
+                              aria-label={"Anotação interna: " + label}
+                              disabled={!check}
+                              onChange={(event) => setNoteDrafts((currentNotes) => ({ ...currentNotes, [id]: event.target.value }))}
+                              onBlur={() => {
+                                const note = noteDrafts[id] ?? check?.observacao ?? "";
+                                if (check && note !== check.observacao) void updateReviewCheck(id, undefined, note);
+                              }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+
+                <details className="rounded-xl border bg-card p-4">
+                  <summary className="cursor-pointer font-semibold">
+                    Histórico desta questão ({reviewHistory.length}{reviewHistory.length === 60 ? "+" : ""})
+                  </summary>
+                  {reviewHistory.length === 0 ? (
+                    <p className="mt-3 text-sm text-muted-foreground">Ainda não há alterações de checklist registradas.</p>
+                  ) : (
+                    <ol className="mt-3 space-y-2">
+                      {reviewHistory.map((event) => (
+                        <li key={event.id} className="rounded-md bg-muted/40 px-3 py-2 text-sm">
+                          <div className="flex flex-wrap items-baseline justify-between gap-2">
+                            <span className="font-medium">
+                              {REVIEW_CRITERIA.find((item) => item.id === event.criterio)?.label ?? event.criterio}
+                              {event.status_anterior ? " · " + REVIEW_STATUS_LABELS[event.status_anterior] : ""}
+                              {" → " + REVIEW_STATUS_LABELS[event.status_novo]}
+                            </span>
+                            <time className="text-xs text-muted-foreground">{formatReviewDate(event.changed_at)}</time>
+                          </div>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {event.motivo === "questao_editada" ? "Edição da questão" : "Atualização do checklist"}
+                            {event.observacao ? " · " + event.observacao : ""}
+                          </p>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </details>
               </>
             ) : (
               <div className="flex min-h-[300px] items-center justify-center rounded-xl border border-dashed bg-card p-8 text-center text-sm text-muted-foreground">
@@ -752,6 +865,12 @@ function ReviewWorkspace() {
               </div>
             )}
           </main>
+
+          <QuestionReviewPdfPanel
+            questionId={question?.id ?? selectedId}
+            year={question?.ano ?? items.find((item) => item.id === selectedId)?.ano ?? null}
+            number={question?.numero ?? items.find((item) => item.id === selectedId)?.numero ?? null}
+          />
         </div>
       </div>
     </AppLayout>
