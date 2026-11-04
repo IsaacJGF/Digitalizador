@@ -416,13 +416,14 @@ function ReviewWorkspace() {
       toast.error("O critério ainda não foi inicializado. Verifique a migração da revisão.");
       return;
     }
+    const questionId = question.id;
     const nextStatus = status ?? current.status;
     const nextNote = note ?? noteDrafts[criterion] ?? current.observacao;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from("question_review_checks")
       .update({ status: nextStatus, observacao: nextNote })
-      .eq("question_id", question.id)
+      .eq("question_id", questionId)
       .eq("criterio", criterion)
       .select("*")
       .single();
@@ -432,9 +433,11 @@ function ReviewWorkspace() {
       return;
     }
     const updated = data as ReviewCheck;
-    setReviewChecks((currentChecks) => currentChecks.map((check) => check.criterio === criterion ? updated : check));
-    setNoteDrafts((currentNotes) => ({ ...currentNotes, [criterion]: updated.observacao ?? "" }));
-    await loadReviewMetadata(question.id);
+    if (selectedIdRef.current === questionId) {
+      setReviewChecks((currentChecks) => currentChecks.map((check) => check.criterio === criterion ? updated : check));
+      setNoteDrafts((currentNotes) => ({ ...currentNotes, [criterion]: updated.observacao ?? "" }));
+      await loadReviewMetadata(questionId);
+    }
     setReviewRefreshKey((value) => value + 1);
     toast.success("Critério de revisão atualizado.");
   };
