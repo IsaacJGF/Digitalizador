@@ -329,10 +329,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _apply_question_image_attachments: {
+        Args: {
+          _attachments: Json
+          _images: Json
+          _legacy_main_image: string
+          _legacy_text_after: string
+          _question_id: string
+          _text: string
+        }
+        Returns: Json
+      }
       count_catalog_usage: {
         Args: { _kind: string; _name: string }
         Returns: number
       }
+      import_question_images_batch: { Args: { _items: Json }; Returns: Json }
     }
     Enums: {
       [_ in never]: never

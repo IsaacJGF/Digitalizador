@@ -637,7 +637,7 @@ function normalizeQuestion(row: Record<string, unknown>): ReviewQuestion {
     numero: nullable(row.numero),
     tipo: typeof row.tipo === "string" ? row.tipo : "multipla_escolha",
     enunciado: typeof row.enunciado === "string" ? row.enunciado : "",
-    alternativas,
+    alternativas: alternatives,
     resposta: nullable(row.resposta),
     fonte: nullable(row.fonte),
     enunciado_imagem: nullable(row.enunciado_imagem),
