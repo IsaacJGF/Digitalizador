@@ -233,7 +233,7 @@ function ReviewWorkspace() {
       }
     })();
     return () => { cancelled = true; };
-  }, [initialized, page, debouncedQuery, filterKey]);
+  }, [initialized, page, debouncedQuery, filters]);
 
   const loadQuestion = useCallback(async (id: string) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
