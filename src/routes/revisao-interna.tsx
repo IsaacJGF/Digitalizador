@@ -377,6 +377,7 @@ function ReviewWorkspace() {
   useEffect(() => {
     if (!selectedId) {
       reviewMetadataRequestIdRef.current += 1;
+      setReviewMetadataLoading(false);
       setReviewChecks([]);
       setReviewHistory([]);
       setNoteDrafts({});
