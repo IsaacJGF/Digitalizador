@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ExternalLink, FileUp, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,13 +70,20 @@ export function QuestionReviewPdfPanel({
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const objectUrlRef = useRef("");
+
+  const replaceObjectUrl = (blob: Blob | null) => {
+    if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+    objectUrlRef.current = blob ? URL.createObjectURL(blob) : "";
+    setPdfUrl(objectUrlRef.current);
+  };
 
   useEffect(() => {
     let active = true;
     void readStoredPdf()
       .then((pdf) => {
         if (!active || !pdf) return;
-        setPdfUrl(URL.createObjectURL(pdf.blob));
+        replaceObjectUrl(pdf.blob);
         setFileName(pdf.name);
       })
       .catch((error) => {
@@ -85,10 +92,8 @@ export function QuestionReviewPdfPanel({
       .finally(() => { if (active) setLoading(false); });
     return () => {
       active = false;
-      setPdfUrl((current) => {
-        if (current) URL.revokeObjectURL(current);
-        return "";
-      });
+      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = "";
     };
   }, []);
 
@@ -117,10 +122,7 @@ export function QuestionReviewPdfPanel({
     setSaving(true);
     try {
       await saveStoredPdf({ blob: file, name: file.name });
-      setPdfUrl((current) => {
-        if (current) URL.revokeObjectURL(current);
-        return URL.createObjectURL(file);
-      });
+      replaceObjectUrl(file);
       setFileName(file.name);
       savePage(1);
       toast.success("PDF salvo neste navegador.");
@@ -135,10 +137,7 @@ export function QuestionReviewPdfPanel({
   const removePdf = async () => {
     try {
       await saveStoredPdf(null);
-      setPdfUrl((current) => {
-        if (current) URL.revokeObjectURL(current);
-        return "";
-      });
+      replaceObjectUrl(null);
       setFileName("");
       toast.success("PDF removido deste navegador.");
     } catch (error) {
