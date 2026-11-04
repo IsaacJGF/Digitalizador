@@ -16,6 +16,8 @@ import { Route as DocumentoRouteImport } from './routes/documento'
 import { Route as QuestoesRouteImport } from './routes/questoes'
 import { Route as RevisaoInternaRouteImport } from './routes/revisao-interna'
 import { Route as RevisarRouteImport } from './routes/revisar'
+import { Route as ApiQuestionImageIngestRouteImport } from './routes/api.question-image-ingest'
+import { Route as ApiQuestionIngestRouteImport } from './routes/api.question-ingest'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -52,6 +54,16 @@ const RevisarRoute = RevisarRouteImport.update({
   path: '/revisar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiQuestionImageIngestRoute = ApiQuestionImageIngestRouteImport.update({
+  id: '/api/question-image-ingest',
+  path: '/api/question-image-ingest',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiQuestionIngestRoute = ApiQuestionIngestRouteImport.update({
+  id: '/api/question-ingest',
+  path: '/api/question-ingest',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -61,6 +73,8 @@ export interface FileRoutesByFullPath {
   '/questoes': typeof QuestoesRoute
   '/revisao-interna': typeof RevisaoInternaRoute
   '/revisar': typeof RevisarRoute
+  '/api/question-image-ingest': typeof ApiQuestionImageIngestRoute
+  '/api/question-ingest': typeof ApiQuestionIngestRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +84,8 @@ export interface FileRoutesByTo {
   '/questoes': typeof QuestoesRoute
   '/revisao-interna': typeof RevisaoInternaRoute
   '/revisar': typeof RevisarRoute
+  '/api/question-image-ingest': typeof ApiQuestionImageIngestRoute
+  '/api/question-ingest': typeof ApiQuestionIngestRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +96,8 @@ export interface FileRoutesById {
   '/questoes': typeof QuestoesRoute
   '/revisao-interna': typeof RevisaoInternaRoute
   '/revisar': typeof RevisarRoute
+  '/api/question-image-ingest': typeof ApiQuestionImageIngestRoute
+  '/api/question-ingest': typeof ApiQuestionIngestRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +109,8 @@ export interface FileRouteTypes {
     | '/questoes'
     | '/revisao-interna'
     | '/revisar'
+    | '/api/question-image-ingest'
+    | '/api/question-ingest'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +120,8 @@ export interface FileRouteTypes {
     | '/questoes'
     | '/revisao-interna'
     | '/revisar'
+    | '/api/question-image-ingest'
+    | '/api/question-ingest'
   id:
     | '__root__'
     | '/'
@@ -109,6 +131,8 @@ export interface FileRouteTypes {
     | '/questoes'
     | '/revisao-interna'
     | '/revisar'
+    | '/api/question-image-ingest'
+    | '/api/question-ingest'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,6 +143,8 @@ export interface RootRouteChildren {
   QuestoesRoute: typeof QuestoesRoute
   RevisaoInternaRoute: typeof RevisaoInternaRoute
   RevisarRoute: typeof RevisarRoute
+  ApiQuestionImageIngestRoute: typeof ApiQuestionImageIngestRoute
+  ApiQuestionIngestRoute: typeof ApiQuestionIngestRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -172,6 +198,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RevisarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/question-image-ingest': {
+      id: '/api/question-image-ingest'
+      path: '/api/question-image-ingest'
+      fullPath: '/api/question-image-ingest'
+      preLoaderRoute: typeof ApiQuestionImageIngestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/question-ingest': {
+      id: '/api/question-ingest'
+      path: '/api/question-ingest'
+      fullPath: '/api/question-ingest'
+      preLoaderRoute: typeof ApiQuestionIngestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -183,6 +223,8 @@ const rootRouteChildren: RootRouteChildren = {
   QuestoesRoute: QuestoesRoute,
   RevisaoInternaRoute: RevisaoInternaRoute,
   RevisarRoute: RevisarRoute,
+  ApiQuestionImageIngestRoute: ApiQuestionImageIngestRoute,
+  ApiQuestionIngestRoute: ApiQuestionIngestRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
