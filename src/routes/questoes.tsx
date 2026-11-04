@@ -22,6 +22,7 @@ import {
   RotateCcw,
   RotateCw,
   Eye,
+  ClipboardCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -230,6 +231,7 @@ function Page() {
   const [expandedPosition, setExpandedPosition] = useState<number | null>(null);
   const [expandedLoading, setExpandedLoading] = useState(false);
   const detailRequestIdRef = useRef(0);
+  const autoEditHandledRef = useRef(false);
   const [referenceDialog, setReferenceDialog] = useState<ReferenceDialogState | null>(null);
   const [referenceGroup, setReferenceGroup] = useState<ReferenceGroupState | null>(null);
   const [referenceLoading, setReferenceLoading] = useState<string | null>(null);
@@ -404,7 +406,7 @@ function Page() {
     }
   };
 
-  const fetchFullQuestion = async (id: string): Promise<Q | null> => {
+  const fetchFullQuestion = useCallback(async (id: string): Promise<Q | null> => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from("questions")
@@ -417,7 +419,7 @@ function Page() {
       return null;
     }
     return normalizeRow(data as Partial<Q>);
-  };
+  }, []);
 
   const openQuestionDetails = async (question: Q) => {
     const requestId = ++detailRequestIdRef.current;
@@ -482,11 +484,36 @@ function Page() {
     setExpandedLoading(false);
   };
 
-  const openQuestionEditor = async (question: Q) => {
-    const full = await fetchFullQuestion(question.id);
+  const openQuestionEditorById = useCallback(async (id: string) => {
+    const full = await fetchFullQuestion(id);
     if (!full) return;
     setEditing(full);
     setEditDraft(toEditDraft(full));
+  }, [fetchFullQuestion]);
+
+  const openQuestionEditor = useCallback((question: Q) => {
+    return openQuestionEditorById(question.id);
+  }, [openQuestionEditorById]);
+
+  useEffect(() => {
+    if (autoEditHandledRef.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const questionId = params.get("editar");
+    if (!questionId) return;
+
+    autoEditHandledRef.current = true;
+    params.delete("editar");
+    const search = params.toString();
+    const nextUrl = window.location.pathname + (search ? "?" + search : "") + window.location.hash;
+    window.history.replaceState(window.history.state, "", nextUrl);
+    void openQuestionEditorById(questionId);
+  }, [openQuestionEditorById]);
+
+  const closeQuestionEditor = () => {
+    setEditing(null);
+    setEditDraft(null);
+    const returnTo = getReviewReturnTarget();
+    if (returnTo) window.location.assign(returnTo);
   };
 
   const openReferenceDialog = async (question: Q) => {
@@ -672,6 +699,8 @@ function Page() {
       setEditing(null);
       setEditDraft(null);
       toast.success(hasSharedReference ? "Questão e referência do grupo atualizadas." : "Questão atualizada.");
+      const returnTo = getReviewReturnTarget();
+      if (returnTo) window.location.assign(returnTo);
     } catch (error) {
       console.error("Falha inesperada ao salvar edição:", error);
       toast.error("Falha ao salvar edição. Verifique sua conexão e tente novamente.");
@@ -731,7 +760,10 @@ function Page() {
               {sel.size > 0 ? ` · ${sel.size} selecionada${sel.size > 1 ? "s" : ""}` : ""}
             </p>
           </div>
-          <Button asChild className="gap-2"><Link to="/"><ScanLine className="size-4" /> Nova questão</Link></Button>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" className="gap-2"><Link to="/revisao-interna"><ClipboardCheck className="size-4" /> Revisão interna</Link></Button>
+            <Button asChild className="gap-2"><Link to="/"><ScanLine className="size-4" /> Nova questão</Link></Button>
+          </div>
         </div>
 
         <div className="mb-3 rounded-xl border bg-card p-3">
@@ -871,7 +903,7 @@ function Page() {
         />
         <ReferenceViewDialog state={referenceDialog} onClose={() => setReferenceDialog(null)} onDraftChange={(patch) => setReferenceDialog((current) => current ? { ...current, draft: { ...current.draft, ...patch } } : current)} onStartEdit={() => setReferenceDialog((current) => current ? { ...current, editing: true } : current)} onCancelEdit={() => setReferenceDialog((current) => current ? { ...current, draft: toReferenceDraft(current.question), editing: false } : current)} onSave={saveReferenceEdit} />
         <ReferenceGroupDialog group={referenceGroup?.items ?? []} selectedIds={referenceGroup?.selected ?? new Set()} assessmentIds={sel} onToggle={toggleReferenceGroupItem} onSelectAll={selectAllReferenceGroupItems} onClear={clearReferenceGroupItems} onAdd={addReferenceGroupSelection} onClose={() => setReferenceGroup(null)} />
-        <EditQuestionDialog question={editing} draft={editDraft} saving={savingEdit} areas={areas} conteudos={catalogConteudos} subconteudos={subconteudos} relacionados={relacionados} tags={tagsCat} provas={provas} instituicoes={instituicoes} onDraftChange={setEditDraft} onClose={() => { setEditing(null); setEditDraft(null); }} onSave={saveQuestionEdit} onDelete={onDelete} />
+        <EditQuestionDialog question={editing} draft={editDraft} saving={savingEdit} areas={areas} conteudos={catalogConteudos} subconteudos={subconteudos} relacionados={relacionados} tags={tagsCat} provas={provas} instituicoes={instituicoes} onDraftChange={setEditDraft} onClose={closeQuestionEditor} onSave={saveQuestionEdit} onDelete={onDelete} />
 
         {sel.size > 0 && (
           <div className="fixed bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-center gap-4 rounded-full bg-primary px-5 py-3 text-primary-foreground shadow-lg">
@@ -1593,6 +1625,19 @@ function CompactPedagogicalInfo({ question }: { question: Q }) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getReviewReturnTarget(): string | null {
+  if (typeof window === "undefined") return null;
+  const raw = new URLSearchParams(window.location.search).get("voltar");
+  if (!raw) return null;
+  try {
+    const target = new URL(raw, window.location.origin);
+    if (target.origin !== window.location.origin || target.pathname !== "/revisao-interna") return null;
+    return target.pathname + target.search + target.hash;
+  } catch {
+    return null;
+  }
+}
+
 function applySupabaseFilters(query: any, search: string, filters: AdvancedFilters) {
   const term = search.trim();
   if (term) {
