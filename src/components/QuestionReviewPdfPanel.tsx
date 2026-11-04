@@ -124,6 +124,7 @@ export function QuestionReviewPdfPanel({
       await saveStoredPdf({ blob: file, name: file.name });
       replaceObjectUrl(file);
       setFileName(file.name);
+      localStorage.removeItem(PAGE_MAP_KEY);
       savePage(1);
       toast.success("PDF salvo neste navegador.");
     } catch (error) {
@@ -139,6 +140,7 @@ export function QuestionReviewPdfPanel({
       await saveStoredPdf(null);
       replaceObjectUrl(null);
       setFileName("");
+      localStorage.removeItem(PAGE_MAP_KEY);
       toast.success("PDF removido deste navegador.");
     } catch (error) {
       console.error("Falha ao remover PDF de referência:", error);
