@@ -14,6 +14,7 @@ import { Route as AnaliseProvasRouteImport } from './routes/analise-provas'
 import { Route as CatalogosRouteImport } from './routes/catalogos'
 import { Route as DocumentoRouteImport } from './routes/documento'
 import { Route as QuestoesRouteImport } from './routes/questoes'
+import { Route as RevisaoInternaRouteImport } from './routes/revisao-interna'
 import { Route as RevisarRouteImport } from './routes/revisar'
 
 const IndexRoute = IndexRouteImport.update({
@@ -41,6 +42,11 @@ const QuestoesRoute = QuestoesRouteImport.update({
   path: '/questoes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RevisaoInternaRoute = RevisaoInternaRouteImport.update({
+  id: '/revisao-interna',
+  path: '/revisao-interna',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RevisarRoute = RevisarRouteImport.update({
   id: '/revisar',
   path: '/revisar',
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/catalogos': typeof CatalogosRoute
   '/documento': typeof DocumentoRoute
   '/questoes': typeof QuestoesRoute
+  '/revisao-interna': typeof RevisaoInternaRoute
   '/revisar': typeof RevisarRoute
 }
 export interface FileRoutesByTo {
@@ -61,6 +68,7 @@ export interface FileRoutesByTo {
   '/catalogos': typeof CatalogosRoute
   '/documento': typeof DocumentoRoute
   '/questoes': typeof QuestoesRoute
+  '/revisao-interna': typeof RevisaoInternaRoute
   '/revisar': typeof RevisarRoute
 }
 export interface FileRoutesById {
@@ -70,6 +78,7 @@ export interface FileRoutesById {
   '/catalogos': typeof CatalogosRoute
   '/documento': typeof DocumentoRoute
   '/questoes': typeof QuestoesRoute
+  '/revisao-interna': typeof RevisaoInternaRoute
   '/revisar': typeof RevisarRoute
 }
 export interface FileRouteTypes {
@@ -80,6 +89,7 @@ export interface FileRouteTypes {
     | '/catalogos'
     | '/documento'
     | '/questoes'
+    | '/revisao-interna'
     | '/revisar'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -88,6 +98,7 @@ export interface FileRouteTypes {
     | '/catalogos'
     | '/documento'
     | '/questoes'
+    | '/revisao-interna'
     | '/revisar'
   id:
     | '__root__'
@@ -96,6 +107,7 @@ export interface FileRouteTypes {
     | '/catalogos'
     | '/documento'
     | '/questoes'
+    | '/revisao-interna'
     | '/revisar'
   fileRoutesById: FileRoutesById
 }
@@ -105,6 +117,7 @@ export interface RootRouteChildren {
   CatalogosRoute: typeof CatalogosRoute
   DocumentoRoute: typeof DocumentoRoute
   QuestoesRoute: typeof QuestoesRoute
+  RevisaoInternaRoute: typeof RevisaoInternaRoute
   RevisarRoute: typeof RevisarRoute
 }
 
@@ -145,6 +158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof QuestoesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/revisao-interna': {
+      id: '/revisao-interna'
+      path: '/revisao-interna'
+      fullPath: '/revisao-interna'
+      preLoaderRoute: typeof RevisaoInternaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/revisar': {
       id: '/revisar'
       path: '/revisar'
@@ -161,6 +181,7 @@ const rootRouteChildren: RootRouteChildren = {
   CatalogosRoute: CatalogosRoute,
   DocumentoRoute: DocumentoRoute,
   QuestoesRoute: QuestoesRoute,
+  RevisaoInternaRoute: RevisaoInternaRoute,
   RevisarRoute: RevisarRoute,
 }
 export const routeTree = rootRouteImport
