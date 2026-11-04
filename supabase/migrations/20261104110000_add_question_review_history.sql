@@ -273,6 +273,7 @@ CREATE OR REPLACE VIEW public.question_review_queue AS
 SELECT
   q.id, q.numero, q.ano, q.prova, q.instituicao, q.enunciado,
   q.area_geral, q.conteudo_principal, q.subconteudo_principal, q.grupo_id,
+  q.fonte, q.referencia_texto, q.referencia_texto_apos, q.referencia_fonte,
   s.total_criteria, s.completed_criteria, s.pending_criteria,
   s.attention_criteria, s.is_complete, s.adjustment_count, s.last_adjustment_at
 FROM public.questions q
