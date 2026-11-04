@@ -13,7 +13,10 @@ import {
 import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CatalogMultiSelect } from "@/components/CatalogSelect";
+import { QuestionReviewPdfPanel } from "@/components/QuestionReviewPdfPanel";
 import { QuestionPreviewContent } from "@/components/QuestionPreviewDialog";
 import type { PreviewQuestion } from "@/components/QuestionPreviewDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,10 +37,46 @@ const SUMMARY_COLUMNS = [
   "conteudo_principal",
   "subconteudo_principal",
   "grupo_id",
+  "fonte",
+  "referencia_texto",
+  "referencia_texto_apos",
+  "referencia_fonte",
+  "total_criteria",
+  "completed_criteria",
+  "pending_criteria",
+  "attention_criteria",
+  "is_complete",
+  "adjustment_count",
+  "last_adjustment_at",
 ].join(",");
 
 type CatalogOption = { id: string; nome: string; ativo: boolean };
 type ReviewFilters = { anos: string[]; provas: string[]; instituicoes: string[] };
+type ReviewCriterion =
+  | "texto_base" | "enunciado" | "alternativas" | "gabarito"
+  | "imagens" | "formatacao" | "dados_prova" | "classificacao";
+type ReviewStatus =
+  | "pendente" | "precisa_ajuste" | "ajustado_pendente_conferencia"
+  | "conferido_ok" | "nao_se_aplica" | "duvida";
+type ReviewQueueMode = "pending" | "changed" | "all";
+type ReviewCheck = {
+  question_id: string;
+  criterio: ReviewCriterion;
+  status: ReviewStatus;
+  observacao: string;
+  updated_at: string;
+};
+type ReviewHistoryEntry = {
+  id: string;
+  question_id: string;
+  criterio: ReviewCriterion;
+  status_anterior: ReviewStatus | null;
+  status_novo: ReviewStatus;
+  observacao: string;
+  motivo: "manual" | "questao_editada";
+  changed_at: string;
+};
+type ReviewStats = { total: number; completed: number; pending: number; changed: number };
 type ReviewListItem = {
   id: string;
   numero: string | null;
@@ -49,6 +88,13 @@ type ReviewListItem = {
   conteudo_principal: string | null;
   subconteudo_principal: string | null;
   grupo_id: string | null;
+  total_criteria: number;
+  completed_criteria: number;
+  pending_criteria: number;
+  attention_criteria: number;
+  is_complete: boolean;
+  adjustment_count: number;
+  last_adjustment_at: string | null;
 };
 type ReviewQuestion = PreviewQuestion & {
   id: string;
@@ -78,6 +124,27 @@ type ReviewQuestion = PreviewQuestion & {
 };
 
 const EMPTY_FILTERS: ReviewFilters = { anos: [], provas: [], instituicoes: [] };
+const REVIEW_CRITERIA: Array<{ id: ReviewCriterion; label: string }> = [
+  { id: "texto_base", label: "Texto-base" },
+  { id: "enunciado", label: "Enunciado" },
+  { id: "alternativas", label: "Alternativas" },
+  { id: "gabarito", label: "Gabarito" },
+  { id: "imagens", label: "Imagens" },
+  { id: "formatacao", label: "Formatação" },
+  { id: "dados_prova", label: "Dados da prova" },
+  { id: "classificacao", label: "Classificação" },
+];
+const REVIEW_STATUSES: Array<{ value: ReviewStatus; label: string }> = [
+  { value: "pendente", label: "Pendente" },
+  { value: "precisa_ajuste", label: "Precisa de ajuste" },
+  { value: "ajustado_pendente_conferencia", label: "Ajuste feito — falta conferir" },
+  { value: "conferido_ok", label: "Conferido — OK" },
+  { value: "nao_se_aplica", label: "Não se aplica" },
+  { value: "duvida", label: "Dúvida" },
+];
+const REVIEW_STATUS_LABELS = Object.fromEntries(
+  REVIEW_STATUSES.map((status) => [status.value, status.label]),
+) as Record<ReviewStatus, string>;
 
 export const Route = createFileRoute("/revisao-interna")({
   head: () => ({ meta: [{ title: "Revisão interna de questões" }] }),
@@ -100,6 +167,13 @@ function ReviewWorkspace() {
   const [loadingQuestion, setLoadingQuestion] = useState(false);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
+  const [queueMode, setQueueMode] = useState<ReviewQueueMode>("pending");
+  const [reviewChecks, setReviewChecks] = useState<ReviewCheck[]>([]);
+  const [reviewHistory, setReviewHistory] = useState<ReviewHistoryEntry[]>([]);
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
+  const [reviewMetadataLoading, setReviewMetadataLoading] = useState(false);
+  const [reviewRefreshKey, setReviewRefreshKey] = useState(0);
+  const [stats, setStats] = useState<ReviewStats>({ total: 0, completed: 0, pending: 0, changed: 0 });
   const [copied, setCopied] = useState(false);
   const pendingPageDirection = useRef<"first" | "last" | null>(null);
   const preferredQuestionId = useRef("");
@@ -174,7 +248,7 @@ function ReviewWorkspace() {
     preferredQuestionId.current = "";
     setPage(0);
     setSelectedId("");
-  }, [debouncedQuery, filterKey, initialized]);
+  }, [debouncedQuery, filterKey, initialized, queueMode]);
 
   useEffect(() => {
     if (!initialized) return;
@@ -184,7 +258,9 @@ function ReviewWorkspace() {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const db = supabase as any;
-        let request = db.from("questions").select(SUMMARY_COLUMNS, { count: "exact" });
+        let request = db.from("question_review_queue").select(SUMMARY_COLUMNS, { count: "exact" });
+        if (queueMode === "pending") request = request.eq("is_complete", false);
+        if (queueMode === "changed") request = request.gt("adjustment_count", 0);
         const term = debouncedQuery.trim().replace(/[^a-zA-ZÀ-ÿ0-9\s-]/g, " ").replace(/\s+/g, " ").trim();
         if (term) {
           request = request.or(
@@ -211,6 +287,10 @@ function ReviewWorkspace() {
         }
 
         const rows = ((data ?? []) as Array<Partial<ReviewListItem>>).map(normalizeListItem);
+        if (rows.length === 0 && (count ?? 0) > 0 && page > 0) {
+          setPage(Math.max(0, Math.ceil((count ?? 0) / PAGE_SIZE) - 1));
+          return;
+        }
         setItems(rows);
         setTotal(count ?? 0);
         const preferred = preferredQuestionId.current;
@@ -233,7 +313,7 @@ function ReviewWorkspace() {
       }
     })();
     return () => { cancelled = true; };
-  }, [initialized, page, debouncedQuery, filters]);
+  }, [initialized, page, debouncedQuery, filters, queueMode, reviewRefreshKey]);
 
   const loadQuestion = useCallback(async (id: string) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -264,6 +344,96 @@ function ReviewWorkspace() {
       .finally(() => { if (!cancelled) setLoadingQuestion(false); });
     return () => { cancelled = true; };
   }, [selectedId, loadQuestion]);
+
+  const loadReviewMetadata = useCallback(async (id: string) => {
+    setReviewMetadataLoading(true);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabase as any;
+      const [checksResult, historyResult] = await Promise.all([
+        db.from("question_review_checks").select("*").eq("question_id", id).order("criterio"),
+        db.from("question_review_history").select("*").eq("question_id", id).order("changed_at", { ascending: false }).limit(60),
+      ]);
+      if (checksResult.error) throw checksResult.error;
+      if (historyResult.error) throw historyResult.error;
+      const checks = (checksResult.data ?? []) as ReviewCheck[];
+      setReviewChecks(checks);
+      setNoteDrafts(Object.fromEntries(checks.map((check) => [check.criterio, check.observacao ?? ""])));
+      setReviewHistory((historyResult.data ?? []) as ReviewHistoryEntry[]);
+    } catch (error) {
+      console.error("Falha ao carregar o histórico da revisão:", error);
+      toast.error("Não foi possível carregar o checklist. Verifique se a migração da revisão foi aplicada.");
+      setReviewChecks([]);
+      setReviewHistory([]);
+      setNoteDrafts({});
+    } finally {
+      setReviewMetadataLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!selectedId) {
+      setReviewChecks([]);
+      setReviewHistory([]);
+      setNoteDrafts({});
+      return;
+    }
+    void loadReviewMetadata(selectedId);
+  }, [selectedId, loadReviewMetadata]);
+
+  useEffect(() => {
+    let cancelled = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+    const count = async (filter?: (query: any) => any) => {
+      let request = db.from("question_review_summary").select("question_id", { count: "exact", head: true });
+      if (filter) request = filter(request);
+      const result = await request;
+      if (result.error) throw result.error;
+      return result.count ?? 0;
+    };
+    void Promise.all([
+      count(),
+      count((request) => request.eq("is_complete", true)),
+      count((request) => request.eq("is_complete", false)),
+      count((request) => request.gt("adjustment_count", 0)),
+    ]).then(([totalCount, completedCount, pendingCount, changedCount]) => {
+      if (!cancelled) setStats({ total: totalCount, completed: completedCount, pending: pendingCount, changed: changedCount });
+    }).catch((error) => {
+      if (!cancelled) console.error("Falha ao carregar resumo da revisão:", error);
+    });
+    return () => { cancelled = true; };
+  }, [reviewRefreshKey]);
+
+  const updateReviewCheck = async (criterion: ReviewCriterion, status?: ReviewStatus, note?: string) => {
+    if (!question) return;
+    const current = reviewChecks.find((check) => check.criterio === criterion);
+    if (!current) {
+      toast.error("O critério ainda não foi inicializado. Verifique a migração da revisão.");
+      return;
+    }
+    const nextStatus = status ?? current.status;
+    const nextNote = note ?? noteDrafts[criterion] ?? current.observacao;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
+      .from("question_review_checks")
+      .update({ status: nextStatus, observacao: nextNote })
+      .eq("question_id", question.id)
+      .eq("criterio", criterion)
+      .select("*")
+      .single();
+    if (error) {
+      console.error("Falha ao salvar checklist:", error);
+      toast.error("Não foi possível salvar este critério.");
+      return;
+    }
+    const updated = data as ReviewCheck;
+    setReviewChecks((currentChecks) => currentChecks.map((check) => check.criterio === criterion ? updated : check));
+    setNoteDrafts((currentNotes) => ({ ...currentNotes, [criterion]: updated.observacao ?? "" }));
+    await loadReviewMetadata(question.id);
+    setReviewRefreshKey((value) => value + 1);
+    toast.success("Critério de revisão atualizado.");
+  };
 
   const selectedIndex = items.findIndex((item) => item.id === selectedId);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
