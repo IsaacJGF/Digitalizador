@@ -38,25 +38,11 @@ CREATE INDEX IF NOT EXISTS question_review_history_question_date_idx
 ALTER TABLE public.question_review_checks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.question_review_history ENABLE ROW LEVEL SECURITY;
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.question_review_checks TO anon, authenticated;
-GRANT SELECT ON public.question_review_history TO anon, authenticated;
+-- Review data is internal: only the server (service_role) may access it.
+-- The app reaches these tables exclusively through password-gated server functions.
+REVOKE ALL ON public.question_review_checks, public.question_review_history FROM PUBLIC, anon, authenticated;
 GRANT ALL ON public.question_review_checks, public.question_review_history TO service_role;
-
-DROP POLICY IF EXISTS "Public read review checks" ON public.question_review_checks;
-CREATE POLICY "Public read review checks" ON public.question_review_checks
-  FOR SELECT TO anon, authenticated USING (true);
-DROP POLICY IF EXISTS "Public insert review checks" ON public.question_review_checks;
-CREATE POLICY "Public insert review checks" ON public.question_review_checks
-  FOR INSERT TO anon, authenticated WITH CHECK (true);
-DROP POLICY IF EXISTS "Public update review checks" ON public.question_review_checks;
-CREATE POLICY "Public update review checks" ON public.question_review_checks
-  FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
-DROP POLICY IF EXISTS "Public delete review checks" ON public.question_review_checks;
-CREATE POLICY "Public delete review checks" ON public.question_review_checks
-  FOR DELETE TO anon, authenticated USING (true);
-DROP POLICY IF EXISTS "Public read review history" ON public.question_review_history;
-CREATE POLICY "Public read review history" ON public.question_review_history
-  FOR SELECT TO anon, authenticated USING (true);
+-- RLS stays enabled with no policies for anon/authenticated, so even a stray grant exposes nothing.
 
 CREATE OR REPLACE FUNCTION public.log_question_review_check_change()
 RETURNS TRIGGER
@@ -279,4 +265,13 @@ SELECT
 FROM public.questions q
 JOIN public.question_review_summary s ON s.question_id = q.id;
 
-GRANT SELECT ON public.question_review_summary, public.question_review_queue TO anon, authenticated;
+-- Views run with the caller's permissions, so they never bypass the table protections above.
+ALTER VIEW public.question_review_summary SET (security_invoker = on);
+ALTER VIEW public.question_review_queue SET (security_invoker = on);
+REVOKE ALL ON public.question_review_summary, public.question_review_queue FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON public.question_review_summary, public.question_review_queue TO service_role;
+
+-- Trigger-only SECURITY DEFINER functions must not be callable through the public API.
+REVOKE EXECUTE ON FUNCTION public.log_question_review_check_change() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.initialize_question_review_checks() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.reset_affected_question_review_checks() FROM PUBLIC, anon, authenticated;
