@@ -26,7 +26,7 @@ function openPdfDatabase(): Promise<IDBDatabase> {
 
 async function readStoredPdf(): Promise<StoredPdf | null> {
   const database = await openPdfDatabase();
-  return new Promise((resolve, reject) => {
+  return new Promise<StoredPdf | null>((resolve, reject) => {
     const request = database.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME).get(PDF_KEY);
     request.onsuccess = () => resolve((request.result as StoredPdf | undefined) ?? null);
     request.onerror = () => reject(request.error ?? new Error("Falha ao ler o PDF salvo."));
@@ -35,7 +35,7 @@ async function readStoredPdf(): Promise<StoredPdf | null> {
 
 async function saveStoredPdf(pdf: StoredPdf | null): Promise<void> {
   const database = await openPdfDatabase();
-  return new Promise((resolve, reject) => {
+  return new Promise<void>((resolve, reject) => {
     const transaction = database.transaction(STORE_NAME, "readwrite");
     const store = transaction.objectStore(STORE_NAME);
     if (pdf) store.put(pdf, PDF_KEY);
