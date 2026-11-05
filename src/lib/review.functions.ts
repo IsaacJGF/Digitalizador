@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createServerFn } from "@tanstack/react-start";
 import { useSession } from "@tanstack/react-start/server";
 import { createHash, timingSafeEqual } from "node:crypto";
@@ -92,7 +93,7 @@ export const listReviewQueue = createServerFn({ method: "POST" })
       .order("numero", { ascending: true })
       .range(data.from, data.to);
     if (error) throw new Error(error.message);
-    return { rows: (rows ?? []) as Record<string, unknown>[], count: (count ?? 0) as number };
+    return { rows: (rows ?? []) as Record<string, any>[], count: (count ?? 0) as number };
   });
 
 export const getReviewStats = createServerFn({ method: "GET" }).handler(async () => {
@@ -128,8 +129,8 @@ export const getReviewMetadata = createServerFn({ method: "POST" })
     if (checks.error) throw new Error(checks.error.message);
     if (history.error) throw new Error(history.error.message);
     return {
-      checks: (checks.data ?? []) as Record<string, unknown>[],
-      history: (history.data ?? []) as Record<string, unknown>[],
+      checks: (checks.data ?? []) as Record<string, any>[],
+      history: (history.data ?? []) as Record<string, any>[],
     };
   });
 
@@ -153,5 +154,5 @@ export const updateReviewCheckFn = createServerFn({ method: "POST" })
       .select("*")
       .single();
     if (error) throw new Error(error.message);
-    return row as Record<string, unknown>;
+    return row as Record<string, any>;
   });
