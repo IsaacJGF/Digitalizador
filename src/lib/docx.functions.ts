@@ -13,6 +13,7 @@ import {
   MathFraction,
   MathRadical,
   AlignmentType,
+  BorderStyle,
   PageBreak,
   Header,
   Footer,
@@ -273,16 +274,26 @@ function richBlockToDocx(block: RichBlock, opts: TextOptions): DocxChild[] {
 
 function tableFromRichBlock(block: Extract<RichBlock, { type: "table" }>, opts: TextOptions) {
   const columnCount = Math.max(1, ...block.rows.map((row) => row.length));
+  const border = { style: BorderStyle.SINGLE, size: 4, color: "7A8793" };
+  const borders = { top: border, bottom: border, left: border, right: border, insideHorizontal: border, insideVertical: border };
   return new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
-    rows: block.rows.map((row) => new TableRow({
-      children: Array.from({ length: columnCount }).map((_, index) => new TableCell({
-        children: [new Paragraph({
-          alignment: alignmentFromRichAlign(block.align),
-          spacing: { after: 40, line: 260 },
-          children: runsFromRichInlines(row[index] ?? [], opts),
-        })],
-      })),
+    borders,
+    rows: block.rows.map((row, rowIndex) => new TableRow({
+      children: Array.from({ length: columnCount }).map((_, index) => {
+        const cell = row[index] ?? { inlines: [], background: null };
+        const isHeader = block.headerRow && rowIndex === 0;
+        const fill = cell.background?.slice(1) || (isHeader ? "E8EEF2" : undefined);
+        return new TableCell({
+          borders,
+          shading: fill ? { fill } : undefined,
+          children: [new Paragraph({
+            alignment: alignmentFromRichAlign(block.align),
+            spacing: { after: 40, line: 260 },
+            children: runsFromRichInlines(cell.inlines, { ...opts, bold: Boolean(opts.bold || isHeader) }),
+          })],
+        });
+      }),
     })),
   });
 }

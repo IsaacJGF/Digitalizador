@@ -1,3 +1,5 @@
+import { parseRichTableDraft } from "@/lib/rich-table-format";
+
 export type RichAlign = "left" | "center" | "right" | "justify";
 export type RichListStyle = "bullet" | "decimal" | "upper-alpha";
 
@@ -6,10 +8,12 @@ export type RichInline =
   | { type: "math"; latex: string; display: boolean }
   | { type: "break" };
 
+export type RichTableCell = { inlines: RichInline[]; background: string | null };
+
 export type RichBlock =
   | { type: "paragraph"; align: RichAlign; inlines: RichInline[] }
   | { type: "list"; align: RichAlign; ordered: boolean; listStyle: RichListStyle; items: RichInline[][] }
-  | { type: "table"; align: RichAlign; rows: RichInline[][][] };
+  | { type: "table"; align: RichAlign; headerRow: boolean; rows: RichTableCell[][] };
 
 type InlineStyle = Omit<Extract<RichInline, { type: "text" }>, "type" | "text">;
 
@@ -39,8 +43,17 @@ export function parseRichText(text: string | null | undefined): RichBlock[] {
     const lines = blockText.split("\n").filter((line) => line.trim().length > 0);
     if (lines.length === 0) return [];
 
-    if (isTable(lines)) {
-      return [{ type: "table", align, rows: parseTable(lines) } satisfies RichBlock];
+    const table = parseRichTableDraft(blockText);
+    if (table) {
+      return [{
+        type: "table",
+        align,
+        headerRow: table.headerRow,
+        rows: table.rows.map((row) => row.map((cell) => ({
+          inlines: parseRichInlines(cell.text),
+          background: cell.background,
+        }))),
+      } satisfies RichBlock];
     }
 
     const list = parseList(lines);
@@ -95,23 +108,6 @@ function normalizeAlign(value: string): RichAlign {
   const lower = value.toLowerCase();
   if (lower === "left" || lower === "center" || lower === "right" || lower === "justify") return lower;
   return "justify";
-}
-
-function isTable(lines: string[]) {
-  const tableLines = lines.filter((line) => line.includes("|"));
-  if (tableLines.length < 2) return false;
-  return tableLines.length === lines.length && tableLines.some((line) => /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$/.test(line));
-}
-
-function parseTable(lines: string[]): RichInline[][][] {
-  return lines
-    .filter((line) => !/^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$/.test(line))
-    .map((line) => splitTableCells(line).map((cell) => parseRichInlines(cell.trim())));
-}
-
-function splitTableCells(line: string) {
-  const trimmed = line.trim().replace(/^\|/, "").replace(/\|$/, "");
-  return trimmed.split("|");
 }
 
 function parseList(lines: string[]): { ordered: boolean; listStyle: RichListStyle; items: RichInline[][] } | null {

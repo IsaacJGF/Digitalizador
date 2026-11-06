@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { parseRichText, type RichAlign, type RichInline } from "@/lib/rich-text";
+import { richTableTextColor } from "@/lib/rich-table-format";
 
 type Props = {
   text: string | null | undefined;
@@ -26,16 +27,28 @@ export function RichText({ text, className = "" }: Props) {
       {blocks.map((block, index) => {
         if (block.type === "table") {
           return (
-            <div key={index} className="my-2 max-w-full overflow-x-auto" style={{ textAlign: toCssAlign(block.align) }}>
+            <div key={index} className="my-3 max-w-full overflow-x-auto rounded-md" style={{ textAlign: toCssAlign(block.align) }}>
               <table className="w-full border-collapse text-sm">
                 <tbody>
                   {block.rows.map((row, rowIndex) => (
                     <tr key={rowIndex}>
-                      {row.map((cell, cellIndex) => (
-                        <td key={cellIndex} className="border px-2 py-1 align-top">
-                          {renderInlines(cell, `${index}-${rowIndex}-${cellIndex}`)}
-                        </td>
-                      ))}
+                      {row.map((cell, cellIndex) => {
+                        const isHeader = block.headerRow && rowIndex === 0;
+                        const style = {
+                          backgroundColor: cell.background ?? (isHeader ? "var(--color-muted)" : undefined),
+                          color: richTableTextColor(cell.background),
+                        };
+                        const contents = renderInlines(cell.inlines, `${index}-${rowIndex}-${cellIndex}`);
+                        return isHeader ? (
+                          <th key={cellIndex} scope="col" className="min-w-20 border border-foreground/35 px-3 py-2 align-top font-semibold" style={style}>
+                            {contents}
+                          </th>
+                        ) : (
+                          <td key={cellIndex} className="min-w-20 border border-foreground/35 px-3 py-2 align-top" style={style}>
+                            {contents}
+                          </td>
+                        );
+                      })}
                     </tr>
                   ))}
                 </tbody>

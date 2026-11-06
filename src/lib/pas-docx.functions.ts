@@ -297,16 +297,32 @@ function tableFromRichBlock(block: Extract<RichBlock, { type: "table" }>) {
   const columnCount = Math.max(1, ...block.rows.map((row) => row.length));
   return new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
-    rows: block.rows.map((row) => new TableRow({
-      children: Array.from({ length: columnCount }).map((_, index) => new TableCell({
-        children: [new Paragraph({
-          alignment: alignmentFromRichAlign(block.align),
-          spacing: { after: 20, line: 220, lineRule: "exact" as any },
-          children: runsFromRichInlines(row[index] ?? [], { size: PAS_BODY_SIZE }),
-        })],
-      })),
+    borders: tableBorders(),
+    rows: block.rows.map((row, rowIndex) => new TableRow({
+      children: Array.from({ length: columnCount }).map((_, index) => {
+        const cell = row[index] ?? { inlines: [], background: null };
+        const isHeader = block.headerRow && rowIndex === 0;
+        const fill = cell.background?.slice(1) || (isHeader ? "E8EEF2" : undefined);
+        const inlines = isHeader
+          ? cell.inlines.map((inline) => inline.type === "text" ? { ...inline, bold: true } : inline)
+          : cell.inlines;
+        return new TableCell({
+          borders: tableBorders(),
+          shading: fill ? { fill } : undefined,
+          children: [new Paragraph({
+            alignment: alignmentFromRichAlign(block.align),
+            spacing: { after: 20, line: 220, lineRule: "exact" as any },
+            children: runsFromRichInlines(inlines, { size: PAS_BODY_SIZE }),
+          })],
+        });
+      }),
     })),
   });
+}
+
+function tableBorders() {
+  const border = { style: BorderStyle.SINGLE, size: 4, color: "7A8793" };
+  return { top: border, bottom: border, left: border, right: border, insideHorizontal: border, insideVertical: border };
 }
 
 function pasParagraph(text: string, opts: { size?: number; bold?: boolean; align?: typeof AlignmentType[keyof typeof AlignmentType]; spacingAfter?: number } = {}) {
