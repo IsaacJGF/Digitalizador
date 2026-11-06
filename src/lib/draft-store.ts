@@ -38,6 +38,21 @@ export type DraftDigitization = {
   questoes: DraftQuestion[];
 };
 
+export function createEmptyDraftQuestion(overrides: Partial<DraftQuestion> = {}): DraftQuestion {
+  return {
+    numero: "",
+    enunciado: "",
+    alternativas: [],
+    tipo: "multipla_escolha",
+    resposta: "",
+    fonte: "",
+    tem_equacao: false,
+    tem_imagem: false,
+    baixa_confianca: [],
+    ...overrides,
+  };
+}
+
 
 const KEY = "digitalizador.draft";
 

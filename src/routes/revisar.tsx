@@ -37,7 +37,7 @@ import { RichTextEditor } from "@/components/RichTextEditor";
 import { CatalogSelect, CatalogMultiSelect } from "@/components/CatalogSelect";
 import { ExtraImagesEditor } from "@/components/ExtraImagesEditor";
 import { legacyReferenceToContent, newContentImage, parseBlocks, serializeBlocks, stripImageMarkers, type ContentBlock } from "@/lib/content-blocks";
-import { loadDraft, clearDraft, LETRAS, reletter, DraftDigitization, DraftQuestion } from "@/lib/draft-store";
+import { createEmptyDraftQuestion, loadDraft, clearDraft, LETRAS, reletter, DraftDigitization, DraftQuestion } from "@/lib/draft-store";
 import {
   DEFAULT_IMAGE_PLACEMENT_LAYOUT,
   normalizeExtraImage,
@@ -276,6 +276,18 @@ function Page() {
     const next = active.alternativas.filter((_, idx) => idx !== i);
     update("alternativas", reletter(next));
   };
+  const addQuestion = () => {
+    const newQuestion = createEmptyDraftQuestion({
+      tipo: active.tipo,
+      ano: active.ano,
+      prova: active.prova,
+      instituicao: active.instituicao,
+    });
+    const questoes = [...draft.questoes, newQuestion];
+    setDraft({ ...draft, questoes });
+    setActiveIndex(questoes.length - 1);
+  };
+
   const removeCurrentQuestion = () => {
     if (draft.questoes.length <= 1) return;
     const label = active.numero ? `item ${active.numero}` : `item ${activeIndex + 1}`;
@@ -424,24 +436,38 @@ function Page() {
             />
 
 
-            {draft.questoes.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {draft.questoes.map((q, i) => (
-                  <Button
-                    key={i}
-                    type="button"
-                    size="sm"
-                    variant={i === activeIndex ? "default" : "outline"}
-                    onClick={() => setActiveIndex(i)}
-                  >
-                    {q.numero ? `Item ${q.numero}` : `Item ${i + 1}`}
-                  </Button>
-                ))}
-                <Button type="button" size="sm" variant="outline" className="gap-1 text-destructive" onClick={removeCurrentQuestion}>
-                  <Trash2 className="size-3.5" /> Excluir item
-                </Button>
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/20 p-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <span className="text-sm font-medium text-muted-foreground">
+                  Itens da referência ({draft.questoes.length})
+                </span>
+                {draft.questoes.length > 1 && (
+                  <div className="flex max-w-full gap-2 overflow-x-auto pb-1">
+                    {draft.questoes.map((q, i) => (
+                      <Button
+                        key={i}
+                        type="button"
+                        size="sm"
+                        variant={i === activeIndex ? "default" : "outline"}
+                        onClick={() => setActiveIndex(i)}
+                      >
+                        {q.numero ? `Item ${q.numero}` : `Item ${i + 1}`}
+                      </Button>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
+              <div className="flex shrink-0 items-center gap-2">
+                <Button type="button" size="sm" variant="outline" className="gap-1" onClick={addQuestion}>
+                  <Plus className="size-3.5" /> Adicionar item
+                </Button>
+                {draft.questoes.length > 1 && (
+                  <Button type="button" size="sm" variant="outline" className="gap-1 text-destructive" onClick={removeCurrentQuestion}>
+                    <Trash2 className="size-3.5" /> Excluir item
+                  </Button>
+                )}
+              </div>
+            </div>
 
             <div>
               <Label>Tipo</Label>
@@ -555,7 +581,16 @@ function Page() {
 
             <div>
               <Label>Resposta / Gabarito</Label>
-              <Input value={active.resposta ?? ""} onChange={(e) => update("resposta", e.target.value)} placeholder="A" />
+              <Input
+                value={active.resposta ?? ""}
+                onChange={(e) => update("resposta", e.target.value)}
+                placeholder={
+                  active.tipo === "multipla_escolha" ? "Ex.: A"
+                    : active.tipo === "certo_errado" ? "C ou E"
+                      : active.tipo === "numerica" ? "Ex.: 25"
+                        : "Resposta esperada (opcional)"
+                }
+              />
             </div>
 
             <details className="rounded-lg border p-3" open>
