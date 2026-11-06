@@ -787,9 +787,9 @@ function ReviewWorkspace() {
                           {queueMode === "pending" && (
                             <Button
                               type="button"
-                              size="icon"
+                              size="sm"
                               variant="ghost"
-                              className="size-8 shrink-0 text-primary"
+                              className="h-8 shrink-0 gap-1 px-2 text-xs text-primary"
                               title="Marcar todos os critérios como conferidos"
                               aria-label={"Marcar todos os critérios como conferidos para " + (item.numero ? "a questão " + item.numero : "esta questão")}
                               disabled={Boolean(quickCompletingId) || loadingList}
@@ -801,6 +801,7 @@ function ReviewWorkspace() {
                               {quickCompletingId === item.id
                                 ? <Loader2 className="size-4 animate-spin" />
                                 : <Check className="size-4" />}
+                              Conferir tudo
                             </Button>
                           )}
                         </div>
