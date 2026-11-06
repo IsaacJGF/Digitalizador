@@ -22,6 +22,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { legacyReferenceToContent } from "@/lib/content-blocks";
 import { normalizeExtraImages, type ExtraImage, type ImagePlacementLayout } from "@/lib/image-layout";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import {
+  getReviewAccess,
+  getReviewMetadata,
+  getReviewStats,
+  listReviewQueue,
+  lockReview,
+  unlockReview,
+  updateReviewCheckFn,
+} from "@/lib/review.functions";
 
 const PAGE_SIZE = 25;
 const RESTORE_KEY = "digitalizador.revisao-interna.return-state";
@@ -147,10 +157,78 @@ const REVIEW_STATUS_LABELS = Object.fromEntries(
 
 export const Route = createFileRoute("/revisao-interna")({
   head: () => ({ meta: [{ title: "Revisão interna de questões" }] }),
-  component: ReviewWorkspace,
+  component: ReviewGate,
 });
 
+function ReviewGate() {
+  const checkAccess = useServerFn(getReviewAccess);
+  const unlock = useServerFn(unlockReview);
+  const lock = useServerFn(lockReview);
+  const [state, setState] = useState<"loading" | "locked" | "unlocked">("loading");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    void checkAccess()
+      .then((r) => setState(r.unlocked ? "unlocked" : "locked"))
+      .catch(() => setState("locked"));
+  }, [checkAccess]);
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError("");
+    try {
+      const r = await unlock({ data: { password } });
+      if (r.ok) { setPassword(""); setState("unlocked"); }
+      else setError("Senha incorreta.");
+    } catch {
+      setError("Não foi possível verificar a senha agora.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (state === "unlocked") {
+    return (
+      <>
+        <ReviewWorkspace />
+        <div className="fixed bottom-4 right-4 z-50">
+          <Button variant="outline" size="sm" onClick={async () => { await lock(); setState("locked"); }}>
+            Sair da revisão
+          </Button>
+        </div>
+      </>
+    );
+  }
+  return (
+    <AppLayout>
+      <div className="mx-auto mt-16 max-w-sm rounded-lg border bg-card p-6">
+        <h1 className="text-lg font-semibold">Revisão interna</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Digite a senha da equipe para continuar.</p>
+        {state === "loading" ? (
+          <p className="mt-4 text-sm text-muted-foreground">Verificando acesso…</p>
+        ) : (
+          <form onSubmit={onSubmit} className="mt-4 space-y-3">
+            <Input type="password" autoComplete="current-password" value={password}
+              onChange={(e) => setPassword(e.target.value)} placeholder="Senha" />
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <Button type="submit" className="w-full" disabled={busy || !password}>
+              {busy ? "Verificando…" : "Entrar"}
+            </Button>
+          </form>
+        )}
+      </div>
+    </AppLayout>
+  );
+}
+
 function ReviewWorkspace() {
+  const fetchQueue = useServerFn(listReviewQueue);
+  const fetchStats = useServerFn(getReviewStats);
+  const fetchMetadata = useServerFn(getReviewMetadata);
+  const saveCheck = useServerFn(updateReviewCheckFn);
   const [initialized, setInitialized] = useState(false);
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebouncedValue(query, 350);
@@ -256,26 +334,25 @@ function ReviewWorkspace() {
     setLoadingList(true);
     void (async () => {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const db = supabase as any;
-        let request = db.from("question_review_queue").select(SUMMARY_COLUMNS, { count: "exact" });
-        if (queueMode === "pending") request = request.eq("is_complete", false);
-        if (queueMode === "changed") request = request.gt("adjustment_count", 0);
-        const term = debouncedQuery.trim().replace(/[^a-zA-ZÀ-ÿ0-9\s-]/g, " ").replace(/\s+/g, " ").trim();
-        if (term) {
-          request = request.or(
-            "enunciado.ilike.%"+term+"%,referencia_texto.ilike.%"+term+
-            "%,referencia_texto_apos.ilike.%"+term+"%,referencia_fonte.ilike.%"+term+
-            "%,fonte.ilike.%"+term+"%",
-          );
+        let data: Record<string, unknown>[] | null = null;
+        let count: number | null = null;
+        let error: unknown = null;
+        try {
+          const result = await fetchQueue({ data: {
+            columns: SUMMARY_COLUMNS.replace(/\s+/g, ""),
+            mode: queueMode,
+            term: debouncedQuery,
+            anos: filters.anos,
+            provas: filters.provas,
+            instituicoes: filters.instituicoes,
+            from: page * PAGE_SIZE,
+            to: page * PAGE_SIZE + PAGE_SIZE - 1,
+          } });
+          data = result.rows;
+          count = result.count;
+        } catch (e) {
+          error = e;
         }
-        if (filters.anos.length) request = request.in("ano", filters.anos);
-        if (filters.provas.length) request = request.in("prova", filters.provas);
-        if (filters.instituicoes.length) request = request.in("instituicao", filters.instituicoes);
-        const { data, count, error } = await request
-          .order("ano", { ascending: false })
-          .order("numero", { ascending: true })
-          .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
         if (cancelled) return;
         if (error) {
           console.error("Falha ao carregar fila de revisão:", error);
@@ -313,7 +390,7 @@ function ReviewWorkspace() {
       }
     })();
     return () => { cancelled = true; };
-  }, [initialized, page, debouncedQuery, filters, queueMode, reviewRefreshKey]);
+  }, [initialized, page, debouncedQuery, filters, queueMode, reviewRefreshKey, fetchQueue]);
 
   const loadQuestion = useCallback(async (id: string) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -349,19 +426,12 @@ function ReviewWorkspace() {
     const requestId = ++reviewMetadataRequestIdRef.current;
     setReviewMetadataLoading(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const db = supabase as any;
-      const [checksResult, historyResult] = await Promise.all([
-        db.from("question_review_checks").select("*").eq("question_id", id).order("criterio"),
-        db.from("question_review_history").select("*").eq("question_id", id).order("changed_at", { ascending: false }).limit(60),
-      ]);
-      if (checksResult.error) throw checksResult.error;
-      if (historyResult.error) throw historyResult.error;
+      const meta = await fetchMetadata({ data: { questionId: id } });
       if (requestId !== reviewMetadataRequestIdRef.current) return;
-      const checks = (checksResult.data ?? []) as ReviewCheck[];
+      const checks = meta.checks as unknown as ReviewCheck[];
       setReviewChecks(checks);
       setNoteDrafts(Object.fromEntries(checks.map((check) => [check.criterio, check.observacao ?? ""])));
-      setReviewHistory((historyResult.data ?? []) as ReviewHistoryEntry[]);
+      setReviewHistory(meta.history as unknown as ReviewHistoryEntry[]);
     } catch (error) {
       if (requestId !== reviewMetadataRequestIdRef.current) return;
       console.error("Falha ao carregar o histórico da revisão:", error);
@@ -372,7 +442,7 @@ function ReviewWorkspace() {
     } finally {
       if (requestId === reviewMetadataRequestIdRef.current) setReviewMetadataLoading(false);
     }
-  }, []);
+  }, [fetchMetadata]);
 
   useEffect(() => {
     if (!selectedId) {
@@ -388,27 +458,13 @@ function ReviewWorkspace() {
 
   useEffect(() => {
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = supabase as any;
-    const count = async (filter?: (query: any) => any) => {
-      let request = db.from("question_review_summary").select("question_id", { count: "exact", head: true });
-      if (filter) request = filter(request);
-      const result = await request;
-      if (result.error) throw result.error;
-      return result.count ?? 0;
-    };
-    void Promise.all([
-      count(),
-      count((request) => request.eq("is_complete", true)),
-      count((request) => request.eq("is_complete", false)),
-      count((request) => request.gt("adjustment_count", 0)),
-    ]).then(([totalCount, completedCount, pendingCount, changedCount]) => {
+    void fetchStats().then(({ total: totalCount, completed: completedCount, pending: pendingCount, changed: changedCount }) => {
       if (!cancelled) setStats({ total: totalCount, completed: completedCount, pending: pendingCount, changed: changedCount });
     }).catch((error) => {
       if (!cancelled) console.error("Falha ao carregar resumo da revisão:", error);
     });
     return () => { cancelled = true; };
-  }, [reviewRefreshKey]);
+  }, [reviewRefreshKey, fetchStats]);
 
   const updateReviewCheck = async (criterion: ReviewCriterion, status?: ReviewStatus, note?: string) => {
     if (!question) return;
@@ -420,20 +476,15 @@ function ReviewWorkspace() {
     const questionId = question.id;
     const nextStatus = status ?? current.status;
     const nextNote = note ?? noteDrafts[criterion] ?? current.observacao;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
-      .from("question_review_checks")
-      .update({ status: nextStatus, observacao: nextNote })
-      .eq("question_id", questionId)
-      .eq("criterio", criterion)
-      .select("*")
-      .single();
-    if (error) {
+    let data: Record<string, unknown>;
+    try {
+      data = await saveCheck({ data: { questionId, criterio: criterion, status: nextStatus, observacao: nextNote ?? "" } });
+    } catch (error) {
       console.error("Falha ao salvar checklist:", error);
       toast.error("Não foi possível salvar este critério.");
       return;
     }
-    const updated = data as ReviewCheck;
+    const updated = data as unknown as ReviewCheck;
     if (selectedIdRef.current === questionId) {
       setReviewChecks((currentChecks) => currentChecks.map((check) => check.criterio === criterion ? updated : check));
       setNoteDrafts((currentNotes) => ({ ...currentNotes, [criterion]: updated.observacao ?? "" }));
