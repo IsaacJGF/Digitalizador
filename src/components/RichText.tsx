@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { parseRichText, type RichAlign, type RichInline } from "@/lib/rich-text";
+import { richTableTextColor } from "@/lib/rich-table-format";
 
 type Props = {
   text: string | null | undefined;
@@ -35,6 +36,7 @@ export function RichText({ text, className = "" }: Props) {
                         const isHeader = block.headerRow && rowIndex === 0;
                         const style = {
                           backgroundColor: cell.background ?? (isHeader ? "var(--color-muted)" : undefined),
+                          color: richTableTextColor(cell.background),
                         };
                         const contents = renderInlines(cell.inlines, `${index}-${rowIndex}-${cellIndex}`);
                         return isHeader ? (
