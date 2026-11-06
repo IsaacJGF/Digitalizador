@@ -4,7 +4,7 @@ import { FileText, ImageIcon, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppLayout } from "@/components/AppLayout";
 import { digitizeQuestion } from "@/lib/digitize.functions";
-import { saveDraft, type DraftDigitization, type DraftQuestion } from "@/lib/draft-store";
+import { createEmptyDraftQuestion, saveDraft, type DraftDigitization } from "@/lib/draft-store";
 import { formatFileSize, isPdfFile, pageRange, readPdfDocumentSummary, renderPdfPagesToImageDataUrl, type PdfDocumentSummary, type PdfRenderedImage } from "@/lib/pdf-reader";
 import { assertImageCanvasSize, MAX_DIGITIZE_IMAGE_DATA_URL_LENGTH, MAX_IMAGE_CANVAS_PIXELS } from "@/lib/image-limits";
 import { toast } from "sonner";
@@ -552,23 +552,13 @@ export function DigitalizarPage() {
               active={false}
               icon={<PenLine className="size-4" />}
               title="Manual"
-              description="Digite a questão do zero e adicione imagens por fora."
+              description="Digite o texto-base e adicione vários itens de tipos diferentes."
               onClick={() =>
                 saveDraftAndReview(
                   {
                     referencia_texto: "",
                     referencia_fonte: "",
-                    questoes: [{
-                      numero: "",
-                      enunciado: "",
-                      alternativas: [],
-                      tipo: "multipla_escolha",
-                      resposta: "",
-                      fonte: "",
-                      tem_equacao: false,
-                      tem_imagem: false,
-                      baixa_confianca: [],
-                    } as DraftQuestion],
+                    questoes: [createEmptyDraftQuestion()],
                   },
                   "Questão manual criada. Preencha os campos.",
                 )
