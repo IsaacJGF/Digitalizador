@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
+  ChevronDown,
   ClipboardCheck,
   Copy,
   Loader2,
@@ -28,6 +29,7 @@ import {
   getReviewAccess,
   getReviewMetadata,
   getReviewStats,
+  getReviewCriterionStats,
   listReviewQueue,
   lockReview,
   markQuestionReviewedFn,
@@ -69,7 +71,17 @@ type ReviewCriterion =
 type ReviewStatus =
   | "pendente" | "precisa_ajuste" | "ajustado_pendente_conferencia"
   | "conferido_ok" | "nao_se_aplica" | "duvida";
-type ReviewQueueMode = "pending" | "changed" | "all";
+type ReviewQueueMode = "pending" | "changed" | "completed" | "all";
+type ReviewOpenStatus = Extract<ReviewStatus, "pendente" | "precisa_ajuste" | "ajustado_pendente_conferencia" | "duvida">;
+type ReviewCriterionFilter = ReviewCriterion | "all";
+type ReviewCriterionStatusFilter = "all_open" | ReviewOpenStatus;
+type ReviewCriterionStats = {
+  total: number;
+  completed: number;
+  pending: number;
+  byStatus: Record<ReviewStatus, number>;
+  byCriterion: Record<ReviewCriterion, Record<ReviewStatus, number>>;
+};
 type ReviewCheck = {
   question_id: string;
   criterio: ReviewCriterion;
@@ -143,7 +155,19 @@ const REVIEW_CRITERIA: Array<{ id: ReviewCriterion; label: string }> = [
   { id: "imagens", label: "Imagens" },
   { id: "formatacao", label: "Formatação" },
   { id: "dados_prova", label: "Dados da prova" },
-  { id: "classificacao", label: "Classificação" },
+  { id: "classificacao", label: "Conteúdos e tags" },
+];
+const REVIEW_OPEN_STATUSES: ReviewOpenStatus[] = [
+  "pendente",
+  "precisa_ajuste",
+  "ajustado_pendente_conferencia",
+  "duvida",
+];
+const REVIEW_OPEN_STATUS_FILTERS: Array<{ value: ReviewOpenStatus; label: string }> = [
+  { value: "pendente", label: "Pendente" },
+  { value: "precisa_ajuste", label: "Precisa de ajuste" },
+  { value: "ajustado_pendente_conferencia", label: "Ajuste feito — falta conferir" },
+  { value: "duvida", label: "Dúvida" },
 ];
 const REVIEW_STATUSES: Array<{ value: ReviewStatus; label: string }> = [
   { value: "pendente", label: "Pendente" },
@@ -156,6 +180,17 @@ const REVIEW_STATUSES: Array<{ value: ReviewStatus; label: string }> = [
 const REVIEW_STATUS_LABELS = Object.fromEntries(
   REVIEW_STATUSES.map((status) => [status.value, status.label]),
 ) as Record<ReviewStatus, string>;
+
+function createEmptyReviewCriterionStats(): ReviewCriterionStats {
+  const emptyStatuses = Object.fromEntries(REVIEW_STATUSES.map(({ value }) => [value, 0])) as Record<ReviewStatus, number>;
+  return {
+    total: 0,
+    completed: 0,
+    pending: 0,
+    byStatus: { ...emptyStatuses },
+    byCriterion: Object.fromEntries(REVIEW_CRITERIA.map(({ id }) => [id, { ...emptyStatuses }])) as Record<ReviewCriterion, Record<ReviewStatus, number>>,
+  };
+}
 
 export const Route = createFileRoute("/revisao-interna")({
   head: () => ({ meta: [{ title: "Revisão interna de questões" }] }),
@@ -229,6 +264,7 @@ function ReviewGate() {
 function ReviewWorkspace() {
   const fetchQueue = useServerFn(listReviewQueue);
   const fetchStats = useServerFn(getReviewStats);
+  const fetchCriterionStats = useServerFn(getReviewCriterionStats);
   const fetchMetadata = useServerFn(getReviewMetadata);
   const saveCheck = useServerFn(updateReviewCheckFn);
   const markReviewed = useServerFn(markQuestionReviewedFn);
@@ -248,6 +284,10 @@ function ReviewWorkspace() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [queueMode, setQueueMode] = useState<ReviewQueueMode>("pending");
+  const [criterionFilter, setCriterionFilter] = useState<ReviewCriterionFilter>("all");
+  const [criterionStatusFilter, setCriterionStatusFilter] = useState<ReviewCriterionStatusFilter>("all_open");
+  const [criterionStats, setCriterionStats] = useState<ReviewCriterionStats>(() => createEmptyReviewCriterionStats());
+  const [criterionStatsLoading, setCriterionStatsLoading] = useState(false);
   const [reviewChecks, setReviewChecks] = useState<ReviewCheck[]>([]);
   const [reviewHistory, setReviewHistory] = useState<ReviewHistoryEntry[]>([]);
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
@@ -276,6 +316,9 @@ function ReviewWorkspace() {
           filters?: Partial<ReviewFilters>;
           page?: unknown;
           selectedId?: unknown;
+          queueMode?: unknown;
+          criterionFilter?: unknown;
+          criterionStatusFilter?: unknown;
         };
         if (typeof parsed.query === "string") setQuery(parsed.query);
         if (parsed.filters && typeof parsed.filters === "object") {
@@ -289,6 +332,9 @@ function ReviewWorkspace() {
           setPage(parsed.page);
         }
         if (typeof parsed.selectedId === "string") preferredQuestionId.current = parsed.selectedId;
+        if (isReviewQueueMode(parsed.queueMode)) setQueueMode(parsed.queueMode);
+        if (isReviewCriterionFilter(parsed.criterionFilter)) setCriterionFilter(parsed.criterionFilter);
+        if (isReviewCriterionStatusFilter(parsed.criterionStatusFilter)) setCriterionStatusFilter(parsed.criterionStatusFilter);
         sessionStorage.removeItem(RESTORE_KEY);
       }
     } catch (error) {
@@ -334,7 +380,7 @@ function ReviewWorkspace() {
     preferredQueueIndex.current = null;
     setPage(0);
     setSelectedId("");
-  }, [debouncedQuery, filterKey, initialized, queueMode]);
+  }, [debouncedQuery, filterKey, initialized, queueMode, criterionFilter, criterionStatusFilter]);
 
   useEffect(() => {
     if (!initialized) return;
@@ -353,6 +399,8 @@ function ReviewWorkspace() {
             anos: filters.anos,
             provas: filters.provas,
             instituicoes: filters.instituicoes,
+            criterion: queueMode === "pending" && criterionFilter !== "all" ? criterionFilter : null,
+            criterionStatus: queueMode === "pending" ? criterionStatusFilter : "all_open",
             from: page * PAGE_SIZE,
             to: page * PAGE_SIZE + PAGE_SIZE - 1,
           } });
@@ -402,7 +450,7 @@ function ReviewWorkspace() {
       }
     })();
     return () => { cancelled = true; };
-  }, [initialized, page, debouncedQuery, filters, queueMode, reviewRefreshKey, fetchQueue]);
+  }, [initialized, page, debouncedQuery, filters, queueMode, criterionFilter, criterionStatusFilter, reviewRefreshKey, fetchQueue]);
 
   const loadQuestion = useCallback(async (id: string) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -478,6 +526,25 @@ function ReviewWorkspace() {
     return () => { cancelled = true; };
   }, [reviewRefreshKey, fetchStats]);
 
+  useEffect(() => {
+    if (!initialized) return;
+    let cancelled = false;
+    setCriterionStatsLoading(true);
+    void fetchCriterionStats({ data: {
+      term: debouncedQuery,
+      anos: filters.anos,
+      provas: filters.provas,
+      instituicoes: filters.instituicoes,
+    } }).then((result) => {
+      if (!cancelled) setCriterionStats(result as unknown as ReviewCriterionStats);
+    }).catch((error) => {
+      if (!cancelled) console.error("Falha ao carregar contagens por critério:", error);
+    }).finally(() => {
+      if (!cancelled) setCriterionStatsLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [initialized, debouncedQuery, filters, reviewRefreshKey, fetchCriterionStats]);
+
   const updateReviewCheck = async (criterion: ReviewCriterion, status?: ReviewStatus, note?: string) => {
     if (!question) return;
     const current = reviewChecks.find((check) => check.criterio === criterion);
@@ -509,6 +576,15 @@ function ReviewWorkspace() {
   const selectedIndex = items.findIndex((item) => item.id === selectedId);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const position = page * PAGE_SIZE + Math.max(0, selectedIndex) + 1;
+  const visibleStatusCounts = criterionFilter === "all"
+    ? criterionStats.byStatus
+    : criterionStats.byCriterion[criterionFilter];
+  const openCountForSelection = criterionFilter === "all"
+    ? criterionStats.pending
+    : countReviewStatuses(criterionStats.byCriterion[criterionFilter], REVIEW_OPEN_STATUSES);
+  const allCriteriaCount = criterionStatusFilter === "all_open"
+    ? criterionStats.pending
+    : criterionStats.byStatus[criterionStatusFilter];
 
   const markQuestionComplete = async (item: ReviewListItem) => {
     if (queueModeRef.current !== "pending" || quickCompletingId) return;
@@ -560,6 +636,9 @@ function ReviewWorkspace() {
         filters,
         page,
         selectedId: question.id,
+        queueMode,
+        criterionFilter,
+        criterionStatusFilter,
       }));
     } catch (error) {
       console.warn("Não foi possível guardar a posição da revisão:", error);
@@ -680,6 +759,9 @@ function ReviewWorkspace() {
             <Button type="button" size="sm" variant={queueMode === "pending" ? "default" : "outline"} onClick={() => setQueueMode("pending")}>
               Pendentes ({stats.pending})
             </Button>
+            <Button type="button" size="sm" variant={queueMode === "completed" ? "default" : "outline"} onClick={() => setQueueMode("completed")}>
+              Conferidas ({stats.completed})
+            </Button>
             <Button type="button" size="sm" variant={queueMode === "changed" ? "default" : "outline"} onClick={() => setQueueMode("changed")}>
               Alteradas ({stats.changed})
             </Button>
@@ -687,9 +769,92 @@ function ReviewWorkspace() {
               Todas ({stats.total})
             </Button>
             <span className="text-xs text-muted-foreground">
-              A fila abre em Pendentes e pula questões concluídas.
+              {queueMode === "pending" ? "A fila abre em Pendentes e pula questões concluídas." : "Use os modos para percorrer as questões conforme o estado da revisão."}
             </span>
           </div>
+          {queueMode === "pending" && (
+            <details className="group rounded-lg border bg-background px-3 py-2" open>
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+                <div>
+                  <p className="font-medium">Pendências por critério</p>
+                  <p className="text-xs text-muted-foreground">
+                    {criterionStatsLoading ? "Atualizando contagens…" : `Contagens do recorte atual: ${criterionStats.pending} questões pendentes.`}
+                  </p>
+                </div>
+                <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="mt-3 space-y-3 border-t pt-3">
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Critério</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={criterionFilter === "all" ? "default" : "outline"}
+                      aria-pressed={criterionFilter === "all"}
+                      disabled={criterionStatsLoading}
+                      onClick={() => setCriterionFilter("all")}
+                      className="gap-2"
+                    >
+                      Todos os critérios <span className="rounded-full bg-background/20 px-2 py-0.5 text-xs">{allCriteriaCount}</span>
+                    </Button>
+                    {REVIEW_CRITERIA.map(({ id, label }) => {
+                      const count = criterionStatusFilter === "all_open"
+                        ? countReviewStatuses(criterionStats.byCriterion[id], REVIEW_OPEN_STATUSES)
+                        : criterionStats.byCriterion[id][criterionStatusFilter];
+                      return (
+                        <Button
+                          key={id}
+                          type="button"
+                          size="sm"
+                          variant={criterionFilter === id ? "default" : "outline"}
+                          aria-pressed={criterionFilter === id}
+                          disabled={criterionStatsLoading}
+                          onClick={() => setCriterionFilter((current) => current === id ? "all" : id)}
+                          className="gap-2"
+                        >
+                          {label} <span className="rounded-full bg-background/20 px-2 py-0.5 text-xs">{count}</span>
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="space-y-2 border-t pt-3">
+                  <p className="text-xs font-medium text-muted-foreground">Situação do critério</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={criterionStatusFilter === "all_open" ? "default" : "outline"}
+                      aria-pressed={criterionStatusFilter === "all_open"}
+                      disabled={criterionStatsLoading}
+                      onClick={() => setCriterionStatusFilter("all_open")}
+                      className="gap-2"
+                    >
+                      Qualquer pendência <span className="rounded-full bg-background/20 px-2 py-0.5 text-xs">{openCountForSelection}</span>
+                    </Button>
+                    {REVIEW_OPEN_STATUS_FILTERS.map(({ value, label }) => (
+                      <Button
+                        key={value}
+                        type="button"
+                        size="sm"
+                        variant={criterionStatusFilter === value ? "default" : "outline"}
+                        aria-pressed={criterionStatusFilter === value}
+                        disabled={criterionStatsLoading}
+                        onClick={() => setCriterionStatusFilter((current) => current === value ? "all_open" : value)}
+                        className="gap-2"
+                      >
+                        {label} <span className="rounded-full bg-background/20 px-2 py-0.5 text-xs">{visibleStatusCounts[value]}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  A contagem segue a busca e os filtros de ano, prova e instituição. Uma questão pode aparecer em mais de uma situação se critérios diferentes tiverem estados distintos.
+                </p>
+              </div>
+            </details>
+          )}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -733,7 +898,7 @@ function ReviewWorkspace() {
             </Button>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-2 text-sm text-muted-foreground">
-            <p>{total} questão{total === 1 ? "" : "ões"} {queueMode === "pending" ? "pendente" : queueMode === "changed" ? "alterada" : "encontrada"}{total === 1 ? "" : "s"}</p>
+            <p>{queueCountLabel(queueMode, total)}</p>
             <p>Página {Math.min(page + 1, totalPages)} de {totalPages}</p>
           </div>
         </section>
@@ -743,7 +908,13 @@ function ReviewWorkspace() {
             <div className="border-b px-4 py-3">
               <h2 className="font-semibold">Fila</h2>
               <p className="text-xs text-muted-foreground">
-                {queueMode === "pending" ? "Questões com algum critério não concluído." : queueMode === "changed" ? "Questões editadas depois de uma conferência." : "Histórico completo de questões."}
+                {queueMode === "pending"
+                  ? "Questões com algum critério não concluído."
+                  : queueMode === "changed"
+                    ? "Questões editadas depois de uma conferência."
+                    : queueMode === "completed"
+                      ? "Questões com todos os critérios concluídos."
+                      : "Histórico completo de questões."}
               </p>
             </div>
             <div className="max-h-[70vh] flex-1 overflow-y-auto p-2">
@@ -873,7 +1044,7 @@ function ReviewWorkspace() {
                   referenceSource={question.referencia_fonte}
                   questionNumberPosition="top"
                 />
-                <section className="grid gap-3 rounded-xl border bg-card p-4 sm:grid-cols-2" aria-label="Dados de classificação e origem">
+                <section className="grid gap-3 rounded-xl border bg-card p-4 sm:grid-cols-2" aria-label="Dados de conteúdos e origem">
                   <MetadataGroup title="Origem">
                     <Metadata label="Prova" value={question.prova} />
                     <Metadata label="Instituição" value={question.instituicao} />
@@ -882,7 +1053,7 @@ function ReviewWorkspace() {
                     <Metadata label="Fonte" value={question.fonte} />
                     <Metadata label="Dificuldade" value={question.dificuldade} />
                   </MetadataGroup>
-                  <MetadataGroup title="Classificação">
+                  <MetadataGroup title="Conteúdos e tags">
                     <Metadata label="Área geral" value={question.area_geral} />
                     <Metadata label="Conteúdo principal" value={question.conteudo_principal} />
                     <Metadata label="Subconteúdo principal" value={question.subconteudo_principal} />
@@ -1132,6 +1303,30 @@ function plainText(value: string): string {
 
 function stringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function countReviewStatuses(counts: Partial<Record<ReviewStatus, number>>, statuses: readonly ReviewStatus[]) {
+  return statuses.reduce((total, status) => total + (counts[status] ?? 0), 0);
+}
+
+function isReviewQueueMode(value: unknown): value is ReviewQueueMode {
+  return value === "pending" || value === "changed" || value === "completed" || value === "all";
+}
+
+function isReviewCriterionFilter(value: unknown): value is ReviewCriterionFilter {
+  return value === "all" || (typeof value === "string" && REVIEW_CRITERIA.some((criterion) => criterion.id === value));
+}
+
+function isReviewCriterionStatusFilter(value: unknown): value is ReviewCriterionStatusFilter {
+  return value === "all_open" || REVIEW_OPEN_STATUSES.includes(value as ReviewOpenStatus);
+}
+
+function queueCountLabel(mode: ReviewQueueMode, count: number) {
+  const noun = count === 1 ? "questão" : "questões";
+  if (mode === "pending") return `${count} ${noun} pendente${count === 1 ? "" : "s"}`;
+  if (mode === "changed") return `${count} ${noun} alterada${count === 1 ? "" : "s"}`;
+  if (mode === "completed") return `${count} ${noun} conferida${count === 1 ? "" : "s"} por completo`;
+  return `${count} ${noun} encontrada${count === 1 ? "" : "s"}`;
 }
 
 function useDebouncedValue(value: string, delay: number) {
