@@ -164,8 +164,17 @@ function TableCellEditor({
       end = cell.text.length;
     }
     if (start === end) return;
-    const selected = cell.text.slice(start, end);
-    const alreadyBold = selected.startsWith("**") && selected.endsWith("**") && selected.length >= 4;
+    let selected = cell.text.slice(start, end);
+    const wrappedAroundSelection = start >= 2
+      && cell.text.slice(start - 2, start) === "**"
+      && cell.text.slice(end, end + 2) === "**";
+    const alreadyBold = wrappedAroundSelection
+      || (selected.startsWith("**") && selected.endsWith("**") && selected.length >= 4);
+    if (wrappedAroundSelection) {
+      start -= 2;
+      end += 2;
+      selected = cell.text.slice(start, end);
+    }
     const replacement = alreadyBold ? selected.slice(2, -2) : `**${selected}**`;
     const nextText = cell.text.slice(0, start) + replacement + cell.text.slice(end);
     onChange({ ...cell, text: nextText });
@@ -187,7 +196,7 @@ function TableCellEditor({
         value={cell.text}
         aria-label={`Conteúdo da ${label}`}
         onChange={(event) => onChange({ ...cell, text: event.target.value })}
-        className="min-h-20 resize-y bg-background/80 text-xs"
+        className="min-h-20 resize-y bg-transparent text-xs"
         placeholder={isHeader ? "Cabeçalho" : "Texto da célula"}
       />
       <div className="flex items-center gap-1.5">
