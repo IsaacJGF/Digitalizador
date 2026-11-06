@@ -331,6 +331,7 @@ function ReviewWorkspace() {
     }
     pendingPageDirection.current = null;
     preferredQuestionId.current = "";
+    preferredQueueIndex.current = null;
     setPage(0);
     setSelectedId("");
   }, [debouncedQuery, filterKey, initialized, queueMode]);
@@ -516,7 +517,7 @@ function ReviewWorkspace() {
       await markReviewed({ data: { questionId: item.id } });
       if (selectedIdRef.current === item.id && queueModeRef.current === "pending") {
         const itemIndex = items.findIndex((candidate) => candidate.id === item.id);
-        const isLastItemOnLastPage = itemIndex === items.length - 1 && page + 1 >= totalPages;
+        const isLastItemOnLastPage = itemIndex >= 0 && itemIndex === items.length - 1 && page + 1 >= totalPages;
         if (isLastItemOnLastPage) {
           preferredQueueIndex.current = null;
           pendingPageDirection.current = "last";
