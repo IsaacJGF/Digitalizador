@@ -156,3 +156,32 @@ export const updateReviewCheckFn = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return row as Record<string, any>;
   });
+
+export const markQuestionReviewedFn = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => z.object({
+    questionId: z.string().uuid(),
+  }).parse(data))
+  .handler(async ({ data }) => {
+    await requireUnlocked();
+    const db = await admin();
+    const { data: checks, error: checksError } = await db
+      .from("question_review_checks")
+      .select("criterio")
+      .eq("question_id", data.questionId);
+
+    if (checksError) throw new Error(checksError.message);
+    const availableCriteria = new Set((checks ?? []).map((check: { criterio: string }) => check.criterio));
+    if (CRITERIA.some((criterion) => !availableCriteria.has(criterion))) {
+      throw new Error("Checklist incompleto para esta questão.");
+    }
+
+    const { data: updatedChecks, error } = await db
+      .from("question_review_checks")
+      .update({ status: "conferido_ok" })
+      .eq("question_id", data.questionId)
+      .neq("status", "conferido_ok")
+      .select("criterio");
+
+    if (error) throw new Error(error.message);
+    return { updatedCount: updatedChecks?.length ?? 0 };
+  });
