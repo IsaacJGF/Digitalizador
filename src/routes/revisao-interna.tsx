@@ -1155,7 +1155,7 @@ function ReviewWorkspace() {
               </>
             ) : (
               <div className="flex min-h-[300px] items-center justify-center rounded-xl border border-dashed bg-card p-8 text-center text-sm text-muted-foreground">
-                Escolha uma questão na fila para ver texto-base, enunciado, alternativas, gabarito e classificação completos.
+                Escolha uma questão na fila para ver texto-base, enunciado, alternativas, gabarito e conteúdos e tags completos.
               </div>
             )}
           </main>
