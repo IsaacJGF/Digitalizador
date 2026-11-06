@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import {
   ArrowLeft,
   ArrowRight,
+  Check,
   ClipboardCheck,
   Copy,
   Loader2,
@@ -29,6 +30,7 @@ import {
   getReviewStats,
   listReviewQueue,
   lockReview,
+  markQuestionReviewedFn,
   unlockReview,
   updateReviewCheckFn,
 } from "@/lib/review.functions";
@@ -229,6 +231,7 @@ function ReviewWorkspace() {
   const fetchStats = useServerFn(getReviewStats);
   const fetchMetadata = useServerFn(getReviewMetadata);
   const saveCheck = useServerFn(updateReviewCheckFn);
+  const markReviewed = useServerFn(markQuestionReviewedFn);
   const [initialized, setInitialized] = useState(false);
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebouncedValue(query, 350);
@@ -252,13 +255,17 @@ function ReviewWorkspace() {
   const [reviewRefreshKey, setReviewRefreshKey] = useState(0);
   const [stats, setStats] = useState<ReviewStats>({ total: 0, completed: 0, pending: 0, changed: 0 });
   const [copied, setCopied] = useState(false);
+  const [quickCompletingId, setQuickCompletingId] = useState("");
   const pendingPageDirection = useRef<"first" | "last" | null>(null);
   const preferredQuestionId = useRef("");
+  const preferredQueueIndex = useRef<number | null>(null);
   const selectedIdRef = useRef("");
+  const queueModeRef = useRef(queueMode);
   const filterChangeInitialized = useRef(false);
   const reviewMetadataRequestIdRef = useRef(0);
 
   selectedIdRef.current = selectedId;
+  queueModeRef.current = queueMode;
 
   useEffect(() => {
     try {
@@ -355,6 +362,7 @@ function ReviewWorkspace() {
         }
         if (cancelled) return;
         if (error) {
+          preferredQueueIndex.current = null;
           console.error("Falha ao carregar fila de revisão:", error);
           toast.error("Não foi possível carregar as questões para revisão.");
           setItems([]);
@@ -372,11 +380,14 @@ function ReviewWorkspace() {
         setTotal(count ?? 0);
         const preferred = preferredQuestionId.current;
         const saved = selectedIdRef.current;
+        const requestedIndex = preferredQueueIndex.current;
         const target = rows.find((item) => item.id === preferred)
+          ?? (requestedIndex !== null && rows.length > 0 ? rows[Math.min(requestedIndex, rows.length - 1)] : undefined)
           ?? rows.find((item) => item.id === saved)
           ?? (pendingPageDirection.current === "last" ? rows[rows.length - 1] : rows[0]);
         pendingPageDirection.current = null;
         preferredQuestionId.current = "";
+        preferredQueueIndex.current = null;
         setSelectedId(target?.id ?? "");
       } catch (error) {
         if (cancelled) return;
@@ -497,6 +508,32 @@ function ReviewWorkspace() {
   const selectedIndex = items.findIndex((item) => item.id === selectedId);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const position = page * PAGE_SIZE + Math.max(0, selectedIndex) + 1;
+
+  const markQuestionComplete = async (item: ReviewListItem) => {
+    if (queueModeRef.current !== "pending" || quickCompletingId) return;
+    setQuickCompletingId(item.id);
+    try {
+      await markReviewed({ data: { questionId: item.id } });
+      if (selectedIdRef.current === item.id && queueModeRef.current === "pending") {
+        const itemIndex = items.findIndex((candidate) => candidate.id === item.id);
+        const isLastItemOnLastPage = itemIndex === items.length - 1 && page + 1 >= totalPages;
+        if (isLastItemOnLastPage) {
+          preferredQueueIndex.current = null;
+          pendingPageDirection.current = "last";
+        } else if (itemIndex >= 0) {
+          preferredQueueIndex.current = itemIndex;
+          pendingPageDirection.current = null;
+        }
+      }
+      setReviewRefreshKey((value) => value + 1);
+      toast.success("Questão marcada como conferida — OK.");
+    } catch (error) {
+      console.error("Falha ao concluir checklist da questão:", error);
+      toast.error("Não foi possível marcar todos os critérios como conferidos.");
+    } finally {
+      setQuickCompletingId("");
+    }
+  };
 
   const navigateQuestion = (direction: -1 | 1) => {
     if (loadingList || !items.length) return;
@@ -720,28 +757,53 @@ function ReviewWorkspace() {
                     const source = [item.prova, item.instituicao, item.ano].filter(Boolean).join(" · ") || "Fonte não informada";
                     const excerpt = plainText(item.enunciado).slice(0, 150);
                     return (
-                      <button
+                      <div
                         key={item.id}
-                        type="button"
-                        onClick={() => setSelectedId(item.id)}
-                        aria-current={active ? "true" : undefined}
-                        className={"w-full rounded-lg border px-3 py-3 text-left transition-colors " +
+                        className={"rounded-lg border transition-colors " +
                           (active ? "border-primary bg-primary/10" : "border-transparent hover:border-border hover:bg-muted/60")}
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="text-xs font-medium text-muted-foreground">{source}</span>
-                          <span className="shrink-0 text-xs text-muted-foreground">
-                            {item.numero ? "Q" + item.numero : "#" + (page * PAGE_SIZE + index + 1)}
-                          </span>
+                        <div className="flex items-start gap-1 p-2">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedId(item.id)}
+                            aria-current={active ? "true" : undefined}
+                            className="min-w-0 flex-1 rounded-md px-1 py-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <span className="text-xs font-medium text-muted-foreground">{source}</span>
+                              <span className="shrink-0 text-xs text-muted-foreground">
+                                {item.numero ? "Q" + item.numero : "#" + (page * PAGE_SIZE + index + 1)}
+                              </span>
+                            </div>
+                            <p className="mt-1 line-clamp-3 text-sm text-foreground">{excerpt || "Enunciado não preenchido."}</p>
+                            <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] text-muted-foreground">
+                              <span>{item.completed_criteria}/{item.total_criteria} critérios concluídos</span>
+                              {item.pending_criteria > 0 && <span>· {item.pending_criteria} pendentes</span>}
+                              {item.attention_criteria > 0 && <span className="text-amber-600 dark:text-amber-400">· {item.attention_criteria} precisam de atenção</span>}
+                              {item.adjustment_count > 0 && <span className="text-primary">· {item.adjustment_count} ajuste(s) após revisão</span>}
+                            </div>
+                          </button>
+                          {queueMode === "pending" && (
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              className="size-8 shrink-0 text-primary"
+                              title="Marcar todos os critérios como conferidos"
+                              aria-label={"Marcar todos os critérios como conferidos para " + (item.numero ? "a questão " + item.numero : "esta questão")}
+                              disabled={Boolean(quickCompletingId) || loadingList}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                void markQuestionComplete(item);
+                              }}
+                            >
+                              {quickCompletingId === item.id
+                                ? <Loader2 className="size-4 animate-spin" />
+                                : <Check className="size-4" />}
+                            </Button>
+                          )}
                         </div>
-                        <p className="mt-1 line-clamp-3 text-sm text-foreground">{excerpt || "Enunciado não preenchido."}</p>
-                        <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] text-muted-foreground">
-                          <span>{item.completed_criteria}/{item.total_criteria} critérios concluídos</span>
-                          {item.pending_criteria > 0 && <span>· {item.pending_criteria} pendentes</span>}
-                          {item.attention_criteria > 0 && <span className="text-amber-600 dark:text-amber-400">· {item.attention_criteria} precisam de atenção</span>}
-                          {item.adjustment_count > 0 && <span className="text-primary">· {item.adjustment_count} ajuste(s) após revisão</span>}
-                        </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
