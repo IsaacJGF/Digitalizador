@@ -333,14 +333,24 @@ function tableFromRichBlock(block: Extract<RichBlock, { type: "table" }>) {
     width: { size: 100, type: WidthType.PERCENTAGE },
     layout: TableLayoutType.FIXED,
     borders: thinTableBorders(),
-    rows: block.rows.map((row) => new TableRow({
-      children: Array.from({ length: columnCount }).map((_, index) => new TableCell({
-        children: [new Paragraph({
-          alignment: alignmentFromRichAlign(block.align),
-          spacing: { after: 20, line: 220, lineRule: "exact" as any },
-          children: runsFromRichInlines(row[index] ?? [], { size: 9 }),
-        })],
-      })),
+    rows: block.rows.map((row, rowIndex) => new TableRow({
+      children: Array.from({ length: columnCount }).map((_, index) => {
+        const cell = row[index] ?? { inlines: [], background: null };
+        const isHeader = block.headerRow && rowIndex === 0;
+        const fill = cell.background?.slice(1) || (isHeader ? "E8EEF2" : undefined);
+        const inlines = isHeader
+          ? cell.inlines.map((inline) => inline.type === "text" ? { ...inline, bold: true } : inline)
+          : cell.inlines;
+        return new TableCell({
+          borders: thinTableBorders(),
+          shading: fill ? { fill } : undefined,
+          children: [new Paragraph({
+            alignment: alignmentFromRichAlign(block.align),
+            spacing: { after: 20, line: 220, lineRule: "exact" as any },
+            children: runsFromRichInlines(inlines, { size: 9 }),
+          })],
+        });
+      }),
     })),
   });
 }
