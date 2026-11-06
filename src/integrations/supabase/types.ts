@@ -204,6 +204,107 @@ export type Database = {
         }
         Relationships: []
       }
+      question_review_checks: {
+        Row: {
+          criterio: string
+          observacao: string
+          question_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          criterio: string
+          observacao?: string
+          question_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          criterio?: string
+          observacao?: string
+          question_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_review_checks_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "question_review_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_review_checks_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "question_review_summary"
+            referencedColumns: ["question_id"]
+          },
+          {
+            foreignKeyName: "question_review_checks_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      question_review_history: {
+        Row: {
+          changed_at: string
+          criterio: string
+          id: string
+          motivo: string
+          observacao: string
+          question_id: string
+          status_anterior: string | null
+          status_novo: string
+        }
+        Insert: {
+          changed_at?: string
+          criterio: string
+          id?: string
+          motivo?: string
+          observacao?: string
+          question_id: string
+          status_anterior?: string | null
+          status_novo: string
+        }
+        Update: {
+          changed_at?: string
+          criterio?: string
+          id?: string
+          motivo?: string
+          observacao?: string
+          question_id?: string
+          status_anterior?: string | null
+          status_novo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_review_history_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "question_review_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_review_history_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "question_review_summary"
+            referencedColumns: ["question_id"]
+          },
+          {
+            foreignKeyName: "question_review_history_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       questions: {
         Row: {
           alternativas: Json
@@ -326,7 +427,45 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      question_review_queue: {
+        Row: {
+          adjustment_count: number | null
+          ano: string | null
+          area_geral: string | null
+          attention_criteria: number | null
+          completed_criteria: number | null
+          conteudo_principal: string | null
+          enunciado: string | null
+          fonte: string | null
+          grupo_id: string | null
+          id: string | null
+          instituicao: string | null
+          is_complete: boolean | null
+          last_adjustment_at: string | null
+          numero: string | null
+          pending_criteria: number | null
+          prova: string | null
+          referencia_fonte: string | null
+          referencia_texto: string | null
+          referencia_texto_apos: string | null
+          subconteudo_principal: string | null
+          total_criteria: number | null
+        }
+        Relationships: []
+      }
+      question_review_summary: {
+        Row: {
+          adjustment_count: number | null
+          attention_criteria: number | null
+          completed_criteria: number | null
+          is_complete: boolean | null
+          last_adjustment_at: string | null
+          pending_criteria: number | null
+          question_id: string | null
+          total_criteria: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       _apply_question_image_attachments: {

@@ -8,6 +8,13 @@
       "when": 1793802378025,
       "tag": "0000_question_image_batch_import",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793983550702,
+      "tag": "0001_add_question_review_history",
+      "breakpoints": true
     }
   ]
 }
