@@ -115,7 +115,8 @@ function escapeCellText(value: string): string {
     .replace(/\r\n?/g, "\n")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replace(/>/g, "&gt;")
+    .replace(/\n/g, "<br />");
 }
 
 function normalizeColor(value?: string | null): string | null {
