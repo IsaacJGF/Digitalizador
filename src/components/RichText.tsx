@@ -33,18 +33,18 @@ export function RichText({ text, className = "" }: Props) {
                     <tr key={rowIndex}>
                       {row.map((cell, cellIndex) => {
                         const isHeader = block.headerRow && rowIndex === 0;
-                        const Cell = isHeader ? "th" : "td";
-                        return (
-                          <Cell
-                            key={cellIndex}
-                            scope={isHeader ? "col" : undefined}
-                            className={"min-w-20 border border-foreground/35 px-3 py-2 align-top " + (isHeader ? "font-semibold" : "")}
-                            style={{
-                              backgroundColor: cell.background ?? (isHeader ? "var(--color-muted)" : undefined),
-                            }}
-                          >
-                            {renderInlines(cell.inlines, `${index}-${rowIndex}-${cellIndex}`)}
-                          </Cell>
+                        const style = {
+                          backgroundColor: cell.background ?? (isHeader ? "var(--color-muted)" : undefined),
+                        };
+                        const contents = renderInlines(cell.inlines, `${index}-${rowIndex}-${cellIndex}`);
+                        return isHeader ? (
+                          <th key={cellIndex} scope="col" className="min-w-20 border border-foreground/35 px-3 py-2 align-top font-semibold" style={style}>
+                            {contents}
+                          </th>
+                        ) : (
+                          <td key={cellIndex} className="min-w-20 border border-foreground/35 px-3 py-2 align-top" style={style}>
+                            {contents}
+                          </td>
                         );
                       })}
                     </tr>
