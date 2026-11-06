@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { RichTableCellDraft, RichTableDraft } from "@/lib/rich-table-format";
+import { richTableTextColor, type RichTableCellDraft, type RichTableDraft } from "@/lib/rich-table-format";
 
 type Props = {
   open: boolean;
@@ -197,6 +197,7 @@ function TableCellEditor({
         aria-label={`Conteúdo da ${label}`}
         onChange={(event) => onChange({ ...cell, text: event.target.value })}
         className="min-h-20 resize-y bg-transparent text-xs"
+        style={{ color: richTableTextColor(cell.background) }}
         placeholder={isHeader ? "Cabeçalho" : "Texto da célula"}
       />
       <div className="flex items-center gap-1.5">
