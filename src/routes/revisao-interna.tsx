@@ -266,22 +266,6 @@ function ReviewGate() {
           </form>
         )}
       </div>
-      <EditQuestionDialog
-        question={editingQuestion}
-        draft={editDraft}
-        saving={savingEdit}
-        areas={areas}
-        conteudos={contents}
-        subconteudos={subcontents}
-        relacionados={relatedContents}
-        tags={tags}
-        provas={tests}
-        instituicoes={institutions}
-        onDraftChange={setEditDraft}
-        onClose={closeQuestionEditor}
-        onSave={saveQuestionEdit}
-        onDelete={deleteEditedQuestion}
-      />
     </AppLayout>
   );
 }
@@ -1302,6 +1286,22 @@ function ReviewWorkspace() {
           </aside>
         </div>
       </div>
+      <EditQuestionDialog
+        question={editingQuestion}
+        draft={editDraft}
+        saving={savingEdit}
+        areas={areas}
+        conteudos={contents}
+        subconteudos={subcontents}
+        relacionados={relatedContents}
+        tags={tags}
+        provas={tests}
+        instituicoes={institutions}
+        onDraftChange={setEditDraft}
+        onClose={closeQuestionEditor}
+        onSave={saveQuestionEdit}
+        onDelete={deleteEditedQuestion}
+      />
     </AppLayout>
   );
 }
