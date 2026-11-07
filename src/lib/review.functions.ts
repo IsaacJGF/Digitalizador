@@ -60,12 +60,14 @@ export const lockReview = createServerFn({ method: "POST" }).handler(async () =>
 const CRITERIA = ["texto_base", "enunciado", "alternativas", "gabarito", "imagens", "formatacao", "dados_prova", "classificacao"] as const;
 const STATUSES = ["pendente", "precisa_ajuste", "ajustado_pendente_conferencia", "conferido_ok", "nao_se_aplica", "duvida"] as const;
 const OPEN_STATUSES = ["pendente", "precisa_ajuste", "ajustado_pendente_conferencia", "duvida"] as const;
+const PENDING_STATUSES = ["pendente"] as const;
+const NEEDS_ATTENTION_STATUSES = ["precisa_ajuste", "ajustado_pendente_conferencia", "duvida"] as const;
 const QUESTION_ID_BATCH_SIZE = 80;
 const REVIEW_QUEUE_COLUMNS_FOR_STATS = "id,ano,prova,instituicao,enunciado,referencia_texto,referencia_texto_apos,referencia_fonte,fonte,is_complete";
 
 const QueueInput = z.object({
   columns: z.string().regex(/^[a-z_,]+$/).max(1000),
-  mode: z.enum(["pending", "changed", "completed", "all"]),
+  mode: z.enum(["pending", "needs_adjustment", "completed", "all"]),
   criterion: z.enum(CRITERIA).nullable().optional(),
   criterionStatus: z.enum(["all_open", ...OPEN_STATUSES]).optional(),
   term: z.string().max(200),
@@ -89,21 +91,32 @@ export const listReviewQueue = createServerFn({ method: "POST" })
     await requireUnlocked();
     const db = await admin();
     const criterion = data.criterion ?? null;
-    const criterionStatus = data.criterionStatus ?? "all_open";
-    const useCriterionFilter = data.mode === "pending" && (
-      criterion !== null || criterionStatus !== "all_open"
-    );
+    const criterionStatus = data.criterionStatus ?? "pendente";
 
-    if (useCriterionFilter) {
-      const questionIds = await getQuestionIdsWithReviewStatus(db, criterion, criterionStatus);
+    if (data.mode === "pending" || data.mode === "needs_adjustment") {
+      const modeStatuses = data.mode === "pending" ? PENDING_STATUSES : NEEDS_ATTENTION_STATUSES;
+      const matchingIds = new Set(await getQuestionIdsWithReviewStatus(db, null, modeStatuses));
+
+      if (data.mode === "needs_adjustment") {
+        const pendingIds = new Set(await getQuestionIdsWithReviewStatus(db, null, PENDING_STATUSES));
+        for (const id of pendingIds) matchingIds.delete(id);
+      }
+
+      if (data.mode === "pending" && (criterion !== null || (criterionStatus !== "pendente" && criterionStatus !== "all_open"))) {
+        const selectedStatuses = criterionStatus === "all_open" ? OPEN_STATUSES : [criterionStatus];
+        const selectedIds = new Set(await getQuestionIdsWithReviewStatus(db, criterion, selectedStatuses));
+        for (const id of matchingIds) {
+          if (!selectedIds.has(id)) matchingIds.delete(id);
+        }
+      }
+
+      const questionIds = [...matchingIds];
       if (questionIds.length === 0) return { rows: [], count: 0 };
 
       const matchingRows: Record<string, any>[] = [];
       for (const ids of chunk(questionIds, QUESTION_ID_BATCH_SIZE)) {
         let request = db.from("question_review_queue").select(data.columns).in("id", ids);
-        request = applyQueueFilters(request, data);
-        request = request.eq("is_complete", false);
-        if (data.mode === "changed") request = request.gt("adjustment_count", 0);
+        request = applyQueueFilters(request, data).eq("is_complete", false);
         const { data: rows, error } = await request
           .order("ano", { ascending: false })
           .order("numero", { ascending: true })
@@ -120,9 +133,7 @@ export const listReviewQueue = createServerFn({ method: "POST" })
     }
 
     let request = db.from("question_review_queue").select(data.columns, { count: "exact" });
-    if (data.mode === "pending") request = request.eq("is_complete", false);
     if (data.mode === "completed") request = request.eq("is_complete", true);
-    if (data.mode === "changed") request = request.gt("adjustment_count", 0);
     request = applyQueueFilters(request, data);
     const { data: rows, count, error } = await request
       .order("ano", { ascending: false })
@@ -150,11 +161,14 @@ function sanitizeSearchTerm(value: string) {
   return value.replace(/[^a-zA-ZÀ-ÿ0-9\s-]/g, " ").replace(/\s+/g, " ").trim();
 }
 
-async function getQuestionIdsWithReviewStatus(db: any, criterion: typeof CRITERIA[number] | null, status: "all_open" | typeof OPEN_STATUSES[number]) {
+async function getQuestionIdsWithReviewStatus(
+  db: any,
+  criterion: typeof CRITERIA[number] | null,
+  statuses: readonly (typeof STATUSES)[number][],
+) {
   const ids = new Set<string>();
-  const statuses = status === "all_open" ? OPEN_STATUSES : [status];
   for (let from = 0; ; from += 1000) {
-    let request = db.from("question_review_checks").select("question_id").in("status", statuses);
+    let request = db.from("question_review_checks").select("question_id").in("status", [...statuses]);
     if (criterion) request = request.eq("criterio", criterion);
     const { data, error } = await request.range(from, from + 999);
     if (error) throw new Error(error.message);
@@ -201,6 +215,7 @@ export const getReviewCriterionStats = createServerFn({ method: "POST" })
       Object.fromEntries(STATUSES.map((status) => [status, 0])),
     ])) as Record<typeof CRITERIA[number], Record<typeof STATUSES[number], number>>;
     const questionIdsByStatus = Object.fromEntries(STATUSES.map((status) => [status, new Set<string>()])) as Record<typeof STATUSES[number], Set<string>>;
+    const checksByQuestion = new Map<string, Array<{ criterion: typeof CRITERIA[number]; status: typeof STATUSES[number] }>>();
 
     for (const ids of chunk(questions.map((question) => String(question.id)), QUESTION_ID_BATCH_SIZE)) {
       const { data: checks, error } = await db.from("question_review_checks")
@@ -210,40 +225,43 @@ export const getReviewCriterionStats = createServerFn({ method: "POST" })
       for (const check of checks ?? []) {
         const criterion = check.criterio as typeof CRITERIA[number];
         const status = check.status as typeof STATUSES[number];
-        if (!(CRITERIA as readonly string[]).includes(criterion) || !(STATUSES as readonly string[]).includes(status)) continue;
-        byCriterion[criterion][status] += 1;
-        if (typeof check.question_id === "string") questionIdsByStatus[status].add(check.question_id);
+        const questionId = typeof check.question_id === "string" ? check.question_id : "";
+        if (!questionId || !(CRITERIA as readonly string[]).includes(criterion) || !(STATUSES as readonly string[]).includes(status)) continue;
+        const questionChecks = checksByQuestion.get(questionId) ?? [];
+        questionChecks.push({ criterion, status });
+        checksByQuestion.set(questionId, questionChecks);
       }
     }
 
+    const pendingQuestionIds = new Set<string>();
+    let completed = 0;
+    for (const question of questions) {
+      const questionId = String(question.id);
+      const checks = checksByQuestion.get(questionId) ?? [];
+      if (checks.length < CRITERIA.length || checks.some((check) => check.status === "pendente")) {
+        pendingQuestionIds.add(questionId);
+      } else if (question.is_complete === true) {
+        completed += 1;
+      }
+    }
+
+    for (const questionId of pendingQuestionIds) {
+      for (const check of checksByQuestion.get(questionId) ?? []) {
+        byCriterion[check.criterion][check.status] += 1;
+        questionIdsByStatus[check.status].add(questionId);
+      }
+    }
+
+    const pending = pendingQuestionIds.size;
     return {
       total: questions.length,
-      pending: questions.filter((question) => !question.is_complete).length,
-      completed: questions.filter((question) => question.is_complete).length,
+      completed,
+      pending,
+      needsAdjustment: Math.max(0, questions.length - completed - pending),
       byStatus: Object.fromEntries(STATUSES.map((status) => [status, questionIdsByStatus[status].size])),
       byCriterion,
     };
   });
-
-export const getReviewStats = createServerFn({ method: "GET" }).handler(async () => {
-  await requireUnlocked();
-  const db = await admin();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const count = async (filter?: (q: any) => any) => {
-    let request = db.from("question_review_summary").select("question_id", { count: "exact", head: true });
-    if (filter) request = filter(request);
-    const result = await request;
-    if (result.error) throw new Error(result.error.message);
-    return (result.count ?? 0) as number;
-  };
-  const [total, completed, pending, changed] = await Promise.all([
-    count(),
-    count((q) => q.eq("is_complete", true)),
-    count((q) => q.eq("is_complete", false)),
-    count((q) => q.gt("adjustment_count", 0)),
-  ]);
-  return { total, completed, pending, changed };
-});
 
 export const getReviewMetadata = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => z.object({ questionId: z.string().uuid() }).parse(data))
