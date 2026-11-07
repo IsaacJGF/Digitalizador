@@ -1134,45 +1134,45 @@ function ReviewWorkspace() {
                     <Loader2 className="size-4 animate-spin" /> Carregando checklist e histórico...
                   </div>
                 ) : (
-                      <div className="space-y-2">
-                        {REVIEW_CRITERIA.map(({ id, label }) => {
-                          const check = reviewChecks.find((item) => item.criterio === id);
-                          const status = check?.status ?? "pendente";
-                          return (
-                            <div key={id} className="grid gap-2 rounded-lg border p-3">
-                              <div>
-                                <p className="text-sm font-medium">{label}</p>
-                                {check?.updated_at && <p className="text-[10px] text-muted-foreground">Atualizado {formatReviewDate(check.updated_at)}</p>}
-                              </div>
-                              <Select
-                                value={status}
-                                onValueChange={(value) => void updateReviewCheck(id, value as ReviewStatus)}
-                                disabled={!check}
-                              >
-                                <SelectTrigger aria-label={"Estado de revisão: " + label}><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                  {REVIEW_STATUSES.map((option) => (
-                                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <Input
-                                value={noteDrafts[id] ?? check?.observacao ?? ""}
-                                placeholder={status === "duvida" ? "Descreva a dúvida..." : "Anotação interna (opcional)"}
-                                aria-label={"Anotação interna: " + label}
-                                disabled={!check}
-                                onChange={(event) => setNoteDrafts((currentNotes) => ({ ...currentNotes, [id]: event.target.value }))}
-                                onBlur={() => {
-                                  const note = noteDrafts[id] ?? check?.observacao ?? "";
-                                  if (check && note !== check.observacao) void updateReviewCheck(id, undefined, note);
-                                }}
-                              />
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </section>
+                  <div className="space-y-2">
+                    {REVIEW_CRITERIA.map(({ id, label }) => {
+                      const check = reviewChecks.find((item) => item.criterio === id);
+                      const status = check?.status ?? "pendente";
+                      return (
+                        <div key={id} className="grid gap-2 rounded-lg border p-3">
+                          <div>
+                            <p className="text-sm font-medium">{label}</p>
+                            {check?.updated_at && <p className="text-[10px] text-muted-foreground">Atualizado {formatReviewDate(check.updated_at)}</p>}
+                          </div>
+                          <Select
+                            value={status}
+                            onValueChange={(value) => void updateReviewCheck(id, value as ReviewStatus)}
+                            disabled={!check}
+                          >
+                            <SelectTrigger aria-label={"Estado de revisão: " + label}><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {REVIEW_STATUSES.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            value={noteDrafts[id] ?? check?.observacao ?? ""}
+                            placeholder={status === "duvida" ? "Descreva a dúvida..." : "Anotação interna (opcional)"}
+                            aria-label={"Anotação interna: " + label}
+                            disabled={!check}
+                            onChange={(event) => setNoteDrafts((currentNotes) => ({ ...currentNotes, [id]: event.target.value }))}
+                            onBlur={() => {
+                              const note = noteDrafts[id] ?? check?.observacao ?? "";
+                              if (check && note !== check.observacao) void updateReviewCheck(id, undefined, note);
+                            }}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
             ) : (
               <section className="flex min-h-32 flex-col justify-center rounded-xl border bg-card p-4" aria-label="Checklist de revisão">
                 <h2 className="font-semibold">Checklist da questão</h2>
