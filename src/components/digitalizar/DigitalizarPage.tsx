@@ -4,7 +4,7 @@ import { FileText, ImageIcon, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppLayout } from "@/components/AppLayout";
 import { digitizeQuestion } from "@/lib/digitize.functions";
-import { createEmptyDraftQuestion, saveDraft, type DraftDigitization } from "@/lib/draft-store";
+import { createEmptyDraftQuestion, saveDraft, type DraftDigitization, type DraftQuestion } from "@/lib/draft-store";
 import { formatFileSize, isPdfFile, pageRange, readPdfDocumentSummary, renderPdfPagesToImageDataUrl, type PdfDocumentSummary, type PdfRenderedImage } from "@/lib/pdf-reader";
 import { assertImageCanvasSize, MAX_DIGITIZE_IMAGE_DATA_URL_LENGTH, MAX_IMAGE_CANVAS_PIXELS } from "@/lib/image-limits";
 import { toast } from "sonner";

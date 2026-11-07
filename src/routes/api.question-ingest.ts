@@ -446,7 +446,7 @@ function toQuestionRow(
     id,
     numero: question.numero || null,
     enunciado: statement.text || "",
-    alternativas,
+    alternativas: alternatives,
     tipo: question.tipo,
     resposta: question.resposta
       ? question.tipo === "certo_errado" ? question.resposta.toUpperCase() : question.resposta
@@ -711,7 +711,8 @@ async function importIssueQuestion(input: z.infer<typeof issueRequestSchema>) {
 
   const { data, error } = await supabaseAdmin
     .from("questions")
-    .insert(toQuestionRow(question, id))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .insert(toQuestionRow(question, id) as any)
     .select("id")
     .single();
 
@@ -951,7 +952,7 @@ export const Route = createFileRoute("/api/question-ingest")({
         try {
           return issueValidation.success
             ? await importIssueQuestion(issueValidation.data)
-            : await importQuestionBatch(batchValidation.data);
+            : await importQuestionBatch(batchValidation.data!);
         } catch (error) {
           console.error("[Question ingest] Unexpected server error:", error);
           return json({ ok: false, error: "O servidor não conseguiu processar os dados." }, 500);

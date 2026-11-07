@@ -249,7 +249,7 @@ export function EditQuestionDialog({ question, draft, saving, areas, conteudos, 
       patch({
         enunciado_imagens_extra: upsertEditExtraImage(draft.enunciado_imagens_extra, dataUrl, cropTarget.index),
       });
-    } else {
+    } else if (cropTarget.kind === "alt") {
       updateAlt(cropTarget.index, { imagem: dataUrl, imagem_pendente: false });
     }
     setCropTarget(null);

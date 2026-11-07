@@ -673,13 +673,14 @@ function ReviewWorkspace() {
 
   const openEditor = () => {
     if (!question) return;
-    const editableQuestion: EditableQuestion = {
+    const editableQuestion = {
       ...question,
+      numero: question.numero ?? null,
       disciplina: question.area_geral,
       conteudo: question.conteudo_principal,
       tags: question.tags_livres,
       created_at: question.created_at ?? "",
-    };
+    } as EditableQuestion;
     setEditingQuestion(editableQuestion);
     setEditDraft(toEditDraft(editableQuestion));
   };
