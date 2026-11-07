@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ExternalLink, FileUp, Loader2, Trash2 } from "lucide-react";
+import { ChevronDown, ExternalLink, FileUp, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -60,10 +60,14 @@ export function QuestionReviewPdfPanel({
   questionId,
   year,
   number,
+  open,
+  onOpenChange,
 }: {
   questionId: string;
   year: string | null;
   number: string | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
   const [pdfUrl, setPdfUrl] = useState("");
   const [fileName, setFileName] = useState("");
@@ -152,85 +156,109 @@ export function QuestionReviewPdfPanel({
   const questionSearch = [year, number ? "questão " + number : ""].filter(Boolean).join(" ");
 
   return (
-    <section className="flex min-h-[420px] flex-col overflow-hidden rounded-xl border bg-card" aria-label="PDF original da questão">
-      <div className="space-y-3 border-b p-3">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <h2 className="font-semibold">PDF original</h2>
-            <p className="text-xs text-muted-foreground">
-              {fileName || "O arquivo fica salvo somente neste navegador."}
-            </p>
-          </div>
-          {pdfUrl && (
-            <Button type="button" variant="ghost" size="icon" title="Remover PDF salvo" aria-label="Remover PDF salvo" onClick={() => void removePdf()}>
-              <Trash2 className="size-4" />
-            </Button>
-          )}
-        </div>
-        {!pdfUrl && (
-          <Label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-4 text-sm hover:bg-muted/50">
-            {saving || loading ? <Loader2 className="size-4 animate-spin" /> : <FileUp className="size-4" />}
-            {saving ? "Salvando PDF..." : loading ? "Carregando PDF..." : "Selecionar PDF de referência"}
-            <Input
-              type="file"
-              accept="application/pdf,.pdf"
-              className="sr-only"
-              disabled={saving || loading}
-              onChange={(event) => {
-                void uploadPdf(event.currentTarget.files?.[0]);
-                event.currentTarget.value = "";
-              }}
-            />
-          </Label>
-        )}
-        {pdfUrl && (
-          <div className="grid grid-cols-[1fr_auto] items-end gap-2">
-            <div className="space-y-1">
-              <Label htmlFor="review-pdf-page" className="text-xs">Página original</Label>
-              <Input
-                id="review-pdf-page"
-                type="number"
-                min={1}
-                step={1}
-                value={page}
-                onChange={(event) => savePage(Number(event.target.value))}
-              />
+    <section className="overflow-hidden rounded-xl border bg-card" aria-label="PDF original da questão">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => onOpenChange(!open)}
+        className="flex w-full items-center justify-between gap-3 p-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+      >
+        <span className="flex min-w-0 items-center gap-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <FileUp className="size-4" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold">PDF original</span>
+            <span className="block truncate text-xs text-muted-foreground">
+              {fileName || (loading ? "Verificando PDF salvo..." : "Clique para abrir e selecionar o PDF.")}
+            </span>
+          </span>
+        </span>
+        <ChevronDown className={"size-4 shrink-0 text-muted-foreground transition-transform " + (open ? "rotate-180" : "")} />
+      </button>
+      {open && (
+        <div className="border-t">
+          <div className="space-y-3 p-3">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <p className="text-xs text-muted-foreground">
+                {fileName
+                  ? "PDF salvo somente neste navegador."
+                  : "Envie o PDF da prova para comparar a questão cadastrada com a página original."}
+              </p>
+              {pdfUrl && (
+                <div className="flex items-center gap-3">
+                  <a className="inline-flex items-center gap-1 text-xs text-primary hover:underline" href={pdfPageUrl} target="_blank" rel="noreferrer">
+                    Abrir em nova aba <ExternalLink className="size-3" />
+                  </a>
+                  <Button type="button" variant="ghost" size="icon" title="Remover PDF salvo" aria-label="Remover PDF salvo" onClick={() => void removePdf()}>
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              )}
             </div>
-            <Label className="flex h-10 cursor-pointer items-center gap-2 rounded-md border px-3 text-xs hover:bg-muted/50">
-              <FileUp className="size-4" />
-              Trocar PDF
-              <Input
-                type="file"
-                accept="application/pdf,.pdf"
-                className="sr-only"
-                disabled={saving}
-                onChange={(event) => {
-                  void uploadPdf(event.currentTarget.files?.[0]);
-                  event.currentTarget.value = "";
-                }}
-              />
-            </Label>
+            {!pdfUrl && (
+              <Label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-4 text-sm hover:bg-muted/50">
+                {saving || loading ? <Loader2 className="size-4 animate-spin" /> : <FileUp className="size-4" />}
+                {saving ? "Salvando PDF..." : loading ? "Carregando PDF..." : "Selecionar PDF de referência"}
+                <Input
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  className="sr-only"
+                  disabled={saving || loading}
+                  onChange={(event) => {
+                    void uploadPdf(event.currentTarget.files?.[0]);
+                    event.currentTarget.value = "";
+                  }}
+                />
+              </Label>
+            )}
+            {pdfUrl && (
+              <>
+                <div className="grid grid-cols-[1fr_auto] items-end gap-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="review-pdf-page" className="text-xs">Página original</Label>
+                    <Input
+                      id="review-pdf-page"
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={page}
+                      onChange={(event) => savePage(Number(event.target.value))}
+                    />
+                  </div>
+                  <Label className="flex h-10 cursor-pointer items-center gap-2 rounded-md border px-3 text-xs hover:bg-muted/50">
+                    <FileUp className="size-4" />
+                    Trocar PDF
+                    <Input
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      className="sr-only"
+                      disabled={saving}
+                      onChange={(event) => {
+                        void uploadPdf(event.currentTarget.files?.[0]);
+                        event.currentTarget.value = "";
+                      }}
+                    />
+                  </Label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {questionSearch ? "Localize " + questionSearch + " e associe a página." : "Associe a página desta questão."}
+                </p>
+              </>
+            )}
           </div>
-        )}
-        {pdfUrl && (
-          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-            <span>{questionSearch ? "Localize " + questionSearch + " e associe a página." : "Associe a página desta questão."}</span>
-            <a className="inline-flex items-center gap-1 text-primary hover:underline" href={pdfPageUrl} target="_blank" rel="noreferrer">
-              Abrir em nova aba <ExternalLink className="size-3" />
-            </a>
-          </div>
-        )}
-      </div>
-      {pdfUrl ? (
-        <iframe
-          key={pdfUrl + "-" + page}
-          title={fileName ? "PDF original: " + fileName : "PDF original"}
-          src={pdfPageUrl}
-          className="min-h-[560px] w-full flex-1 bg-muted"
-        />
-      ) : (
-        <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-muted-foreground">
-          Envie o PDF da prova para comparar a questão cadastrada com a página original.
+          {pdfUrl ? (
+            <iframe
+              key={pdfUrl + "-" + page}
+              title={fileName ? "PDF original: " + fileName : "PDF original"}
+              src={pdfPageUrl}
+              className="h-[55vh] min-h-[320px] max-h-[560px] w-full border-t bg-muted"
+            />
+          ) : (
+            <div className="flex min-h-[180px] items-center justify-center border-t p-6 text-center text-sm text-muted-foreground">
+              Envie o PDF ou selecione um arquivo acima.
+            </div>
+          )}
         </div>
       )}
     </section>
