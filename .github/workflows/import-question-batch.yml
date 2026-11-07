@@ -28,13 +28,25 @@ jobs:
             const pr = context.payload.pull_request;
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const comment = async (body) => github.rest.issues.createComment({
-              owner,
-              repo,
-              issue_number: pr.number,
-              body,
-            });
+            const comment = async (body) => {
+              try {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: pr.number,
+                  body,
+                });
+              } catch (error) {
+                const message = error instanceof Error ? error.message : "erro desconhecido";
+                core.warning("Não foi possível publicar o resultado no PR: " + message);
+              }
+            };
             const fail = async (message) => {
+              core.error(message);
+              await core.summary
+                .addHeading("Importação não concluída")
+                .addText(message)
+                .write();
               await comment("Não consegui importar o lote aprovado. " + message);
               core.setFailed(message);
             };
@@ -125,8 +137,21 @@ jobs:
 
               const result = await response.json().catch(() => null);
               if (!response.ok || !result?.ok) {
-                const details = Array.isArray(result?.details) ? " " + result.details.join("; ") : "";
-                await fail((result?.error || "O endpoint rejeitou o lote.") + details);
+                const details = Array.isArray(result?.details)
+                  ? " " + result.details.slice(0, 20).map((detail) => {
+                      if (typeof detail === "string") return detail;
+                      if (detail && typeof detail === "object") {
+                        const path = typeof detail.path === "string" ? detail.path : "";
+                        const message = typeof detail.message === "string" ? detail.message : "";
+                        return [path, message].filter(Boolean).join(": ") || JSON.stringify(detail);
+                      }
+                      return String(detail);
+                    }).join("; ").slice(0, 5_000)
+                  : "";
+                await fail(
+                  "Endpoint respondeu HTTP " + response.status + ": " +
+                  (result?.error || "O endpoint rejeitou o lote.") + details
+                );
                 return;
               }
 
