@@ -284,6 +284,7 @@ function ReviewWorkspace() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [queueMode, setQueueMode] = useState<ReviewQueueMode>("pending");
+  const [pdfExpanded, setPdfExpanded] = useState(false);
   const [criterionFilter, setCriterionFilter] = useState<ReviewCriterionFilter>("all");
   const [criterionStatusFilter, setCriterionStatusFilter] = useState<ReviewCriterionStatusFilter>("all_open");
   const [criterionStats, setCriterionStats] = useState<ReviewCriterionStats>(() => createEmptyReviewCriterionStats());
@@ -306,6 +307,10 @@ function ReviewWorkspace() {
 
   selectedIdRef.current = selectedId;
   queueModeRef.current = queueMode;
+
+  useEffect(() => {
+    setPdfExpanded(false);
+  }, [queueMode]);
 
   useEffect(() => {
     try {
@@ -1068,63 +1073,6 @@ function ReviewWorkspace() {
                   </div>
                 </section>
 
-                <section className="space-y-3 rounded-xl border bg-card p-4" aria-label="Checklist de revisão">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <h2 className="font-semibold">Checklist da questão</h2>
-                      <p className="text-xs text-muted-foreground">
-                        Marque cada critério. Questões com itens incompletos continuam na fila de pendentes.
-                      </p>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      {reviewChecks.filter((check) => check.status === "conferido_ok" || check.status === "nao_se_aplica").length}/8 concluídos
-                    </span>
-                  </div>
-                  {reviewMetadataLoading ? (
-                    <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
-                      <Loader2 className="size-4 animate-spin" /> Carregando checklist e histórico...
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {REVIEW_CRITERIA.map(({ id, label }) => {
-                        const check = reviewChecks.find((item) => item.criterio === id);
-                        const status = check?.status ?? "pendente";
-                        return (
-                          <div key={id} className="grid gap-2 rounded-lg border p-3 md:grid-cols-[minmax(130px,0.7fr)_minmax(210px,1fr)_minmax(180px,1fr)] md:items-center">
-                            <div>
-                              <p className="text-sm font-medium">{label}</p>
-                              {check?.updated_at && <p className="text-[10px] text-muted-foreground">Atualizado {formatReviewDate(check.updated_at)}</p>}
-                            </div>
-                            <Select
-                              value={status}
-                              onValueChange={(value) => void updateReviewCheck(id, value as ReviewStatus)}
-                              disabled={!check}
-                            >
-                              <SelectTrigger aria-label={"Estado de revisão: " + label}><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                {REVIEW_STATUSES.map((option) => (
-                                  <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <Input
-                              value={noteDrafts[id] ?? check?.observacao ?? ""}
-                              placeholder={status === "duvida" ? "Descreva a dúvida..." : "Anotação interna (opcional)"}
-                              aria-label={"Anotação interna: " + label}
-                              disabled={!check}
-                              onChange={(event) => setNoteDrafts((currentNotes) => ({ ...currentNotes, [id]: event.target.value }))}
-                              onBlur={() => {
-                                const note = noteDrafts[id] ?? check?.observacao ?? "";
-                                if (check && note !== check.observacao) void updateReviewCheck(id, undefined, note);
-                              }}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </section>
-
                 <details className="rounded-xl border bg-card p-4">
                   <summary className="cursor-pointer font-semibold">
                     Histórico desta questão ({reviewHistory.length}{reviewHistory.length === 60 ? "+" : ""})
@@ -1160,11 +1108,80 @@ function ReviewWorkspace() {
             )}
           </main>
 
-          <QuestionReviewPdfPanel
-            questionId={question?.id ?? selectedId}
-            year={question?.ano ?? items.find((item) => item.id === selectedId)?.ano ?? null}
-            number={question?.numero ?? items.find((item) => item.id === selectedId)?.numero ?? null}
-          />
+          <aside className="min-w-0 space-y-3 xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)] xl:self-start xl:overflow-y-auto" aria-label="Painel de revisão">
+            <QuestionReviewPdfPanel
+              questionId={question?.id ?? selectedId}
+              year={question?.ano ?? items.find((item) => item.id === selectedId)?.ano ?? null}
+              number={question?.numero ?? items.find((item) => item.id === selectedId)?.numero ?? null}
+              open={pdfExpanded}
+              onOpenChange={setPdfExpanded}
+            />
+            {question ? (
+              <section className="space-y-3 rounded-xl border bg-card p-4" aria-label="Checklist de revisão">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <h2 className="font-semibold">Checklist da questão</h2>
+                    <p className="text-xs text-muted-foreground">
+                      Marque cada critério. Questões com itens incompletos continuam na fila de pendentes.
+                    </p>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {reviewChecks.filter((check) => check.status === "conferido_ok" || check.status === "nao_se_aplica").length}/8 concluídos
+                  </span>
+                </div>
+                {reviewMetadataLoading ? (
+                  <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+                    <Loader2 className="size-4 animate-spin" /> Carregando checklist e histórico...
+                  </div>
+                ) : (
+                      <div className="space-y-2">
+                        {REVIEW_CRITERIA.map(({ id, label }) => {
+                          const check = reviewChecks.find((item) => item.criterio === id);
+                          const status = check?.status ?? "pendente";
+                          return (
+                            <div key={id} className="grid gap-2 rounded-lg border p-3">
+                              <div>
+                                <p className="text-sm font-medium">{label}</p>
+                                {check?.updated_at && <p className="text-[10px] text-muted-foreground">Atualizado {formatReviewDate(check.updated_at)}</p>}
+                              </div>
+                              <Select
+                                value={status}
+                                onValueChange={(value) => void updateReviewCheck(id, value as ReviewStatus)}
+                                disabled={!check}
+                              >
+                                <SelectTrigger aria-label={"Estado de revisão: " + label}><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  {REVIEW_STATUSES.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Input
+                                value={noteDrafts[id] ?? check?.observacao ?? ""}
+                                placeholder={status === "duvida" ? "Descreva a dúvida..." : "Anotação interna (opcional)"}
+                                aria-label={"Anotação interna: " + label}
+                                disabled={!check}
+                                onChange={(event) => setNoteDrafts((currentNotes) => ({ ...currentNotes, [id]: event.target.value }))}
+                                onBlur={() => {
+                                  const note = noteDrafts[id] ?? check?.observacao ?? "";
+                                  if (check && note !== check.observacao) void updateReviewCheck(id, undefined, note);
+                                }}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </section>
+            ) : (
+              <section className="flex min-h-32 flex-col justify-center rounded-xl border bg-card p-4" aria-label="Checklist de revisão">
+                <h2 className="font-semibold">Checklist da questão</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {loadingQuestion ? "Carregando questão e checklist..." : "Selecione uma questão na fila para exibir o checklist."}
+                </p>
+              </section>
+            )}
+          </aside>
         </div>
       </div>
     </AppLayout>
