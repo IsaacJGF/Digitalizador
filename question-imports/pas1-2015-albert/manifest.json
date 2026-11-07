@@ -1,0 +1,512 @@
+{
+  "schema_version": 1,
+  "batch_key": "pas1-2015-albert-fisica-16",
+  "references": [
+    {
+      "id": "pas1-2015-albert-2015-albert-r055-061",
+      "blocos": [
+        {
+          "tipo": "texto",
+          "texto": "Cientistas e agricultores estão trabalhando juntos, no Peru, para reduzir os impactos das mudanças climáticas, por meio da produção de biocarvão. Em um forno revestido de alumínio, eles produzem o composto a partir da queima de bambu. O biocarvão é usado em plantações de mandioca, milho, pimentão e cana-de-açúcar. De acordo com os pesquisadores, o material mostrou-se capaz de aumentar a fertilidade do solo e favorecer o crescimento das plantas cultivadas.\n\nEm Cusco, no Vale Sagrado dos Incas, o processo de produção de biocarvão é simples: o forno é aquecido até a temperatura de 800 ºC, o que limita a entrada de oxigênio; em seguida, bambus são inseridos e queimam por 5 horas; depois, são resfriados com água e triturados.\n\nNo Brasil, pesquisadores do Instituto Agronômico de Campinas estão testando biocarvão produzido a partir de dejetos de galinha, lodo de esgoto e palha de cana-de-açúcar em altas temperaturas, também para finalidade agrícola e na retenção de metais pesados no solo. A ideia de queimar fontes ricas em carbono para aumentar o estoque no solo e melhorar suas propriedades químicas, físicas e biológicas surgiu a partir de estudos com terra preta em sítios pré-históricos da Amazônia Central.\n\nA superfície porosa do biocarvão constitui um ambiente favorável à proliferação de fungos e bactérias que ajudam as plantas a absorver melhor os nutrientes do solo. Além disso, o biocarvão é adicionado à terra com o objetivo de imobilizar / reter metais e reduzir sua transferência para a água, plantas e animais, incluindo-se o ser humano.\n\nInternet: <www.revistapesquisa.fapesp.br> (com adaptações).\n\n"
+        },
+        {
+          "tipo": "imagem"
+        },
+        {
+          "tipo": "imagem"
+        },
+        {
+          "tipo": "texto",
+          "texto": "Tendo como referência o texto e as figuras acima e considerando que 6 × 10²³ mol⁻¹ seja o valor da constante de Avogadro, julgue os itens de 55 a 60, e faça o que se pede no item 61, que é do tipo C."
+        }
+      ],
+      "fonte": "PAS 1/UnB, 1.ª etapa, Caderno Albert (2015), p. 9; PDF unificado, p. 169."
+    },
+    {
+      "id": "pas1-2015-albert-2015-albert-r062-068",
+      "blocos": [
+        {
+          "tipo": "texto",
+          "texto": "Os fermentos são muito utilizados como ingredientes na produção de pães e bolos: servem para dar maciez a esses alimentos. Os fermentos, que podem ser químicos ou biológicos, funcionam, basicamente, da mesma maneira: produzem, por meio de reações químicas, gás carbônico, que aera as massas dos alimentos. Para melhor compreender o funcionamento dos fermentos, considere os experimentos I e II descritos a seguir.\n\nexperimento I\n\nfarinha de trigo\naçúcar\nágua\nfermento biológico"
+        },
+        {
+          "tipo": "imagem"
+        },
+        {
+          "tipo": "texto",
+          "texto": "A massa cresce, mesmo à temperatura ambiente, devido à fermentação da glicose pelos microrganismos contidos no fermento biológico, de acordo com a seguinte reação:\n\nC₆H₁₂O₆(s) → 2C₂H₅OH(l) + 2CO₂(g)."
+        },
+        {
+          "tipo": "texto",
+          "texto": "experimento II\n\nfarinha de trigo\naçúcar\nágua\nfermento químico"
+        },
+        {
+          "tipo": "imagem"
+        },
+        {
+          "tipo": "texto",
+          "texto": "A reação ocorre quando o sistema é aquecido e há decomposição térmica do principal componente do fermento químico, o bicarbonato de sódio (NaHCO₃):\n\n2NaHCO₃(s) → Na₂CO₃(s) + H₂O(l) + CO₂(g).\n\nConsiderando essas informações, julgue os itens de 62 a 66 e faça o que se pede no item 67, que é do tipo B, e no item 68, que é do tipo D."
+        }
+      ],
+      "fonte": "PAS 1/UnB, 1.ª etapa, Caderno Albert (2015), p. 10; PDF unificado, p. 170."
+    },
+    {
+      "id": "pas1-2015-albert-2015-albert-r069-071",
+      "blocos": [
+        {
+          "tipo": "imagem"
+        },
+        {
+          "tipo": "texto",
+          "texto": "Os parques eólicos localizados no município gaúcho de Osório formam o maior complexo gerador de energia a partir do vento da América Latina. Com 150 MW de energia instalada, o empreendimento destaca-se, entre outros aspectos, por produzir energia limpa e renovável, sem emissões de dióxido de carbono (CO₂), um dos gases responsáveis pelo efeito estufa.\n\nA transformação do vento em energia ocorre por meio das turbinas eólicas, também conhecidas como aerogeradores ou cata-ventos (figura acima). As turbinas eólicas de Osório são dotadas de um sistema que orienta o rotor, composto por três pás, na direção do vento. A inclinação das pás é automaticamente regulada para otimizar a incidência do vento. As pás medem 35 m e foram desenvolvidas com a utilização de tecnologia da indústria aeronáutica. O projeto é integrado por três parques, que reúnem 75 aerogeradores, instalados em torres de concreto, a 100 m de altura.\n\nInternet: <www.brasil.gov.br> (com adaptações).\n\nTendo o texto e a figura acima como referências, considerando a aceleração da gravidade igual a 10 m/s² e assumindo 3,14 como o valor aproximado de π, julgue os itens que se seguem."
+        }
+      ],
+      "fonte": "PAS 1/UnB, 1.ª etapa, Caderno Albert (2015), p. 11; PDF unificado, p. 171."
+    },
+    {
+      "id": "pas1-2015-albert-2015-albert-r072-073",
+      "blocos": [
+        {
+          "tipo": "imagem"
+        },
+        {
+          "tipo": "texto",
+          "texto": "Tendo como referência a figura acima, que representa uma torre que sustenta as três pás do cata-vento, julgue os itens a seguir, considerando iguais os ângulos entre as pás."
+        }
+      ],
+      "fonte": "PAS 1/UnB, 1.ª etapa, Caderno Albert (2015), p. 11; PDF unificado, p. 171."
+    },
+    {
+      "id": "pas1-2015-albert-2015-albert-r077-078",
+      "blocos": [
+        {
+          "tipo": "imagem"
+        },
+        {
+          "tipo": "texto",
+          "texto": "Considerando o gráfico acima, que ilustra o deslocamento retilíneo de um móvel em função do tempo, julgue o item 77 e faça o que se pede no item 78, que é do tipo D."
+        }
+      ],
+      "fonte": "PAS 1/UnB, 1.ª etapa, Caderno Albert (2015), p. 12; PDF unificado, p. 172."
+    },
+    {
+      "id": "pas1-2015-albert-2015-albert-r086",
+      "blocos": [
+        {
+          "tipo": "texto",
+          "texto": "Dois veículos, A e B, de massas iguais a 1.000 kg e 800 kg, respectivamente, colidem frontalmente. A velocidade do veículo A era de 40 km/h no momento da colisão."
+        }
+      ],
+      "fonte": "PAS 1/UnB, 1.ª etapa, Caderno Albert (2015), p. 14; PDF unificado, p. 174."
+    },
+    {
+      "id": "pas1-2015-albert-2015-albert-r087",
+      "blocos": [
+        {
+          "tipo": "texto",
+          "texto": "Coeficiente de restituição é a relação entre as velocidades de um objeto depois e antes de uma colisão. Por exemplo, se uma bola, solta de uma altura h₁, quicar no solo e retornar a uma altura h₂, com h₂ < h₁, o coeficiente de restituição do solo será menor que 1.\n\nTendo como referência as informações acima, assinale a opção correta no item que se segue, que é do tipo C."
+        }
+      ],
+      "fonte": "PAS 1/UnB, 1.ª etapa, Caderno Albert (2015), p. 14; PDF unificado, p. 174."
+    },
+    {
+      "id": "pas1-2015-albert-2015-albert-r090-093",
+      "blocos": [
+        {
+          "tipo": "imagem"
+        },
+        {
+          "tipo": "texto",
+          "texto": "Um navio negreiro típico, com 200 toneladas de massa, tem a forma de um prisma triangular reto, cujas dimensões são mostradas na figura acima. As bases do prisma são triângulos isósceles e o convés do navio é um retângulo.\n\nCom base nessas informações e considerando que a densidade da água seja igual a 1.000 kg/m³, julgue os itens de 90 a 92 e assinale a opção correta no item 93, que é do tipo C."
+        }
+      ],
+      "fonte": "PAS 1/UnB, 1.ª etapa, Caderno Albert (2015), p. 15; PDF unificado, p. 175."
+    },
+    {
+      "id": "pas1-2015-albert-2015-albert-r096-100",
+      "blocos": [
+        {
+          "tipo": "texto",
+          "texto": "O Sistema de Detecção do Desmatamento em Tempo Real (DETER) do INPE indicou que em agosto e setembro de 2014 foram devastados 1.626 km² de florestas na Amazônia Legal, um crescimento de 122% em relação ao mesmo período em 2013. Em agosto, foram desmatados 890,2 km², um salto de 208% considerados os 288,6 km² desmatados no mesmo mês de 2013. Em setembro, foram 736,66% mais que em setembro do ano anterior.\n\nO IBAMA está preocupado com um novo método do crime organizado para desmatar na Amazônia, que consiste em fazer desmatamentos em pequenos pontos para dificultar a detecção pelo DETER. Hoje, o sistema, que se baseia em imagens feitas por dois satélites, enxerga apenas cortes em áreas maiores que 25 hectares. Por isso, o órgão pretende tornar operacional um DETER mais potente, para que seja possível enxergar desmatamento em áreas a partir de 6,25 hectares.\n\nInternet: <www.em.com.br> (com adaptações).\n\nTendo o texto acima como referência inicial e considerando as características da Amazônia, julgue os itens de 96 a 99 e assinale a opção correta no item 100, que é do tipo C."
+        }
+      ],
+      "fonte": "PAS 1/UnB, 1.ª etapa, Caderno Albert (2015), p. 16; PDF unificado, p. 176."
+    }
+  ],
+  "questions": [
+    {
+      "numero": "61",
+      "tipo": "multipla_escolha",
+      "alternativas": [
+        {
+          "letra": "A",
+          "texto": "",
+          "imagem_pendente": true
+        },
+        {
+          "letra": "B",
+          "texto": "",
+          "imagem_pendente": true
+        },
+        {
+          "letra": "C",
+          "texto": "",
+          "imagem_pendente": true
+        },
+        {
+          "letra": "D",
+          "texto": "",
+          "imagem_pendente": true
+        }
+      ],
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Hidrostática",
+      "subconteudo_principal": "Densidade e estratificação de materiais",
+      "conteudos_relacionados": [],
+      "tags_livres": [],
+      "ano": "2015",
+      "prova": "PAS 1 — Primeira Etapa",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2015 (triênio 2015/2017)",
+      "caderno": "Albert",
+      "referencia_id": "pas1-2015-albert-2015-albert-r055-061",
+      "fonte": "Prova: Caderno Albert, p. 9 (PDF unificado, p. 169). Gabarito: CEBRASPE, Gabaritos Oficiais Preliminares, PAS12015_001_01, item 61.",
+      "enunciado": "Considere a tabela abaixo, que mostra a densidade média de alguns componentes.\n\ncomponente — densidade média\nágua — 1,0 × 10⁶ mg/L\nbiocarvão — 200 kg/m³\nareia limpa — 2,5 g/cm³\n\nAssinale a opção que mostra a disposição dos componentes do sistema formado após a adição de água a uma amostra contendo somente areia limpa e biocarvão.",
+      "resposta": "B"
+    },
+    {
+      "numero": "64",
+      "tipo": "certo_errado",
+      "alternativas": [],
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Hidrostática",
+      "subconteudo_principal": "Densidade de materiais e misturas",
+      "conteudos_relacionados": [],
+      "tags_livres": [],
+      "ano": "2015",
+      "prova": "PAS 1 — Primeira Etapa",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2015 (triênio 2015/2017)",
+      "caderno": "Albert",
+      "referencia_id": "pas1-2015-albert-2015-albert-r062-068",
+      "fonte": "Prova: Caderno Albert, p. 10 (PDF unificado, p. 170). Gabarito: CEBRASPE, Gabaritos Oficiais Preliminares, PAS12015_001_01, item 64.",
+      "enunciado": "O processo de fermentação aumenta a densidade da massa de pães e bolos.",
+      "resposta": "E"
+    },
+    {
+      "numero": "67",
+      "tipo": "numerica",
+      "alternativas": [],
+      "area_geral": "Física Térmica",
+      "conteudo_principal": "Termodinâmica",
+      "subconteudo_principal": "Gases e variação de volume",
+      "conteudos_relacionados": [],
+      "tags_livres": [],
+      "ano": "2015",
+      "prova": "PAS 1 — Primeira Etapa",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2015 (triênio 2015/2017)",
+      "caderno": "Albert",
+      "referencia_id": "pas1-2015-albert-2015-albert-r062-068",
+      "fonte": "Prova: Caderno Albert, p. 10 (PDF unificado, p. 170). Gabarito: CEBRASPE, Gabaritos Oficiais Preliminares, PAS12015_001_01, item 67.",
+      "enunciado": "Considere que um volume cúbico de 10 cm de aresta contendo 8,4 g de bicarbonato de sódio seja aquecido até a completa decomposição do NaHCO₃, conforme a equação química apresentada. Considere, ainda, que nesse processo haja expansão homogênea do volume do cubo, em decorrência unicamente do desprendimento de CO₂ da reação, sem perdas, de maneira que se forme um cubo maior. Suponha que, para cada mol de CO₂ formado, haja um incremento de 20 L em gás carbônico. Com base nessas informações, calcule o volume final do cubo, em cm³, após expansão da massa. Divida o valor encontrado por 10. Após ter efetuado todos os cálculos solicitados, despreze, para a marcação no Caderno de Respostas, a parte fracionária do resultado final obtido, caso exista.",
+      "resposta": "200"
+    },
+    {
+      "numero": "69",
+      "tipo": "certo_errado",
+      "alternativas": [],
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Cinemática",
+      "subconteudo_principal": "Queda livre",
+      "conteudos_relacionados": [],
+      "tags_livres": [],
+      "ano": "2015",
+      "prova": "PAS 1 — Primeira Etapa",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2015 (triênio 2015/2017)",
+      "caderno": "Albert",
+      "referencia_id": "pas1-2015-albert-2015-albert-r069-071",
+      "fonte": "Prova: Caderno Albert, p. 11 (PDF unificado, p. 171). Gabarito: CEBRASPE, Gabaritos Oficiais Preliminares, PAS12015_001_01, item 69.",
+      "enunciado": "Desconsiderada a resistência do ar, um objeto que caia do alto da torre onde estão instalados os aerogeradores chegará ao solo com velocidade superior a 120 km/h.",
+      "resposta": "C"
+    },
+    {
+      "numero": "70",
+      "tipo": "certo_errado",
+      "alternativas": [],
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Trabalho, energia e potência",
+      "subconteudo_principal": "Potência",
+      "conteudos_relacionados": [],
+      "tags_livres": [],
+      "ano": "2015",
+      "prova": "PAS 1 — Primeira Etapa",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2015 (triênio 2015/2017)",
+      "caderno": "Albert",
+      "referencia_id": "pas1-2015-albert-2015-albert-r069-071",
+      "fonte": "Prova: Caderno Albert, p. 11 (PDF unificado, p. 171). Gabarito: CEBRASPE, Gabaritos Oficiais Preliminares, PAS12015_001_01, item 70.",
+      "enunciado": "Se todos os aerogeradores referidos no texto forem iguais, então cada um deles gera 2 MW de energia.",
+      "resposta": "C"
+    },
+    {
+      "numero": "71",
+      "tipo": "certo_errado",
+      "alternativas": [],
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Movimento circular",
+      "subconteudo_principal": "Velocidade tangencial",
+      "conteudos_relacionados": [],
+      "tags_livres": [],
+      "ano": "2015",
+      "prova": "PAS 1 — Primeira Etapa",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2015 (triênio 2015/2017)",
+      "caderno": "Albert",
+      "referencia_id": "pas1-2015-albert-2015-albert-r069-071",
+      "fonte": "Prova: Caderno Albert, p. 11 (PDF unificado, p. 171). Gabarito: CEBRASPE, Gabaritos Oficiais Preliminares, PAS12015_001_01, item 71.",
+      "enunciado": "Considere que, para a avaliação da rotação nominal de operação das turbinas eólicas, utiliza-se a fórmula prática RPM = 1.150/D, em que RPM significa rotações por minuto e D é o diâmetro do rotor (diâmetro do círculo determinado pelo giro das pás). Nesse caso, a velocidade linear da ponta de uma pá nos aerogeradores é inferior a 40 m/s.",
+      "resposta": "E"
+    },
+    {
+      "numero": "72",
+      "tipo": "certo_errado",
+      "alternativas": [],
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Movimento circular",
+      "subconteudo_principal": "Rotação e trajetória espacial",
+      "conteudos_relacionados": [],
+      "tags_livres": [],
+      "ano": "2015",
+      "prova": "PAS 1 — Primeira Etapa",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2015 (triênio 2015/2017)",
+      "caderno": "Albert",
+      "referencia_id": "pas1-2015-albert-2015-albert-r072-073",
+      "fonte": "Prova: Caderno Albert, p. 11 (PDF unificado, p. 171). Gabarito: CEBRASPE, Gabaritos Oficiais Preliminares, PAS12015_001_01, item 72.",
+      "enunciado": "Se as rotações das três pás DA, DB, DC e a rotação do cata-vento em torno do eixo DP forem independentes, então o ponto C descreverá, no espaço, uma circunferência paralela ao solo.",
+      "resposta": "E"
+    },
+    {
+      "numero": "73",
+      "tipo": "certo_errado",
+      "alternativas": [],
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Movimento circular",
+      "subconteudo_principal": "Posição angular",
+      "conteudos_relacionados": [],
+      "tags_livres": [],
+      "ano": "2015",
+      "prova": "PAS 1 — Primeira Etapa",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2015 (triênio 2015/2017)",
+      "caderno": "Albert",
+      "referencia_id": "pas1-2015-albert-2015-albert-r072-073",
+      "fonte": "Prova: Caderno Albert, p. 11 (PDF unificado, p. 171). Gabarito: CEBRASPE, Gabaritos Oficiais Preliminares, PAS12015_001_01, item 73.",
+      "enunciado": "Se, em determinado instante, o ângulo entre a pá DA e o suporte DP estiver entre 0º e 30º, então, nesse instante, nenhuma das pás DB ou DC estará paralela ao solo.",
+      "resposta": "C"
+    },
+    {
+      "numero": "77",
+      "tipo": "certo_errado",
+      "alternativas": [],
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Cinemática",
+      "subconteudo_principal": "Gráficos do movimento",
+      "conteudos_relacionados": [],
+      "tags_livres": [],
+      "ano": "2015",
+      "prova": "PAS 1 — Primeira Etapa",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2015 (triênio 2015/2017)",
+      "caderno": "Albert",
+      "referencia_id": "pas1-2015-albert-2015-albert-r077-078",
+      "fonte": "Prova: Caderno Albert, p. 12 (PDF unificado, p. 172). Gabarito: CEBRASPE, Gabaritos Oficiais Preliminares, PAS12015_001_01, item 77.",
+      "enunciado": "Em 8 segundos, o móvel percorreu uma distância inferior a 8 m.",
+      "resposta": "E"
+    },
+    {
+      "numero": "78",
+      "tipo": "discursiva",
+      "alternativas": [],
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Cinemática",
+      "subconteudo_principal": "Gráficos do movimento",
+      "conteudos_relacionados": [],
+      "tags_livres": [],
+      "ano": "2015",
+      "prova": "PAS 1 — Primeira Etapa",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2015 (triênio 2015/2017)",
+      "caderno": "Albert",
+      "referencia_id": "pas1-2015-albert-2015-albert-r077-078",
+      "fonte": "Prova: Caderno Albert, p. 12 (PDF unificado, p. 172). Gabarito: CEBRASPE, Gabaritos Oficiais Preliminares, PAS12015_001_01, item 78.",
+      "enunciado_blocos": [
+        {
+          "tipo": "texto",
+          "texto": "Esboce, no espaço a seguir, o gráfico referente à velocidade do móvel versus tempo."
+        },
+        {
+          "tipo": "imagem"
+        }
+      ]
+    },
+    {
+      "numero": "86",
+      "tipo": "multipla_escolha",
+      "alternativas": [
+        {
+          "letra": "A",
+          "texto": "30 km/h.",
+          "imagem_pendente": false
+        },
+        {
+          "letra": "B",
+          "texto": "40 km/h.",
+          "imagem_pendente": false
+        },
+        {
+          "letra": "C",
+          "texto": "50 km/h.",
+          "imagem_pendente": false
+        },
+        {
+          "letra": "D",
+          "texto": "60 km/h.",
+          "imagem_pendente": false
+        }
+      ],
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Impulso e quantidade de movimento",
+      "subconteudo_principal": "Colisões",
+      "conteudos_relacionados": [],
+      "tags_livres": [],
+      "ano": "2015",
+      "prova": "PAS 1 — Primeira Etapa",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2015 (triênio 2015/2017)",
+      "caderno": "Albert",
+      "referencia_id": "pas1-2015-albert-2015-albert-r086",
+      "fonte": "Prova: Caderno Albert, p. 14 (PDF unificado, p. 174). Gabarito: CEBRASPE, Gabaritos Oficiais Preliminares, PAS12015_001_01, item 86.",
+      "enunciado": "Considerando-se a situação acima, para que os veículos ficassem parados após a colisão, a velocidade do veículo B (em módulo) deveria ser igual a",
+      "resposta": "C"
+    },
+    {
+      "numero": "87",
+      "tipo": "multipla_escolha",
+      "alternativas": [
+        {
+          "letra": "A",
+          "texto": "h/8.",
+          "imagem_pendente": false
+        },
+        {
+          "letra": "B",
+          "texto": "h/4.",
+          "imagem_pendente": false
+        },
+        {
+          "letra": "C",
+          "texto": "h/2.",
+          "imagem_pendente": false
+        },
+        {
+          "letra": "D",
+          "texto": "h.",
+          "imagem_pendente": false
+        }
+      ],
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Impulso e quantidade de movimento",
+      "subconteudo_principal": "Coeficiente de restituição",
+      "conteudos_relacionados": [],
+      "tags_livres": [],
+      "ano": "2015",
+      "prova": "PAS 1 — Primeira Etapa",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2015 (triênio 2015/2017)",
+      "caderno": "Albert",
+      "referencia_id": "pas1-2015-albert-2015-albert-r087",
+      "fonte": "Prova: Caderno Albert, p. 14 (PDF unificado, p. 174). Gabarito: CEBRASPE, Gabaritos Oficiais Preliminares, PAS12015_001_01, item 87.",
+      "enunciado": "Considere a situação em que uma bola cai, na vertical, de uma altura h sobre uma superfície cujo coeficiente de restituição seja igual a 0,5. Nessa situação, desconsiderando-se a resistência do ar, a bola retornará até a altura",
+      "resposta": "B"
+    },
+    {
+      "numero": "90",
+      "tipo": "certo_errado",
+      "alternativas": [],
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Hidrostática",
+      "subconteudo_principal": "Pressão hidrostática",
+      "conteudos_relacionados": [],
+      "tags_livres": [],
+      "ano": "2015",
+      "prova": "PAS 1 — Primeira Etapa",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2015 (triênio 2015/2017)",
+      "caderno": "Albert",
+      "referencia_id": "pas1-2015-albert-2015-albert-r090-093",
+      "fonte": "Prova: Caderno Albert, p. 15 (PDF unificado, p. 175). Gabarito: CEBRASPE, Gabaritos Oficiais Preliminares, PAS12015_001_01, item 90.",
+      "enunciado": "A pressão da água na parte mais baixa do casco do navio é menor que a pressão da água na superfície do mar.",
+      "resposta": "E"
+    },
+    {
+      "numero": "91",
+      "tipo": "certo_errado",
+      "alternativas": [],
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Leis de Newton",
+      "subconteudo_principal": "Força normal",
+      "conteudos_relacionados": [],
+      "tags_livres": [],
+      "ano": "2015",
+      "prova": "PAS 1 — Primeira Etapa",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2015 (triênio 2015/2017)",
+      "caderno": "Albert",
+      "referencia_id": "pas1-2015-albert-2015-albert-r090-093",
+      "fonte": "Prova: Caderno Albert, p. 15 (PDF unificado, p. 175). Gabarito: CEBRASPE, Gabaritos Oficiais Preliminares, PAS12015_001_01, item 91.",
+      "enunciado": "Quando o convés do navio estiver inclinado em relação à superfície da água, o módulo da força normal que o convés exerce sobre um objeto que está sobre ele será inferior ao módulo da força peso do objeto. Desconsidere o atrito entre o objeto e o convés.",
+      "resposta": "C"
+    },
+    {
+      "numero": "92",
+      "tipo": "certo_errado",
+      "alternativas": [],
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Hidrostática",
+      "subconteudo_principal": "Empuxo e flutuação",
+      "conteudos_relacionados": [],
+      "tags_livres": [],
+      "ano": "2015",
+      "prova": "PAS 1 — Primeira Etapa",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2015 (triênio 2015/2017)",
+      "caderno": "Albert",
+      "referencia_id": "pas1-2015-albert-2015-albert-r090-093",
+      "fonte": "Prova: Caderno Albert, p. 15 (PDF unificado, p. 175). Gabarito: CEBRASPE, Gabaritos Oficiais Preliminares, PAS12015_001_01, item 92.",
+      "enunciado": "Mais de 40% do volume do navio ficará submerso.",
+      "resposta": "E"
+    },
+    {
+      "numero": "96",
+      "tipo": "certo_errado",
+      "alternativas": [],
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Grandezas físicas e medidas",
+      "subconteudo_principal": "Relação entre volume, área e espessura",
+      "conteudos_relacionados": [],
+      "tags_livres": [],
+      "ano": "2015",
+      "prova": "PAS 1 — Primeira Etapa",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2015 (triênio 2015/2017)",
+      "caderno": "Albert",
+      "referencia_id": "pas1-2015-albert-2015-albert-r096-100",
+      "fonte": "Prova: Caderno Albert, p. 16 (PDF unificado, p. 176). Gabarito: CEBRASPE, Gabaritos Oficiais Preliminares, PAS12015_001_01, item 96.",
+      "enunciado": "Considere que o volume de material a ser escavado para a construção da hidrelétrica de Belo Monte seja de aproximadamente 240 milhões de metros cúbicos. Nesse caso, se esse material for depositado sobre a área a ser inundada pelo reservatório da hidrelétrica, que é de 516 km², formando uma camada homogênea de mesma espessura, então a espessura dessa camada será superior a 50 cm.",
+      "resposta": "E"
+    }
+  ]
+}
