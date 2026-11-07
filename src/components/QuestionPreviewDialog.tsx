@@ -6,6 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { QuestionReferenceContent } from "@/components/QuestionReferenceContent";
+import { hasImageMarkers } from "@/lib/content-blocks";
 import { RichText } from "@/components/RichText";
 import {
   DEFAULT_IMAGE_PLACEMENT_LAYOUT,
@@ -25,7 +26,7 @@ export type PreviewQuestion = {
   enunciado_imagem_pos?: string | null;
   enunciado_imagem_layout?: Partial<ImagePlacementLayout> | null;
   enunciado_imagens_extra?: unknown;
-  alternativas: { letra: string; texto: string; imagem?: string | null }[];
+  alternativas: { letra: string; texto: string; imagem?: string | null; imagem_pendente?: boolean }[];
   resposta?: string | null;
   fonte?: string | null;
 };
@@ -143,48 +144,59 @@ export function QuestionPreviewContent({
           </div>
         )}
 
-        {extraImagesBefore.map((image, index) => (
-          <BlockImage
-            key={"statement-before-" + index}
-            image={image}
-            alt={"Imagem do enunciado " + (index + 1)}
-          />
-        ))}
-
-        {floatingStatementImage && question.enunciado_imagem && statementLayout ? (
-          <FloatingStatement
-            imageUrl={question.enunciado_imagem}
-            layout={statementLayout}
+        {hasImageMarkers(question.enunciado) ? (
+          <QuestionReferenceContent
             text={question.enunciado}
+            extraImages={statementExtras}
+            className="text-sm leading-relaxed"
+            imageClassName="my-2"
           />
         ) : (
           <>
-            {question.enunciado_imagem && question.enunciado_imagem_pos === "antes" && (
-              <StandaloneStatementImage
-                imageUrl={question.enunciado_imagem}
-                layout={statementLayout}
-              />
-            )}
-            <RichText
-              text={question.enunciado || "Enunciado não preenchido."}
-              className="text-sm leading-relaxed"
+          {extraImagesBefore.map((image, index) => (
+            <BlockImage
+              key={"statement-before-" + index}
+              image={image}
+              alt={"Imagem do enunciado " + (index + 1)}
             />
-            {question.enunciado_imagem && question.enunciado_imagem_pos !== "antes" && (
-              <StandaloneStatementImage
-                imageUrl={question.enunciado_imagem}
-                layout={statementLayout}
+          ))}
+  
+          {floatingStatementImage && question.enunciado_imagem && statementLayout ? (
+            <FloatingStatement
+              imageUrl={question.enunciado_imagem}
+              layout={statementLayout}
+              text={question.enunciado}
+            />
+          ) : (
+            <>
+              {question.enunciado_imagem && question.enunciado_imagem_pos === "antes" && (
+                <StandaloneStatementImage
+                  imageUrl={question.enunciado_imagem}
+                  layout={statementLayout}
+                />
+              )}
+              <RichText
+                text={question.enunciado || "Enunciado não preenchido."}
+                className="text-sm leading-relaxed"
               />
-            )}
+              {question.enunciado_imagem && question.enunciado_imagem_pos !== "antes" && (
+                <StandaloneStatementImage
+                  imageUrl={question.enunciado_imagem}
+                  layout={statementLayout}
+                />
+              )}
+            </>
+          )}
+  
+          {extraImagesAfter.map((image, index) => (
+            <BlockImage
+              key={"statement-after-" + index}
+              image={image}
+              alt={"Imagem adicional do enunciado " + (index + 1)}
+            />
+          ))}
           </>
         )}
-
-        {extraImagesAfter.map((image, index) => (
-          <BlockImage
-            key={"statement-after-" + index}
-            image={image}
-            alt={"Imagem adicional do enunciado " + (index + 1)}
-          />
-        ))}
       </section>
 
       {question.alternativas.length > 0 && (
@@ -200,14 +212,23 @@ export function QuestionPreviewContent({
                   {(alternative.letra || index + 1) + ")"}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <RichText text={alternative.texto || "(sem texto)"} />
-                  {alternative.imagem && (
+                  {alternative.texto?.trim() && <RichText text={alternative.texto} />}
+                  {alternative.imagem ? (
                     <img
                       src={alternative.imagem}
                       alt={"Imagem da alternativa " + (alternative.letra || index + 1)}
                       className="mt-2 max-h-40 max-w-full rounded border object-contain"
                     />
-                  )}
+                  ) : alternative.imagem_pendente ? (
+                    <div
+                      role="img"
+                      aria-label={"Espaço reservado para imagem da alternativa " + (alternative.letra || index + 1)}
+                      className="mt-2 flex min-h-24 max-w-xl flex-col items-center justify-center gap-2 rounded-md border border-dashed bg-gray-50 px-4 py-5 text-center text-sm text-gray-500"
+                    >
+                      <span className="font-medium text-gray-700">Espaço reservado para imagem</span>
+                      <span className="text-xs">Abra a edição da questão para enviar e recortar.</span>
+                    </div>
+                  ) : null}
                 </div>
               </li>
             ))}

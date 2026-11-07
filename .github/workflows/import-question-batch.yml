@@ -1,0 +1,148 @@
+name: Importar lote aprovado
+
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  import-batch:
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' && github.event.pull_request.user.login == 'IsaacJGFerreira'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    concurrency:
+      group: question-import-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    steps:
+      - name: Enviar manifesto mesclado ao endpoint existente
+        uses: actions/github-script@v7
+        env:
+          QUESTION_INGEST_URL: ${{ vars.QUESTION_INGEST_URL }}
+          QUESTION_INGEST_TOKEN: ${{ secrets.QUESTION_INGEST_TOKEN }}
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const comment = async (body) => github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: pr.number,
+              body,
+            });
+            const fail = async (message) => {
+              await comment("Não consegui importar o lote aprovado. " + message);
+              core.setFailed(message);
+            };
+
+            try {
+              const changedFiles = await github.paginate(github.rest.pulls.listFiles, {
+                owner,
+                repo,
+                pull_number: pr.number,
+                per_page: 100,
+              });
+              const manifests = changedFiles.filter((file) =>
+                file.status !== "removed" &&
+                file.filename.startsWith("question-imports/") &&
+                file.filename.endsWith("/manifest.json")
+              );
+              if (manifests.length === 0) {
+                core.notice("Este PR não contém manifesto de questões; importação ignorada.");
+                return;
+              }
+              if (manifests.length !== 1) {
+                await fail("O PR precisa conter exatamente um manifesto em question-imports/<lote>/manifest.json.");
+                return;
+              }
+              const manifestFile = manifests[0];
+              if (!/^question-imports\/[A-Za-z0-9._-]+\/manifest\.json$/.test(manifestFile.filename)) {
+                await fail("O caminho do manifesto não é válido.");
+                return;
+              }
+
+              const blob = await github.rest.git.getBlob({
+                owner,
+                repo,
+                file_sha: manifestFile.sha,
+              });
+              const manifestText = Buffer.from(blob.data.content, "base64").toString("utf8");
+              let batch;
+              try {
+                batch = JSON.parse(manifestText);
+              } catch {
+                await fail("O manifesto mesclado não contém JSON válido.");
+                return;
+              }
+
+              const endpoint = process.env.QUESTION_INGEST_URL;
+              const token = process.env.QUESTION_INGEST_TOKEN;
+              if (!endpoint || !token) {
+                await fail("Configure QUESTION_INGEST_URL e QUESTION_INGEST_TOKEN no GitHub Actions.");
+                return;
+              }
+              let endpointUrl;
+              try {
+                endpointUrl = new URL(endpoint);
+              } catch {
+                await fail("QUESTION_INGEST_URL não é uma URL válida.");
+                return;
+              }
+              if (endpointUrl.protocol !== "https:") {
+                await fail("QUESTION_INGEST_URL precisa usar HTTPS.");
+                return;
+              }
+
+              let response;
+              try {
+                response = await fetch(endpointUrl, {
+                  method: "POST",
+                  headers: {
+                    "content-type": "application/json",
+                    authorization: "Bearer " + token,
+                  },
+                  body: JSON.stringify({
+                    batch,
+                    source: {
+                      repository: owner + "/" + repo,
+                      pull_request_number: pr.number,
+                      pull_request_id: pr.id,
+                      pull_request_url: pr.html_url,
+                      pull_request_author: pr.user.login,
+                      head_sha: pr.head.sha,
+                    },
+                  }),
+                  signal: AbortSignal.timeout(20_000),
+                });
+              } catch {
+                await fail("O endpoint não respondeu. Confirme a URL e se o app está publicado.");
+                return;
+              }
+
+              const result = await response.json().catch(() => null);
+              if (!response.ok || !result?.ok) {
+                const details = Array.isArray(result?.details) ? " " + result.details.join("; ") : "";
+                await fail((result?.error || "O endpoint rejeitou o lote.") + details);
+                return;
+              }
+
+              const itemLines = Array.isArray(result.questions)
+                ? result.questions.map((item) =>
+                    "- Item " + (item.numero || "?") + ": " +
+                    (item.status === "already_inserted" ? "já estava cadastrado" : "cadastrado") +
+                    " — ID " + item.id
+                  )
+                : [];
+              await comment(
+                "Lote processado no Digitalizador (" + result.status + "). " +
+                result.count + " item(ns).\n\n" +
+                (itemLines.length ? itemLines.join("\n") : "O endpoint confirmou o lote, mas não retornou a lista de IDs.")
+              );
+            } catch (error) {
+              const message = error instanceof Error ? error.message : "erro inesperado";
+              await fail("Falha no processamento seguro: " + message);
+            }

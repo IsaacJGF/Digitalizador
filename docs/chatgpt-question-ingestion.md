@@ -1,76 +1,66 @@
-# Envio de questões do ChatGPT
+# Digitalizador: cadastro automatizado de questões
 
-Este fluxo recebe questões em um GitHub Issue e grava os campos textuais na tabela questions do Supabase do app. O GitHub Actions funciona como ponte; a chave de serviço do Supabase permanece no servidor do Lovable.
+## Dois caminhos que compartilham o endpoint
+
+O cadastro antigo por GitHub Issue continua disponível para questões individuais. Para referências com vários itens, use um manifesto JSON em um PR. O PR é a etapa de revisão e aprovação; depois que ele é mesclado na branch main, o GitHub Actions envia o manifesto ao mesmo endpoint do aplicativo, que valida e grava o lote no Supabase.
+
+O fluxo não usa automação do navegador, não cria uma segunda API e não exige novo token. O endpoint usa a chave de serviço somente no servidor. O texto é cadastrado; figuras ainda não são carregadas: blocos do tipo imagem criam espaços reservados nativos para preencher depois no editor.
 
 ## Configuração única
 
-Faça estes passos depois de integrar a alteração na branch padrão:
+O caminho pelo PR reaproveita QUESTION_INGEST_URL e QUESTION_INGEST_TOKEN já usados no fluxo de Issues. Se ainda não estiverem configurados:
 
-1. Gere um segredo aleatório com pelo menos 32 caracteres (por exemplo, openssl rand -hex 32). Use exatamente o mesmo valor nos passos 2 e 3.
-2. No projeto do Lovable, adicione a variável de ambiente de servidor QUESTION_INGEST_TOKEN com esse valor e publique/republique o app para que o endpoint receba a configuração.
-3. No GitHub, abra **Settings → Secrets and variables → Actions**. Crie:
-   - um **secret** chamado QUESTION_INGEST_TOKEN, com o mesmo valor;
-   - uma **variable** chamada QUESTION_INGEST_URL, com a URL HTTPS publicada do app seguida de /api/question-ingest (por exemplo, https://seu-app.lovable.app/api/question-ingest).
+1. Gere um token aleatório de pelo menos 32 caracteres.
+2. Cadastre QUESTION_INGEST_TOKEN como segredo de servidor no Lovable e publique o app.
+3. No GitHub, em Settings → Secrets and variables → Actions, cadastre o mesmo QUESTION_INGEST_TOKEN como secret e QUESTION_INGEST_URL como variable, com a URL HTTPS publicada terminada em /api/question-ingest.
 
-Não coloque o token no código, em Issues ou em mensagens. O endpoint exige HTTPS, autenticação Bearer e autoriza apenas Issues abertos pelo login configurado no fluxo.
+Não coloque credenciais em manifestos, PRs ou Issues.
 
-## Como enviar uma questão
+## Manifesto do lote
 
-Quando você mandar uma questão no ChatGPT e pedir para registrá-la, o ChatGPT cria um Issue com:
+Crie uma pasta com um nome curto em question-imports/, por exemplo question-imports/pas1-2015-fisica/manifest.json. Use schema_version 1, um batch_key estável e de 1 a 35 itens. O exemplo sintético está em docs/examples/question-import-manifest.json. Ele mostra os quatro tipos de item e espaços de imagem; seus textos não são questões reais e os nomes de prova/instituição precisam coincidir com os catálogos ativos para serem importáveis.
 
-- título começando por [DIGITALIZADOR];
-- um comentário oculto <!-- digitalizador-question:v1 -->;
-- um bloco JSON logo após o comentário.
+Campos por item:
 
-Exemplo de estrutura (os valores são ilustrativos e devem ser substituídos):
+- Obrigatórios: numero, tipo, enunciado ou enunciado_blocos, ano, prova, instituicao, area_geral, conteudo_principal e subconteudo_principal.
+- Tipo: certo_errado, numerica, multipla_escolha ou discursiva. Itens C/E recebem C ou E; numéricos recebem o valor; múltipla escolha exige alternativas e gabarito; o gabarito discursivo pode ficar vazio quando não estiver disponível. Para os itens objetivos, envie o gabarito oficial conferido no PDF.
+- Classificação: conteudos_relacionados e tags_livres são listas de nomes, não IDs. Todos os nomes devem existir e estar ativos. O endpoint confere também a relação área → conteúdo principal → subconteúdo. Nenhuma opção faltante é criada ou substituída automaticamente; o lote inteiro é recusado com os caminhos pendentes.
+- Identidade: modalidade e caderno são opcionais e servem para distinguir aplicações ou cadernos quando existirem. Se a prova usar variantes, preencha esses campos com o identificador original. O sistema usa instituição + prova + ano + modalidade + caderno + número para detectar duplicatas.
+- Fonte e observações são opcionais.
+
+### Referências compartilhadas e imagens
+
+Declare cada texto-base compartilhado uma vez em references com id, e escreva referencia_id nos itens selecionados. Cada item ainda será uma linha individual; itens ligados recebem o mesmo grupo_id. O texto-base completo é preservado nos itens selecionados e a interface os exibe como uma referência agrupada.
+
+Para uma figura intercalada, use blocos ordenados texto/imagem:
 
 ~~~json
-{
-  "numero": "101",
-  "enunciado": "Texto do enunciado da questão",
-  "alternativas": [
-    { "letra": "A", "texto": "Texto da alternativa A" },
-    { "letra": "B", "texto": "Texto da alternativa B" }
-  ],
-  "resposta": "A",
-  "area_geral": "Área geral",
-  "conteudo_principal": "Conteúdo principal",
-  "subconteudo_principal": "Subconteúdo",
-  "conteudos_relacionados": ["Conteúdo relacionado"],
-  "tags_livres": ["Característica da questão"],
-  "ano": "2023",
-  "prova": "ENEM",
-  "instituicao": "INEP",
-  "referencia_blocos": [
-    { "tipo": "texto", "texto": "Texto-base antes da imagem." },
-    { "tipo": "imagem" },
-    { "tipo": "texto", "texto": "Continuação do texto-base depois da imagem." }
-  ],
-  "tem_equacao": false
-}
+"references": [
+  {
+    "id": "texto-1",
+    "blocos": [
+      { "tipo": "texto", "texto": "Trecho antes da figura." },
+      { "tipo": "imagem" },
+      { "tipo": "texto", "texto": "Trecho depois da figura." }
+    ],
+    "fonte": "Fonte do texto-base"
+  }
+]
 ~~~
 
-O fluxo aceita somente questões de múltipla escolha. O campo source não deve aparecer no Issue; o workflow acrescenta os metadados do GitHub automaticamente. A resposta correta é opcional, mas, quando enviada, deve corresponder a uma letra existente nas alternativas.
+O mesmo formato pode ser usado em enunciado_blocos. Cada bloco imagem vira um espaço reservado nativo no ponto correspondente. Para uma alternativa com imagem, use {"letra":"C","texto":"","imagem_pendente":true}; isso também permite alternativas só com imagem. Não escreva marcadores como [imagem aqui] ou [[img:1]] no texto. Tabelas e equações devem ficar em conteúdo editável quando o editor conseguir representá-las fielmente; use espaço de imagem só quando necessário.
 
-Quando uma imagem ficar entre trechos do texto-base, use `referencia_blocos` no lugar de `referencia_texto`. Separe o texto antes e depois da imagem em blocos `texto` e coloque `{"tipo":"imagem"}` exatamente no ponto em que ela aparece. Não envie os dois campos ao mesmo tempo. O bloco de imagem cria um espaço reservado no sistema; o arquivo será enviado e recortado depois, na edição da questão. São aceitos até 20 espaços por referência.
+### Revisão, validação e resultado
 
-## O que é gravado
+- Antes do merge, a Action valida o JSON, os tipos, o limite de 35 itens, campos obrigatórios, referências, gabaritos e duplicatas internas do lote.
+- Depois do merge, uma Action confiável lê somente o manifesto mesclado (não executa código vindo do PR) e chama o endpoint existente.
+- O endpoint confere os catálogos ativos do Supabase e rejeita qualquer nome ausente/inativo. Só depois da validação ele grava todas as linhas em uma única inserção. Uma falha crítica não deixa parte do lote inserida.
+- Reenvios do mesmo lote retornam os IDs existentes. Uma colisão parcial ou uma possível duplicata já cadastrada manualmente interrompe o lote para conferência.
+- A Action comenta no PR os números, IDs e resultados de cada item. As marcações da Revisão Interna ficam pendentes pela automação existente do banco.
+- A alteração de esquema precisa estar aplicada antes do primeiro lote: a migração adiciona modalidade, caderno e import_key, além de um índice único de identidade importada. Este PR não aplica a migração no banco de produção.
 
-O endpoint mapeia os campos para o modelo atual da tabela questions:
+Se o endpoint recusar o lote porque uma prova, instituição ou classificação não existe no catálogo ativo, corrija o catálogo em um fluxo aprovado e envie um novo PR do manifesto. O importador nunca altera os catálogos globais.
 
-- area_geral também preenche disciplina;
-- conteudo_principal também preenche conteudo;
-- tags_livres também preenche tags;
-- os demais campos de classificação são gravados com os nomes correspondentes da tabela;
-- created_at e updated_at ficam a cargo do banco.
+## Revisão na própria aba
 
-O ID da questão é derivado do ID do Issue. Repetir o envio do mesmo Issue não cria outra linha. A automação deixa um comentário no Issue com o resultado e o ID gravado.
-
-## Limites desta primeira versão
-
-- O repositório é público; Issues e seus textos também ficam públicos.
-- O fluxo de texto continua criando espaços reservados. Para importar recortes em lote em questões já cadastradas, use o procedimento de `docs/question-image-import.md`; ele aceita imagens de referência, enunciado e alternativas.
-- O fluxo apenas insere. Editar um Issue depois de gravado não altera a linha existente; correções devem ser feitas no app.
-- O workflow só processa Issues novos com título iniciado por [DIGITALIZADOR], abertos pelo login autorizado definido no workflow e neste endpoint.
-
-A migração/exportação de dados para Firebase é um trabalho separado e não faz parte deste fluxo.
+O botão Editar questão dentro da Revisão Interna abre o editor sobre a mesma página. Ao salvar, a fila e o checklist atualizam sem navegar para Questões salvas. A tela de Questões salvas continua usando o mesmo editor compartilhado.

@@ -309,6 +309,9 @@ export type Database = {
         Row: {
           alternativas: Json
           ano: string | null
+          caderno: string | null
+          import_key: string | null
+          modalidade: string | null
           area_geral: string | null
           conteudo: string | null
           conteudo_principal: string | null
@@ -348,6 +351,9 @@ export type Database = {
         Insert: {
           alternativas?: Json
           ano?: string | null
+          caderno?: string | null
+          import_key?: string | null
+          modalidade?: string | null
           area_geral?: string | null
           conteudo?: string | null
           conteudo_principal?: string | null
@@ -387,6 +393,9 @@ export type Database = {
         Update: {
           alternativas?: Json
           ano?: string | null
+          caderno?: string | null
+          import_key?: string | null
+          modalidade?: string | null
           area_geral?: string | null
           conteudo?: string | null
           conteudo_principal?: string | null

@@ -18,6 +18,15 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CatalogMultiSelect } from "@/components/CatalogSelect";
 import { QuestionReviewPdfPanel } from "@/components/QuestionReviewPdfPanel";
+import {
+  EditQuestionDialog,
+  editDraftToPayload,
+  editReferenceToPayload,
+  toEditDraft,
+  type CatalogItem,
+  type EditDraft,
+  type EditableQuestion,
+} from "@/components/QuestionEditDialog";
 import { QuestionPreviewContent } from "@/components/QuestionPreviewDialog";
 import type { PreviewQuestion } from "@/components/QuestionPreviewDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,7 +72,7 @@ const SUMMARY_COLUMNS = [
   "last_adjustment_at",
 ].join(",");
 
-type CatalogOption = { id: string; nome: string; ativo: boolean };
+type CatalogOption = CatalogItem;
 type ReviewFilters = { anos: string[]; provas: string[]; instituicoes: string[] };
 type ReviewCriterion =
   | "texto_base" | "enunciado" | "alternativas" | "gabarito"
@@ -257,6 +266,22 @@ function ReviewGate() {
           </form>
         )}
       </div>
+      <EditQuestionDialog
+        question={editingQuestion}
+        draft={editDraft}
+        saving={savingEdit}
+        areas={areas}
+        conteudos={contents}
+        subconteudos={subcontents}
+        relacionados={relatedContents}
+        tags={tags}
+        provas={tests}
+        instituicoes={institutions}
+        onDraftChange={setEditDraft}
+        onClose={closeQuestionEditor}
+        onSave={saveQuestionEdit}
+        onDelete={deleteEditedQuestion}
+      />
     </AppLayout>
   );
 }
@@ -276,9 +301,17 @@ function ReviewWorkspace() {
   const [years, setYears] = useState<CatalogOption[]>([]);
   const [tests, setTests] = useState<CatalogOption[]>([]);
   const [institutions, setInstitutions] = useState<CatalogOption[]>([]);
+  const [areas, setAreas] = useState<CatalogItem[]>([]);
+  const [contents, setContents] = useState<CatalogItem[]>([]);
+  const [subcontents, setSubcontents] = useState<CatalogItem[]>([]);
+  const [relatedContents, setRelatedContents] = useState<CatalogItem[]>([]);
+  const [tags, setTags] = useState<CatalogItem[]>([]);
   const [items, setItems] = useState<ReviewListItem[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [question, setQuestion] = useState<ReviewQuestion | null>(null);
+  const [editingQuestion, setEditingQuestion] = useState<EditableQuestion | null>(null);
+  const [editDraft, setEditDraft] = useState<EditDraft | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
   const [loadingList, setLoadingList] = useState(false);
   const [loadingQuestion, setLoadingQuestion] = useState(false);
   const [total, setTotal] = useState(0);
@@ -355,21 +388,42 @@ function ReviewWorkspace() {
     void (async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabase as any;
-      const [yearResult, testResult, institutionResult] = await Promise.all([
+      const [
+        yearResult,
+        testResult,
+        institutionResult,
+        areaResult,
+        contentResult,
+        subcontentResult,
+        relatedResult,
+        tagResult,
+      ] = await Promise.all([
         db.from("questions").select("ano").not("ano", "is", null).order("ano", { ascending: false }).limit(3000),
         db.from("catalog_provas").select("id,nome,ativo").order("nome"),
         db.from("catalog_instituicoes").select("id,nome,ativo").order("nome"),
+        db.from("catalog_areas").select("id,nome,ativo").order("nome"),
+        db.from("catalog_conteudos").select("id,nome,ativo,area_id").order("nome"),
+        db.from("catalog_subconteudos").select("id,nome,ativo,conteudo_id").order("nome"),
+        db.from("catalog_relacionados").select("id,nome,ativo").order("nome"),
+        db.from("catalog_tags").select("id,nome,ativo").order("nome"),
       ]);
       if (cancelled) return;
-      if (yearResult.error || testResult.error || institutionResult.error) {
-        console.error("Falha ao carregar opções da revisão:", yearResult.error ?? testResult.error ?? institutionResult.error);
-        toast.error("Não foi possível carregar todas as opções de filtro.");
+      const failed = [yearResult, testResult, institutionResult, areaResult, contentResult, subcontentResult, relatedResult, tagResult]
+        .find((result) => result.error);
+      if (failed) {
+        console.error("Falha ao carregar opções da revisão:", failed.error);
+        toast.error("Não foi possível carregar todas as opções da revisão.");
       }
       const uniqueYearNames = [...new Set(((yearResult.data ?? []) as Array<{ ano?: string | null }>)
         .flatMap((row) => row.ano ? [row.ano] : []))].sort((a, b) => b.localeCompare(a, "pt-BR"));
       setYears(uniqueYearNames.map((nome) => ({ id: "ano-" + nome, nome, ativo: true })));
       setTests((testResult.data ?? []) as CatalogOption[]);
       setInstitutions((institutionResult.data ?? []) as CatalogOption[]);
+      setAreas((areaResult.data ?? []) as CatalogItem[]);
+      setContents((contentResult.data ?? []) as CatalogItem[]);
+      setSubcontents((subcontentResult.data ?? []) as CatalogItem[]);
+      setRelatedContents((relatedResult.data ?? []) as CatalogItem[]);
+      setTags((tagResult.data ?? []) as CatalogItem[]);
     })();
     return () => { cancelled = true; };
   }, []);
@@ -635,24 +689,88 @@ function ReviewWorkspace() {
 
   const openEditor = () => {
     if (!question) return;
+    const editableQuestion: EditableQuestion = {
+      ...question,
+      disciplina: question.area_geral,
+      conteudo: question.conteudo_principal,
+      tags: question.tags_livres,
+      created_at: question.created_at ?? "",
+    };
+    setEditingQuestion(editableQuestion);
+    setEditDraft(toEditDraft(editableQuestion));
+  };
+
+  const closeQuestionEditor = () => {
+    setEditingQuestion(null);
+    setEditDraft(null);
+  };
+
+  const saveQuestionEdit = async () => {
+    if (!editingQuestion || !editDraft) return;
+    setSavingEdit(true);
     try {
-      sessionStorage.setItem(RESTORE_KEY, JSON.stringify({
-        query,
-        filters,
-        page,
-        selectedId: question.id,
-        queueMode,
-        criterionFilter,
-        criterionStatusFilter,
-      }));
+      const questionPayload = editDraftToPayload(editDraft);
+      const referencePayload = editReferenceToPayload(editDraft);
+      const sharedGroupId = editingQuestion.grupo_id?.trim() ?? "";
+      const hasSharedReference = Boolean(sharedGroupId);
+      // The review stays mounted; update the item here and refresh its checklist after DB triggers run.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabase as any;
+      const { data, error } = await db
+        .from("questions")
+        .update({ ...questionPayload, ...(!hasSharedReference ? referencePayload : {}) })
+        .eq("id", editingQuestion.id)
+        .select("*")
+        .single();
+      if (error) {
+        console.error("Falha ao salvar edição na Revisão Interna:", error);
+        toast.error("Falha ao salvar edição.");
+        return;
+      }
+
+      if (hasSharedReference) {
+        const { error: referenceError } = await db
+          .from("questions")
+          .update(referencePayload)
+          .eq("grupo_id", sharedGroupId);
+        if (referenceError) {
+          console.error("Falha ao atualizar referência compartilhada:", referenceError);
+          toast.error("A questão foi salva, mas a referência compartilhada não foi atualizada. Tente salvar novamente.");
+          return;
+        }
+      }
+
+      const updated = normalizeQuestion({
+        ...(data as Record<string, unknown>),
+        ...(hasSharedReference ? referencePayload : {}),
+      });
+      if (selectedIdRef.current === editingQuestion.id) {
+        setQuestion(updated);
+        await loadReviewMetadata(editingQuestion.id);
+      }
+      setReviewRefreshKey((value) => value + 1);
+      closeQuestionEditor();
+      toast.success("Questão atualizada. Você continua na Revisão Interna.");
     } catch (error) {
-      console.warn("Não foi possível guardar a posição da revisão:", error);
+      console.error("Falha ao salvar edição na Revisão Interna:", error);
+      toast.error("Não foi possível salvar a questão.");
+    } finally {
+      setSavingEdit(false);
     }
-    const params = new URLSearchParams({
-      editar: question.id,
-      voltar: "/revisao-interna",
-    });
-    window.location.assign("/questoes?" + params.toString());
+  };
+
+  const deleteEditedQuestion = async (id: string) => {
+    if (!confirm("Excluir esta questão? Esta ação não pode ser desfeita.")) return;
+    const { error } = await supabase.from("questions").delete().eq("id", id);
+    if (error) {
+      console.error("Falha ao excluir questão:", error);
+      toast.error("Falha ao excluir questão.");
+      return;
+    }
+    closeQuestionEditor();
+    setQuestion(null);
+    setReviewRefreshKey((value) => value + 1);
+    toast.success("Questão excluída.");
   };
 
   const copyQuestion = async () => {
@@ -1264,6 +1382,7 @@ function normalizeQuestion(row: Record<string, unknown>): ReviewQuestion {
         letra: typeof item.letra === "string" ? item.letra : "",
         texto: typeof item.texto === "string" ? item.texto : "",
         imagem: typeof item.imagem === "string" ? item.imagem : null,
+        imagem_pendente: item.imagem_pendente === true,
       }];
     })
     : [];

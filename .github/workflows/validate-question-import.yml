@@ -1,0 +1,38 @@
+name: Validar manifesto de questões
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - "question-imports/**/manifest.json"
+      - "scripts/validate-question-import.mjs"
+      - "docs/examples/question-import-manifest.json"
+      - ".github/workflows/validate-question-import.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate-manifest:
+    if: github.event.pull_request.user.login == 'IsaacJGFerreira'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validar exemplo sintético e manifesto alterado
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node scripts/validate-question-import.mjs docs/examples/question-import-manifest.json
+          mapfile -d '' -t manifest_files < <(git diff --name-only -z "$BASE_SHA" "$HEAD_SHA" -- 'question-imports/**/manifest.json')
+          if [ "${#manifest_files[@]}" -gt 1 ]; then
+            echo "Um PR deve conter no máximo um manifesto de lote."
+            exit 1
+          fi
+          if [ "${#manifest_files[@]}" -eq 1 ]; then
+            node scripts/validate-question-import.mjs "${manifest_files[0]}"
+          fi

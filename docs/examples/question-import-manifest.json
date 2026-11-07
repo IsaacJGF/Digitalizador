@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "batch_key": "pas1-2015-fisica-exemplo",
+  "references": [
+    {
+      "id": "texto-comum-1",
+      "blocos": [
+        {
+          "tipo": "texto",
+          "texto": "Texto-base meramente ilustrativo. O lote real deve preservar a transcrição conferida com o PDF."
+        },
+        {
+          "tipo": "imagem"
+        },
+        {
+          "tipo": "texto",
+          "texto": "Continuação ilustrativa após a figura."
+        }
+      ],
+      "fonte": "Fonte ilustrativa"
+    }
+  ],
+  "questions": [
+    {
+      "numero": "1",
+      "tipo": "certo_errado",
+      "enunciado": "Item ilustrativo de certo ou errado.",
+      "alternativas": [],
+      "resposta": "C",
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Cinemática",
+      "subconteudo_principal": "Movimento uniforme (MU)",
+      "conteudos_relacionados": [],
+      "tags_livres": [
+        "Sem cálculo"
+      ],
+      "ano": "2015",
+      "prova": "PAS 1",
+      "instituicao": "UnB — Universidade de Brasília",
+      "modalidade": "Subprograma ilustrativo",
+      "caderno": "Exemplo",
+      "referencia_id": "texto-comum-1"
+    },
+    {
+      "numero": "2",
+      "tipo": "numerica",
+      "enunciado": "Item ilustrativo numérico.",
+      "alternativas": [],
+      "resposta": "12",
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Cinemática",
+      "subconteudo_principal": "Movimento uniforme (MU)",
+      "conteudos_relacionados": [],
+      "tags_livres": [],
+      "ano": "2015",
+      "prova": "PAS 1",
+      "instituicao": "UnB — Universidade de Brasília",
+      "modalidade": "Subprograma ilustrativo",
+      "caderno": "Exemplo",
+      "referencia_id": "texto-comum-1"
+    },
+    {
+      "numero": "3",
+      "tipo": "multipla_escolha",
+      "enunciado_blocos": [
+        {
+          "tipo": "texto",
+          "texto": "Item ilustrativo com figura no meio do enunciado."
+        },
+        {
+          "tipo": "imagem"
+        },
+        {
+          "tipo": "texto",
+          "texto": "Texto que continua depois da figura."
+        }
+      ],
+      "alternativas": [
+        {
+          "letra": "A",
+          "texto": "Alternativa ilustrativa correta."
+        },
+        {
+          "letra": "B",
+          "texto": "Alternativa ilustrativa incorreta."
+        },
+        {
+          "letra": "C",
+          "texto": "",
+          "imagem_pendente": true
+        }
+      ],
+      "resposta": "A",
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Cinemática",
+      "subconteudo_principal": "Movimento uniforme (MU)",
+      "conteudos_relacionados": [],
+      "tags_livres": [
+        "Interpretação de figura"
+      ],
+      "ano": "2015",
+      "prova": "PAS 1",
+      "instituicao": "UnB — Universidade de Brasília",
+      "modalidade": "Subprograma ilustrativo",
+      "caderno": "Exemplo",
+      "referencia_id": "texto-comum-1"
+    },
+    {
+      "numero": "4",
+      "tipo": "discursiva",
+      "enunciado": "Item ilustrativo discursivo.",
+      "alternativas": [],
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Cinemática",
+      "subconteudo_principal": "Movimento uniforme (MU)",
+      "conteudos_relacionados": [],
+      "tags_livres": [],
+      "ano": "2015",
+      "prova": "PAS 1",
+      "instituicao": "UnB — Universidade de Brasília",
+      "modalidade": "Subprograma ilustrativo",
+      "caderno": "Exemplo",
+      "referencia_id": "texto-comum-1"
+    }
+  ]
+}
