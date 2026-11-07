@@ -26,10 +26,8 @@ function passwordMatches(input: string, expected: string) {
   return timingSafeEqual(a, b);
 }
 
-async function requireUnlocked() {
-  const session = await useSession<ReviewSession>(sessionConfig());
-  if (!session.data.unlocked) throw new Error("REVIEW_LOCKED");
-}
+// Acesso aberto: a revisão interna não exige mais senha (decisão do usuário).
+async function requireUnlocked() {}
 
 async function admin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

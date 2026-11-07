@@ -203,7 +203,7 @@ function createEmptyReviewCriterionStats(): ReviewCriterionStats {
 
 export const Route = createFileRoute("/revisao-interna")({
   head: () => ({ meta: [{ title: "Revisão interna de questões" }] }),
-  component: ReviewGate,
+  component: ReviewWorkspace,
 });
 
 function ReviewGate() {
