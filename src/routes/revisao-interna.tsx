@@ -37,7 +37,6 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   getReviewAccess,
   getReviewMetadata,
-  getReviewStats,
   getReviewCriterionStats,
   listReviewQueue,
   lockReview,
@@ -80,7 +79,7 @@ type ReviewCriterion =
 type ReviewStatus =
   | "pendente" | "precisa_ajuste" | "ajustado_pendente_conferencia"
   | "conferido_ok" | "nao_se_aplica" | "duvida";
-type ReviewQueueMode = "pending" | "changed" | "completed" | "all";
+type ReviewQueueMode = "pending" | "needs_adjustment" | "completed" | "all";
 type ReviewOpenStatus = Extract<ReviewStatus, "pendente" | "precisa_ajuste" | "ajustado_pendente_conferencia" | "duvida">;
 type ReviewCriterionFilter = ReviewCriterion | "all";
 type ReviewCriterionStatusFilter = "all_open" | ReviewOpenStatus;
@@ -88,6 +87,7 @@ type ReviewCriterionStats = {
   total: number;
   completed: number;
   pending: number;
+  needsAdjustment: number;
   byStatus: Record<ReviewStatus, number>;
   byCriterion: Record<ReviewCriterion, Record<ReviewStatus, number>>;
 };
@@ -108,7 +108,6 @@ type ReviewHistoryEntry = {
   motivo: "manual" | "questao_editada";
   changed_at: string;
 };
-type ReviewStats = { total: number; completed: number; pending: number; changed: number };
 type ReviewListItem = {
   id: string;
   numero: string | null;
@@ -196,6 +195,7 @@ function createEmptyReviewCriterionStats(): ReviewCriterionStats {
     total: 0,
     completed: 0,
     pending: 0,
+    needsAdjustment: 0,
     byStatus: { ...emptyStatuses },
     byCriterion: Object.fromEntries(REVIEW_CRITERIA.map(({ id }) => [id, { ...emptyStatuses }])) as Record<ReviewCriterion, Record<ReviewStatus, number>>,
   };
@@ -272,7 +272,6 @@ function ReviewGate() {
 
 function ReviewWorkspace() {
   const fetchQueue = useServerFn(listReviewQueue);
-  const fetchStats = useServerFn(getReviewStats);
   const fetchCriterionStats = useServerFn(getReviewCriterionStats);
   const fetchMetadata = useServerFn(getReviewMetadata);
   const saveCheck = useServerFn(updateReviewCheckFn);
@@ -303,7 +302,7 @@ function ReviewWorkspace() {
   const [queueMode, setQueueMode] = useState<ReviewQueueMode>("pending");
   const [pdfExpanded, setPdfExpanded] = useState(false);
   const [criterionFilter, setCriterionFilter] = useState<ReviewCriterionFilter>("all");
-  const [criterionStatusFilter, setCriterionStatusFilter] = useState<ReviewCriterionStatusFilter>("all_open");
+  const [criterionStatusFilter, setCriterionStatusFilter] = useState<ReviewCriterionStatusFilter>("pendente");
   const [criterionStats, setCriterionStats] = useState<ReviewCriterionStats>(() => createEmptyReviewCriterionStats());
   const [criterionStatsLoading, setCriterionStatsLoading] = useState(false);
   const [reviewChecks, setReviewChecks] = useState<ReviewCheck[]>([]);
@@ -311,7 +310,6 @@ function ReviewWorkspace() {
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
   const [reviewMetadataLoading, setReviewMetadataLoading] = useState(false);
   const [reviewRefreshKey, setReviewRefreshKey] = useState(0);
-  const [stats, setStats] = useState<ReviewStats>({ total: 0, completed: 0, pending: 0, changed: 0 });
   const [copied, setCopied] = useState(false);
   const [quickCompletingId, setQuickCompletingId] = useState("");
   const pendingPageDirection = useRef<"first" | "last" | null>(null);
@@ -560,16 +558,6 @@ function ReviewWorkspace() {
   }, [selectedId, loadReviewMetadata]);
 
   useEffect(() => {
-    let cancelled = false;
-    void fetchStats().then(({ total: totalCount, completed: completedCount, pending: pendingCount, changed: changedCount }) => {
-      if (!cancelled) setStats({ total: totalCount, completed: completedCount, pending: pendingCount, changed: changedCount });
-    }).catch((error) => {
-      if (!cancelled) console.error("Falha ao carregar resumo da revisão:", error);
-    });
-    return () => { cancelled = true; };
-  }, [reviewRefreshKey, fetchStats]);
-
-  useEffect(() => {
     if (!initialized) return;
     let cancelled = false;
     setCriterionStatsLoading(true);
@@ -619,6 +607,12 @@ function ReviewWorkspace() {
   const selectedIndex = items.findIndex((item) => item.id === selectedId);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const position = page * PAGE_SIZE + Math.max(0, selectedIndex) + 1;
+  const stats = {
+    total: criterionStats.total,
+    completed: criterionStats.completed,
+    pending: criterionStats.pending,
+    needsAdjustment: criterionStats.needsAdjustment,
+  };
   const visibleStatusCounts = criterionFilter === "all"
     ? criterionStats.byStatus
     : criterionStats.byCriterion[criterionFilter];
@@ -856,10 +850,10 @@ function ReviewWorkspace() {
         </header>
 
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumo das revisões">
-          <ReviewStat label="Questões cadastradas" value={stats.total} />
+          <ReviewStat label="Questões no recorte" value={stats.total} />
           <ReviewStat label="Conferidas por completo" value={stats.completed} />
-          <ReviewStat label="Com pendências" value={stats.pending} />
-          <ReviewStat label="Alteradas após conferência" value={stats.changed} />
+          <ReviewStat label="Pendentes" value={stats.pending} />
+          <ReviewStat label="Precisam de ajuste" value={stats.needsAdjustment} />
         </section>
 
         <section className="space-y-3 rounded-xl border bg-card p-3" aria-label="Filtros da revisão">
@@ -867,17 +861,23 @@ function ReviewWorkspace() {
             <Button type="button" size="sm" variant={queueMode === "pending" ? "default" : "outline"} onClick={() => setQueueMode("pending")}>
               Pendentes ({stats.pending})
             </Button>
+            <Button type="button" size="sm" variant={queueMode === "needs_adjustment" ? "default" : "outline"} onClick={() => setQueueMode("needs_adjustment")}>
+              Precisam de ajuste ({stats.needsAdjustment})
+            </Button>
             <Button type="button" size="sm" variant={queueMode === "completed" ? "default" : "outline"} onClick={() => setQueueMode("completed")}>
               Conferidas ({stats.completed})
-            </Button>
-            <Button type="button" size="sm" variant={queueMode === "changed" ? "default" : "outline"} onClick={() => setQueueMode("changed")}>
-              Alteradas ({stats.changed})
             </Button>
             <Button type="button" size="sm" variant={queueMode === "all" ? "default" : "outline"} onClick={() => setQueueMode("all")}>
               Todas ({stats.total})
             </Button>
             <span className="text-xs text-muted-foreground">
-              {queueMode === "pending" ? "A fila abre em Pendentes e pula questões concluídas." : "Use os modos para percorrer as questões conforme o estado da revisão."}
+              {queueMode === "pending"
+                ? "Inclui questões com pelo menos um critério ainda pendente."
+                : queueMode === "needs_adjustment"
+                  ? "Sem critérios pendentes, mas com ajuste, dúvida ou ajuste aguardando conferência."
+                  : queueMode === "completed"
+                    ? "Todos os critérios estão conferidos — OK ou marcados como não aplicáveis."
+                    : "Todas as questões do recorte, em qualquer estado da revisão."}
             </span>
           </div>
           {queueMode === "pending" && (
@@ -1017,12 +1017,12 @@ function ReviewWorkspace() {
               <h2 className="font-semibold">Fila</h2>
               <p className="text-xs text-muted-foreground">
                 {queueMode === "pending"
-                  ? "Questões com algum critério não concluído."
-                  : queueMode === "changed"
-                    ? "Questões editadas depois de uma conferência."
+                  ? "Questões com pelo menos um critério pendente."
+                  : queueMode === "needs_adjustment"
+                    ? "Questões sem critérios pendentes que precisam de ajuste, esclarecimento ou conferência."
                     : queueMode === "completed"
                       ? "Questões com todos os critérios concluídos."
-                      : "Histórico completo de questões."}
+                      : "Todas as questões do recorte, em qualquer estado."}
               </p>
             </div>
             <div className="max-h-[70vh] flex-1 overflow-y-auto p-2">
@@ -1447,7 +1447,7 @@ function countReviewStatuses(counts: Partial<Record<ReviewStatus, number>>, stat
 }
 
 function isReviewQueueMode(value: unknown): value is ReviewQueueMode {
-  return value === "pending" || value === "changed" || value === "completed" || value === "all";
+  return value === "pending" || value === "needs_adjustment" || value === "completed" || value === "all";
 }
 
 function isReviewCriterionFilter(value: unknown): value is ReviewCriterionFilter {
@@ -1461,7 +1461,7 @@ function isReviewCriterionStatusFilter(value: unknown): value is ReviewCriterion
 function queueCountLabel(mode: ReviewQueueMode, count: number) {
   const noun = count === 1 ? "questão" : "questões";
   if (mode === "pending") return `${count} ${noun} pendente${count === 1 ? "" : "s"}`;
-  if (mode === "changed") return `${count} ${noun} alterada${count === 1 ? "" : "s"}`;
+  if (mode === "needs_adjustment") return `${count} ${noun} que ${count === 1 ? "precisa" : "precisam"} de ajuste`;
   if (mode === "completed") return `${count} ${noun} conferida${count === 1 ? "" : "s"} por completo`;
   return `${count} ${noun} encontrada${count === 1 ? "" : "s"}`;
 }
