@@ -310,6 +310,7 @@ export type Database = {
           alternativas: Json
           ano: string | null
           area_geral: string | null
+          caderno: string | null
           conteudo: string | null
           conteudo_principal: string | null
           conteudos_relacionados: string[]
@@ -325,7 +326,9 @@ export type Database = {
           grupo_id: string | null
           id: string
           imagem_original_url: string | null
+          import_key: string | null
           instituicao: string | null
+          modalidade: string | null
           numero: string | null
           observacoes: string | null
           prova: string | null
@@ -349,6 +352,7 @@ export type Database = {
           alternativas?: Json
           ano?: string | null
           area_geral?: string | null
+          caderno?: string | null
           conteudo?: string | null
           conteudo_principal?: string | null
           conteudos_relacionados?: string[]
@@ -364,7 +368,9 @@ export type Database = {
           grupo_id?: string | null
           id?: string
           imagem_original_url?: string | null
+          import_key?: string | null
           instituicao?: string | null
+          modalidade?: string | null
           numero?: string | null
           observacoes?: string | null
           prova?: string | null
@@ -388,6 +394,7 @@ export type Database = {
           alternativas?: Json
           ano?: string | null
           area_geral?: string | null
+          caderno?: string | null
           conteudo?: string | null
           conteudo_principal?: string | null
           conteudos_relacionados?: string[]
@@ -403,7 +410,9 @@ export type Database = {
           grupo_id?: string | null
           id?: string
           imagem_original_url?: string | null
+          import_key?: string | null
           instituicao?: string | null
+          modalidade?: string | null
           numero?: string | null
           observacoes?: string | null
           prova?: string | null
