@@ -43,10 +43,19 @@ jobs:
             };
             const fail = async (message) => {
               core.error(message);
-              await core.summary
-                .addHeading("Importação não concluída")
-                .addText(message)
-                .write();
+              try {
+                const summaryMessage = message
+                  .replaceAll("&", "&amp;")
+                  .replaceAll("<", "&lt;")
+                  .replaceAll(">", "&gt;");
+                await core.summary
+                  .addHeading("Importação não concluída")
+                  .addRaw(summaryMessage, true)
+                  .write();
+              } catch (error) {
+                const summaryError = error instanceof Error ? error.message : "erro desconhecido";
+                core.warning("Não foi possível registrar o resumo da falha: " + summaryError);
+              }
               await comment("Não consegui importar o lote aprovado. " + message);
               core.setFailed(message);
             };
