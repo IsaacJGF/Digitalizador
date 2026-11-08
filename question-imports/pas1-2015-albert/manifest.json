@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "batch_key": "pas1-2015-albert-fisica-16",
+  "batch_key": "pas1-2015-albert-catalogo-14",
   "references": [
     {
       "id": "pas1-2015-albert-2015-albert-r055-061",
@@ -121,16 +121,6 @@
         }
       ],
       "fonte": "PAS 1/UnB, 1.ª etapa, Caderno Albert (2015), p. 15; PDF unificado, p. 175."
-    },
-    {
-      "id": "pas1-2015-albert-2015-albert-r096-100",
-      "blocos": [
-        {
-          "tipo": "texto",
-          "texto": "O Sistema de Detecção do Desmatamento em Tempo Real (DETER) do INPE indicou que em agosto e setembro de 2014 foram devastados 1.626 km² de florestas na Amazônia Legal, um crescimento de 122% em relação ao mesmo período em 2013. Em agosto, foram desmatados 890,2 km², um salto de 208% considerados os 288,6 km² desmatados no mesmo mês de 2013. Em setembro, foram 736,66% mais que em setembro do ano anterior.\n\nO IBAMA está preocupado com um novo método do crime organizado para desmatar na Amazônia, que consiste em fazer desmatamentos em pequenos pontos para dificultar a detecção pelo DETER. Hoje, o sistema, que se baseia em imagens feitas por dois satélites, enxerga apenas cortes em áreas maiores que 25 hectares. Por isso, o órgão pretende tornar operacional um DETER mais potente, para que seja possível enxergar desmatamento em áreas a partir de 6,25 hectares.\n\nInternet: <www.em.com.br> (com adaptações).\n\nTendo o texto acima como referência inicial e considerando as características da Amazônia, julgue os itens de 96 a 99 e assinale a opção correta no item 100, que é do tipo C."
-        }
-      ],
-      "fonte": "PAS 1/UnB, 1.ª etapa, Caderno Albert (2015), p. 16; PDF unificado, p. 176."
     }
   ],
   "questions": [
@@ -161,9 +151,16 @@
       ],
       "area_geral": "Mecânica",
       "conteudo_principal": "Hidrostática",
-      "subconteudo_principal": "Densidade e estratificação de materiais",
-      "conteudos_relacionados": [],
-      "tags_livres": [],
+      "subconteudo_principal": "Empuxo e flutuação",
+      "conteudos_relacionados": [
+        "Densidade",
+        "Conversão de unidades"
+      ],
+      "tags_livres": [
+        "Com cálculo",
+        "Análise de gráfico ou tabela",
+        "Interpretação de figura"
+      ],
       "ano": "2015",
       "prova": "PAS 1",
       "instituicao": "UnB",
@@ -175,33 +172,19 @@
       "resposta": "B"
     },
     {
-      "numero": "64",
-      "tipo": "certo_errado",
-      "alternativas": [],
-      "area_geral": "Mecânica",
-      "conteudo_principal": "Hidrostática",
-      "subconteudo_principal": "Densidade de materiais e misturas",
-      "conteudos_relacionados": [],
-      "tags_livres": [],
-      "ano": "2015",
-      "prova": "PAS 1",
-      "instituicao": "UnB",
-      "modalidade": "Subprograma 2015 (triênio 2015/2017)",
-      "caderno": "Albert",
-      "referencia_id": "pas1-2015-albert-2015-albert-r062-068",
-      "fonte": "Prova: Caderno Albert, p. 10 (PDF unificado, p. 170). Gabarito: CEBRASPE, Gabaritos Oficiais Preliminares, PAS12015_001_01, item 64.",
-      "enunciado": "O processo de fermentação aumenta a densidade da massa de pães e bolos.",
-      "resposta": "E"
-    },
-    {
       "numero": "67",
       "tipo": "numerica",
       "alternativas": [],
       "area_geral": "Física Térmica",
       "conteudo_principal": "Termodinâmica",
-      "subconteudo_principal": "Gases e variação de volume",
-      "conteudos_relacionados": [],
-      "tags_livres": [],
+      "subconteudo_principal": "Estudo dos gases e suas transformações",
+      "conteudos_relacionados": [
+        "Conversão de unidades"
+      ],
+      "tags_livres": [
+        "Com cálculo",
+        "Usa mais de uma fórmula"
+      ],
       "ano": "2015",
       "prova": "PAS 1",
       "instituicao": "UnB",
@@ -218,9 +201,16 @@
       "alternativas": [],
       "area_geral": "Mecânica",
       "conteudo_principal": "Cinemática",
-      "subconteudo_principal": "Queda livre",
-      "conteudos_relacionados": [],
-      "tags_livres": [],
+      "subconteudo_principal": "Movimento uniformemente variado (MUV)",
+      "conteudos_relacionados": [
+        "Movimento vertical",
+        "Aceleração da gravidade",
+        "Conversão de unidades"
+      ],
+      "tags_livres": [
+        "Com cálculo",
+        "Usa fórmula"
+      ],
       "ano": "2015",
       "prova": "PAS 1",
       "instituicao": "UnB",
@@ -236,10 +226,14 @@
       "tipo": "certo_errado",
       "alternativas": [],
       "area_geral": "Mecânica",
-      "conteudo_principal": "Trabalho, energia e potência",
-      "subconteudo_principal": "Potência",
-      "conteudos_relacionados": [],
-      "tags_livres": [],
+      "conteudo_principal": "Energia Mecânica",
+      "subconteudo_principal": "Trabalho e potência mecânica",
+      "conteudos_relacionados": [
+        "Potência"
+      ],
+      "tags_livres": [
+        "Com cálculo"
+      ],
       "ano": "2015",
       "prova": "PAS 1",
       "instituicao": "UnB",
@@ -255,10 +249,17 @@
       "tipo": "certo_errado",
       "alternativas": [],
       "area_geral": "Mecânica",
-      "conteudo_principal": "Movimento circular",
-      "subconteudo_principal": "Velocidade tangencial",
-      "conteudos_relacionados": [],
-      "tags_livres": [],
+      "conteudo_principal": "Cinemática",
+      "subconteudo_principal": "Movimento circular",
+      "conteudos_relacionados": [
+        "Movimento circular",
+        "Velocidade",
+        "Conversão de unidades"
+      ],
+      "tags_livres": [
+        "Com cálculo",
+        "Usa mais de uma fórmula"
+      ],
       "ano": "2015",
       "prova": "PAS 1",
       "instituicao": "UnB",
@@ -274,10 +275,17 @@
       "tipo": "certo_errado",
       "alternativas": [],
       "area_geral": "Mecânica",
-      "conteudo_principal": "Movimento circular",
-      "subconteudo_principal": "Rotação e trajetória espacial",
-      "conteudos_relacionados": [],
-      "tags_livres": [],
+      "conteudo_principal": "Cinemática",
+      "subconteudo_principal": "Movimento circular",
+      "conteudos_relacionados": [
+        "Movimento circular",
+        "Trajetória",
+        "Composição de movimentos"
+      ],
+      "tags_livres": [
+        "Sem cálculo",
+        "Interpretação de figura"
+      ],
       "ano": "2015",
       "prova": "PAS 1",
       "instituicao": "UnB",
@@ -293,10 +301,17 @@
       "tipo": "certo_errado",
       "alternativas": [],
       "area_geral": "Mecânica",
-      "conteudo_principal": "Movimento circular",
-      "subconteudo_principal": "Posição angular",
-      "conteudos_relacionados": [],
-      "tags_livres": [],
+      "conteudo_principal": "Cinemática",
+      "subconteudo_principal": "Movimento circular",
+      "conteudos_relacionados": [
+        "Movimento circular",
+        "Geometria e trigonometria",
+        "Posição"
+      ],
+      "tags_livres": [
+        "Sem cálculo",
+        "Interpretação de figura"
+      ],
       "ano": "2015",
       "prova": "PAS 1",
       "instituicao": "UnB",
@@ -313,9 +328,19 @@
       "alternativas": [],
       "area_geral": "Mecânica",
       "conteudo_principal": "Cinemática",
-      "subconteudo_principal": "Gráficos do movimento",
-      "conteudos_relacionados": [],
-      "tags_livres": [],
+      "subconteudo_principal": "Movimento uniformemente variado (MUV)",
+      "conteudos_relacionados": [
+        "Análise de gráficos e tabelas",
+        "Gráfico do movimento",
+        "Distância",
+        "Deslocamento",
+        "Movimento uniforme",
+        "Movimento uniformemente variado"
+      ],
+      "tags_livres": [
+        "Com cálculo",
+        "Análise de gráfico ou tabela"
+      ],
       "ano": "2015",
       "prova": "PAS 1",
       "instituicao": "UnB",
@@ -332,9 +357,20 @@
       "alternativas": [],
       "area_geral": "Mecânica",
       "conteudo_principal": "Cinemática",
-      "subconteudo_principal": "Gráficos do movimento",
-      "conteudos_relacionados": [],
-      "tags_livres": [],
+      "subconteudo_principal": "Movimento uniformemente variado (MUV)",
+      "conteudos_relacionados": [
+        "Análise de gráficos e tabelas",
+        "Gráfico do movimento",
+        "Velocidade",
+        "Aceleração",
+        "Movimento uniforme",
+        "Movimento uniformemente variado"
+      ],
+      "tags_livres": [
+        "Com cálculo",
+        "Usa fórmula",
+        "Análise de gráfico ou tabela"
+      ],
       "ano": "2015",
       "prova": "PAS 1",
       "instituicao": "UnB",
@@ -378,10 +414,15 @@
         }
       ],
       "area_geral": "Mecânica",
-      "conteudo_principal": "Impulso e quantidade de movimento",
-      "subconteudo_principal": "Colisões",
-      "conteudos_relacionados": [],
-      "tags_livres": [],
+      "conteudo_principal": "Impulso e Quantidade de Movimento",
+      "subconteudo_principal": "Conservação da quantidade de movimento",
+      "conteudos_relacionados": [
+        "Quantidade de movimento"
+      ],
+      "tags_livres": [
+        "Com cálculo",
+        "Usa fórmula"
+      ],
       "ano": "2015",
       "prova": "PAS 1",
       "instituicao": "UnB",
@@ -418,10 +459,15 @@
         }
       ],
       "area_geral": "Mecânica",
-      "conteudo_principal": "Impulso e quantidade de movimento",
-      "subconteudo_principal": "Coeficiente de restituição",
-      "conteudos_relacionados": [],
-      "tags_livres": [],
+      "conteudo_principal": "Impulso e Quantidade de Movimento",
+      "subconteudo_principal": "Quantidade de movimento",
+      "conteudos_relacionados": [
+        "Colisão parcialmente elástica"
+      ],
+      "tags_livres": [
+        "Sem cálculo",
+        "Usa fórmula"
+      ],
       "ano": "2015",
       "prova": "PAS 1",
       "instituicao": "UnB",
@@ -439,8 +485,14 @@
       "area_geral": "Mecânica",
       "conteudo_principal": "Hidrostática",
       "subconteudo_principal": "Pressão hidrostática",
-      "conteudos_relacionados": [],
-      "tags_livres": [],
+      "conteudos_relacionados": [
+        "Pressão hidrostática",
+        "Lei de Stevin"
+      ],
+      "tags_livres": [
+        "Sem cálculo",
+        "Usa fórmula"
+      ],
       "ano": "2015",
       "prova": "PAS 1",
       "instituicao": "UnB",
@@ -456,10 +508,17 @@
       "tipo": "certo_errado",
       "alternativas": [],
       "area_geral": "Mecânica",
-      "conteudo_principal": "Leis de Newton",
-      "subconteudo_principal": "Força normal",
-      "conteudos_relacionados": [],
-      "tags_livres": [],
+      "conteudo_principal": "Dinâmica",
+      "subconteudo_principal": "Forças",
+      "conteudos_relacionados": [
+        "Força normal",
+        "Força peso",
+        "Vetores"
+      ],
+      "tags_livres": [
+        "Sem cálculo",
+        "Usa fórmula"
+      ],
       "ano": "2015",
       "prova": "PAS 1",
       "instituicao": "UnB",
@@ -477,8 +536,17 @@
       "area_geral": "Mecânica",
       "conteudo_principal": "Hidrostática",
       "subconteudo_principal": "Empuxo e flutuação",
-      "conteudos_relacionados": [],
-      "tags_livres": [],
+      "conteudos_relacionados": [
+        "Densidade",
+        "Empuxo",
+        "Flutuação",
+        "Geometria e trigonometria"
+      ],
+      "tags_livres": [
+        "Com cálculo",
+        "Usa mais de uma fórmula",
+        "Interpretação de figura"
+      ],
       "ano": "2015",
       "prova": "PAS 1",
       "instituicao": "UnB",
@@ -487,25 +555,6 @@
       "referencia_id": "pas1-2015-albert-2015-albert-r090-093",
       "fonte": "Prova: Caderno Albert, p. 15 (PDF unificado, p. 175). Gabarito: CEBRASPE, Gabaritos Oficiais Preliminares, PAS12015_001_01, item 92.",
       "enunciado": "Mais de 40% do volume do navio ficará submerso.",
-      "resposta": "E"
-    },
-    {
-      "numero": "96",
-      "tipo": "certo_errado",
-      "alternativas": [],
-      "area_geral": "Mecânica",
-      "conteudo_principal": "Grandezas físicas e medidas",
-      "subconteudo_principal": "Relação entre volume, área e espessura",
-      "conteudos_relacionados": [],
-      "tags_livres": [],
-      "ano": "2015",
-      "prova": "PAS 1",
-      "instituicao": "UnB",
-      "modalidade": "Subprograma 2015 (triênio 2015/2017)",
-      "caderno": "Albert",
-      "referencia_id": "pas1-2015-albert-2015-albert-r096-100",
-      "fonte": "Prova: Caderno Albert, p. 16 (PDF unificado, p. 176). Gabarito: CEBRASPE, Gabaritos Oficiais Preliminares, PAS12015_001_01, item 96.",
-      "enunciado": "Considere que o volume de material a ser escavado para a construção da hidrelétrica de Belo Monte seja de aproximadamente 240 milhões de metros cúbicos. Nesse caso, se esse material for depositado sobre a área a ser inundada pelo reservatório da hidrelétrica, que é de 516 km², formando uma camada homogênea de mesma espessura, então a espessura dessa camada será superior a 50 cm.",
       "resposta": "E"
     }
   ]
