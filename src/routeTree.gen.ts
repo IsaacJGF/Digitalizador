@@ -13,9 +13,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnaliseProvasRouteImport } from './routes/analise-provas'
 import { Route as CatalogosRouteImport } from './routes/catalogos'
 import { Route as DocumentoRouteImport } from './routes/documento'
+import { Route as McpRouteImport } from './routes/mcp'
 import { Route as QuestoesRouteImport } from './routes/questoes'
 import { Route as RevisaoInternaRouteImport } from './routes/revisao-interna'
 import { Route as RevisarRouteImport } from './routes/revisar'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as ApiQuestionImageIngestRouteImport } from './routes/api.question-image-ingest'
 import { Route as ApiQuestionIngestRouteImport } from './routes/api.question-ingest'
 
@@ -39,6 +41,11 @@ const DocumentoRoute = DocumentoRouteImport.update({
   path: '/documento',
   getParentRoute: () => rootRouteImport,
 } as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const QuestoesRoute = QuestoesRouteImport.update({
   id: '/questoes',
   path: '/questoes',
@@ -54,6 +61,12 @@ const RevisarRoute = RevisarRouteImport.update({
   path: '/revisar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiQuestionImageIngestRoute = ApiQuestionImageIngestRouteImport.update({
   id: '/api/question-image-ingest',
   path: '/api/question-image-ingest',
@@ -70,9 +83,11 @@ export interface FileRoutesByFullPath {
   '/analise-provas': typeof AnaliseProvasRoute
   '/catalogos': typeof CatalogosRoute
   '/documento': typeof DocumentoRoute
+  '/mcp': typeof McpRoute
   '/questoes': typeof QuestoesRoute
   '/revisao-interna': typeof RevisaoInternaRoute
   '/revisar': typeof RevisarRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/api/question-image-ingest': typeof ApiQuestionImageIngestRoute
   '/api/question-ingest': typeof ApiQuestionIngestRoute
 }
@@ -81,9 +96,11 @@ export interface FileRoutesByTo {
   '/analise-provas': typeof AnaliseProvasRoute
   '/catalogos': typeof CatalogosRoute
   '/documento': typeof DocumentoRoute
+  '/mcp': typeof McpRoute
   '/questoes': typeof QuestoesRoute
   '/revisao-interna': typeof RevisaoInternaRoute
   '/revisar': typeof RevisarRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/api/question-image-ingest': typeof ApiQuestionImageIngestRoute
   '/api/question-ingest': typeof ApiQuestionIngestRoute
 }
@@ -93,9 +110,11 @@ export interface FileRoutesById {
   '/analise-provas': typeof AnaliseProvasRoute
   '/catalogos': typeof CatalogosRoute
   '/documento': typeof DocumentoRoute
+  '/mcp': typeof McpRoute
   '/questoes': typeof QuestoesRoute
   '/revisao-interna': typeof RevisaoInternaRoute
   '/revisar': typeof RevisarRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/api/question-image-ingest': typeof ApiQuestionImageIngestRoute
   '/api/question-ingest': typeof ApiQuestionIngestRoute
 }
@@ -106,9 +125,11 @@ export interface FileRouteTypes {
     | '/analise-provas'
     | '/catalogos'
     | '/documento'
+    | '/mcp'
     | '/questoes'
     | '/revisao-interna'
     | '/revisar'
+    | '/.well-known/oauth-protected-resource'
     | '/api/question-image-ingest'
     | '/api/question-ingest'
   fileRoutesByTo: FileRoutesByTo
@@ -117,9 +138,11 @@ export interface FileRouteTypes {
     | '/analise-provas'
     | '/catalogos'
     | '/documento'
+    | '/mcp'
     | '/questoes'
     | '/revisao-interna'
     | '/revisar'
+    | '/.well-known/oauth-protected-resource'
     | '/api/question-image-ingest'
     | '/api/question-ingest'
   id:
@@ -128,9 +151,11 @@ export interface FileRouteTypes {
     | '/analise-provas'
     | '/catalogos'
     | '/documento'
+    | '/mcp'
     | '/questoes'
     | '/revisao-interna'
     | '/revisar'
+    | '/.well-known/oauth-protected-resource'
     | '/api/question-image-ingest'
     | '/api/question-ingest'
   fileRoutesById: FileRoutesById
@@ -140,9 +165,11 @@ export interface RootRouteChildren {
   AnaliseProvasRoute: typeof AnaliseProvasRoute
   CatalogosRoute: typeof CatalogosRoute
   DocumentoRoute: typeof DocumentoRoute
+  McpRoute: typeof McpRoute
   QuestoesRoute: typeof QuestoesRoute
   RevisaoInternaRoute: typeof RevisaoInternaRoute
   RevisarRoute: typeof RevisarRoute
+  Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ApiQuestionImageIngestRoute: typeof ApiQuestionImageIngestRoute
   ApiQuestionIngestRoute: typeof ApiQuestionIngestRoute
 }
@@ -177,6 +204,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocumentoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/questoes': {
       id: '/questoes'
       path: '/questoes'
@@ -196,6 +230,13 @@ declare module '@tanstack/react-router' {
       path: '/revisar'
       fullPath: '/revisar'
       preLoaderRoute: typeof RevisarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/question-image-ingest': {
@@ -220,9 +261,12 @@ const rootRouteChildren: RootRouteChildren = {
   AnaliseProvasRoute: AnaliseProvasRoute,
   CatalogosRoute: CatalogosRoute,
   DocumentoRoute: DocumentoRoute,
+  McpRoute: McpRoute,
   QuestoesRoute: QuestoesRoute,
   RevisaoInternaRoute: RevisaoInternaRoute,
   RevisarRoute: RevisarRoute,
+  Char91DotwellKnownChar93OauthProtectedResourceRoute:
+    Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ApiQuestionImageIngestRoute: ApiQuestionImageIngestRoute,
   ApiQuestionIngestRoute: ApiQuestionIngestRoute,
 }
