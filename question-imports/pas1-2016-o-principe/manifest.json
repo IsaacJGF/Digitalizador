@@ -1,0 +1,488 @@
+{
+  "schema_version": 1,
+  "batch_key": "pas1-2016-o-principe-fisica-12",
+  "references": [
+    {
+      "id": "pas1-2016-mariana",
+      "blocos": [
+        {
+          "tipo": "imagem"
+        },
+        {
+          "tipo": "texto",
+          "texto": "Bento Rodrigues. Subdistrito do município de Mariana (MG) atingido pelo rompimento da barragem. Internet: <www.wikipedia.org.br>.\n\nO pior acidente da mineração brasileira ocorreu em 5/11/2015 no município de Mariana – MG. Foram liberados 62 milhões de metros cúbicos de rejeitos de mineração, que eram formados, principalmente, por óxido de ferro, água e lama. A cobertura de lama impedirá o desenvolvimento de espécies vegetais, uma vez que é pobre em matéria orgânica, o que tornará, portanto, a região infértil. Além disso, em virtude da composição, os rejeitos afetarão o pH da terra, causando a desestruturação química do solo.\n\n(...)\n\nUma análise laboratorial encomendada após o desastre em Mariana encontrou na água do rio da região partículas de metais pesados como chumbo, alumínio, ferro, bário, cobre, boro e mercúrio. Segundo o diretor do Serviço Autônomo de Água e Esgoto de Baixo Guando, órgão responsável pela análise, a água não tem mais utilidade nenhuma, sendo imprópria para a irrigação e o consumo animal e humano. Além dos metais pesados, a própria força da lama prejudicou a biodiversidade do rio para sempre — ambientalistas não descartam a possibilidade de que espécies endêmicas inteiras tenham sido soterradas pela lama. A quantidade de lama é tamanha que o curso natural do rio foi bloqueado, o que fez que ele perdesse força e se formassem lagoas que também não devem ter vida longa, já que, além dos minérios de ferro, esgoto, pesticidas e agrotóxicos também estão sendo carregados pelas águas.\n\nInternet: <www.mundoeducao.bol.uol.com.br> (com adaptações).\n\nTendo o texto acima como referência inicial, e considerando a densidade dos rejeitos liberados em Mariana igual a 2.000 kg/m³; a aceleração da gravidade igual a 9,8 m/s²; e 0,26 e 0,97 como valores aproximados, respectivamente, de sen(15°) e cos(15°), julgue os itens de 56 a 64 e faça o que se pede nos itens 65 e 66, que são do tipo C."
+        }
+      ],
+      "fonte": "PAS 1/UnB, Subprograma 2016, Primeira Etapa, Caderno O Príncipe, p. 9 (PDF unificado, p. 148)."
+    },
+    {
+      "id": "pas1-2016-minerio",
+      "blocos": [
+        {
+          "tipo": "texto",
+          "texto": "Para identificar um tipo de minério encontrado nos dejetos de Mariana, realizou-se o seguinte experimento. Duas amostras de um mesmo minério desconhecido, em forma de bloco, cada um com massa de m gramas, foram presas nas extremidades de um fio ideal que passa por uma polia também ideal, conforme ilustrado na figura acima."
+        },
+        {
+          "tipo": "imagem"
+        },
+        {
+          "tipo": "texto",
+          "texto": "Uma das amostras foi colocada no interior de um recipiente contendo um fluido de densidade 0,304 g/cm³. A tabela abaixo apresenta a densidade de substâncias que pode ser usadas no experimento.\n\nSubstância — densidade (g/cm³)\nalumínio — 2,7\ncobre — 8,9\nchumbo — 11,3\nferro — 7,6\nprata — 10,5\n\nConsiderando que a aceleração das amostras, enquanto estiverem em movimento e a amostra da esquerda estiver imersa, seja igual a 0,2 m/s² e assumindo 10 m/s² como a aceleração da gravidade local, faça o que se pede no item 67, que é do tipo D."
+        }
+      ],
+      "fonte": "PAS 1/UnB, Subprograma 2016, Primeira Etapa, Caderno O Príncipe, p. 10 (PDF unificado, p. 149)."
+    },
+    {
+      "id": "pas1-2016-frenagem",
+      "blocos": [
+        {
+          "tipo": "texto",
+          "texto": "Dois veículos idênticos se deslocavam em linha reta, um ao lado do outro, com velocidades constantes e iguais a 108 km/h. Diante de uma situação de risco de atropelamento, um dos motoristas acionou imediatamente os freios, o outro reagiu depois, com uma diferença de tempo de 0,6 s. Uma vez acionados, os freios produzem, nos seus respectivos veículos, acelerações constantes e iguais até o repouso.\n\nCom base nessas informações, julgue o item 70 e faça o que se pede no item 71, que é do tipo B."
+        }
+      ],
+      "fonte": "PAS 1/UnB, Subprograma 2016, Primeira Etapa, Caderno O Príncipe, p. 11 (PDF unificado, p. 150)."
+    },
+    {
+      "id": "pas1-2016-richter",
+      "blocos": [
+        {
+          "tipo": "texto",
+          "texto": "A escala de magnitude de terremotos mais popular hoje em dia foi desenvolvida em 1935 por Charles Francis Richter com a colaboração de Beno Gutenberg. Valores acima de 6,0 nessa escala representam tremores fortes, com efeitos destruidores em um raio de 160 km. A escala Richter também permite classificar os terremotos em termos da quantidade de energia liberada. A tabela a seguir relaciona as magnitudes dos sismos com seu equivalente em energia.\n\nMagnitude — energia liberada (em massa de TNT) — exemplo de referência\n1,0 — 170 g — pequena explosão em um sítio de construção\n2,0 — 6 kg — explosão de um tanque de gás butano\n3,0 — 181 kg — tremores diários na região de Tarapacá no Chile (geralmente não são sentidos pela população)\n4,0 — 6 t — bomba atômica de baixa potência\n5,0 — 199 t — terremotos em Albolote (1956) e Lorca (2011), Espanha\n6,0 — 1.270 t — terremoto de Double Spring Flat (1994), EUA\n\nInternet: <www.wikipedia.org.br> (com adaptações).\n\nTendo como referência essas informações e sabendo que a energia liberada na explosão de 1,0 kg de TNT é igual a 4,2 × 10⁶ J, julgue os itens subsecutivos."
+        }
+      ],
+      "fonte": "PAS 1/UnB, Subprograma 2016, Primeira Etapa, Caderno O Príncipe, p. 12 (PDF unificado, p. 151)."
+    },
+    {
+      "id": "pas1-2016-ondas-sismicas",
+      "blocos": [
+        {
+          "tipo": "texto",
+          "texto": "Um sismógrafo localizado em Quito detectou ondas sísmicas (primária e secundária) produzidas por um terremoto que ocorreu no interior do Equador. Na figura I acima, essas ondas estão representadas por círculos nas cores verde (onda primária) e vermelha (onda secundária), que se propagam a partir do ponto O, o epicentro do terremoto. As ondas primária e secundária se deslocam com velocidades constantes e diferentes, tal que seus raios crescem, em função do tempo, conforme mostrado na figura II."
+        },
+        {
+          "tipo": "imagem"
+        },
+        {
+          "tipo": "texto",
+          "texto": "Observa-se que, um segundo após o início do terremoto, o raio da onda primária é igual a 5 km e o da secundária, a 3 km. O referido sismógrafo detectou a onda secundária 28 s após ter detectado a onda primária.\n\nCom base nessas informações e nas figuras I e II acima, julgue os itens de 74 a 76."
+        }
+      ],
+      "fonte": "PAS 1/UnB, Subprograma 2016, Primeira Etapa, Caderno O Príncipe, p. 12 (PDF unificado, p. 151); figuras I e II."
+    },
+    {
+      "id": "pas1-2016-grafico-frenagem",
+      "blocos": [
+        {
+          "tipo": "texto",
+          "texto": "Considere que, em um instante t = 0, um motorista esteja dirigindo um automóvel com velocidade de 20 m/s e veja um sinal vermelho em um cruzamento. Considere, ainda, que o motorista leve 2 s para reagir e 8 s acionando o freio até o veículo parar completamente."
+        }
+      ],
+      "fonte": "PAS 1/UnB, Subprograma 2016, Primeira Etapa, Caderno O Príncipe, p. 14 (PDF unificado, p. 153)."
+    },
+    {
+      "id": "pas1-2016-supernova",
+      "blocos": [
+        {
+          "tipo": "imagem"
+        },
+        {
+          "tipo": "texto",
+          "texto": "Nebulosa do Caranguejo. Internet: <www.wikipedia.org.br>.\n\nOs elementos químicos que compõem o planeta Terra e os elementos que fazem parte do corpo humano — como o carbono, o nitrogênio e o oxigênio — são todos restos mortais de estrelas que existiram há 5 bilhões de anos, antes da formação do Sistema Solar. As estrelas inicialmente queimam hidrogênio e hélio no seu interior; posteriormente, o núcleo se comprime, atingindo pressões e temperaturas altíssimas. Com a queima de hélio, elementos mais massivos são gerados. Eventualmente, a estrela “morre” em um evento explosivo intenso que lança no universo os elementos por ela produzidos.\n\n(...)\n\nDurante a explosão, a estrela, além de emitir enorme quantidade de luz, libera também elementos e moléculas do espaço. Dentro da estrela encontra-se a maioria dos primeiros vinte e seis elementos da tabela periódica: desde elementos simples, como o hélio e o carbono, aos mais complexos, como o manganês e o ferro. Após a explosão, os elementos formados vão se combinando para formar outros elementos e moléculas.\n\nA explosão libera uma enorme nuvem de gás e poeira, denominada nuvem interestelar. 90% do gás é hidrogênio, 9% hélio e 1% átomos mais pesados; a poeira contém compostos a base de silício, carbono, ferro, água, gelo, metano (CH₄), amônia (NH₃) e algumas moléculas orgânicas, como o formaldeído (H₂CO).\n\nAlmanaque Abril Socioambiental e Internet: <www.acs.org> (com adaptações).\n\nConsiderando o fragmento de texto e a figura acima, que retrata um exemplo de remanescente de supernova, julgue os itens de 95 a 98 e faça o que se pede no item 99, que é do tipo C."
+        }
+      ],
+      "fonte": "PAS 1/UnB, Subprograma 2016, Primeira Etapa, Caderno O Príncipe, p. 16 (PDF unificado, p. 155); figura da Nebulosa do Caranguejo."
+    }
+  ],
+  "questions": [
+    {
+      "numero": "56",
+      "tipo": "certo_errado",
+      "enunciado": "Se um caminhão capaz de gerar uma potência mecânica máxima de 350 kW for carregado de rejeitos de mineração, de modo que sua massa total seja 23 t, então ele subirá um aclive de 15° em relação à horizontal com velocidade que poderá chegar até 25 km/h.",
+      "alternativas": [],
+      "resposta": "E",
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Energia Mecânica",
+      "subconteudo_principal": "Trabalho e potência mecânica",
+      "conteudos_relacionados": [
+        "Força peso",
+        "Geometria e trigonometria",
+        "Potência",
+        "Conversão de unidades"
+      ],
+      "tags_livres": [
+        "Com cálculo",
+        "Usa fórmula",
+        "Mais de um conteúdo"
+      ],
+      "ano": "2016",
+      "prova": "PAS 1",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2016 (triênio 2016/2018)",
+      "caderno": "O Príncipe",
+      "referencia_id": "pas1-2016-mariana",
+      "fonte": "Prova: Caderno O Príncipe, p. 9 (PDF unificado, p. 148), item 56. Gabarito definitivo Cebraspe, PAS1247_001_03, item 56.",
+      "observacoes": "A fotografia do texto-base será inserida posteriormente pelo editor do sistema."
+    },
+    {
+      "numero": "57",
+      "tipo": "certo_errado",
+      "enunciado": "Se um veículo for incapaz de se manter em repouso, sem deslizar, em um trecho de descida inclinado de 15° em relação à horizontal, então o coeficiente de atrito estático entre os pneus do veículo e a superfície do declive será inferior a 0,28.",
+      "alternativas": [],
+      "resposta": "C",
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Dinâmica",
+      "subconteudo_principal": "Atrito e resistência",
+      "conteudos_relacionados": [
+        "Força de atrito",
+        "Força normal",
+        "Força peso",
+        "Geometria e trigonometria"
+      ],
+      "tags_livres": [
+        "Com cálculo",
+        "Usa fórmula"
+      ],
+      "ano": "2016",
+      "prova": "PAS 1",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2016 (triênio 2016/2018)",
+      "caderno": "O Príncipe",
+      "referencia_id": "pas1-2016-mariana",
+      "fonte": "Prova: Caderno O Príncipe, p. 9 (PDF unificado, p. 148), item 57. Gabarito definitivo Cebraspe, PAS1247_001_03, item 57.",
+      "observacoes": "A fotografia do texto-base será inserida posteriormente pelo editor do sistema."
+    },
+    {
+      "numero": "58",
+      "tipo": "certo_errado",
+      "enunciado": "Se uma máquina com potência de 60,76 kW, operando continuamente, for capaz de drenar a lama do chão e despejá-la a 5 m de altura na carroceria de caminhões encarregados de transportar os rejeitos para um local adequado, então serão necessários mais de 1.000 dias para drenar toda a lama liberada em Mariana.",
+      "alternativas": [],
+      "resposta": "C",
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Energia Mecânica",
+      "subconteudo_principal": "Trabalho e potência mecânica",
+      "conteudos_relacionados": [
+        "Densidade",
+        "Energia potencial gravitacional",
+        "Potência",
+        "Conversão de unidades"
+      ],
+      "tags_livres": [
+        "Com cálculo",
+        "Usa mais de uma fórmula",
+        "Mais de um conteúdo"
+      ],
+      "ano": "2016",
+      "prova": "PAS 1",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2016 (triênio 2016/2018)",
+      "caderno": "O Príncipe",
+      "referencia_id": "pas1-2016-mariana",
+      "fonte": "Prova: Caderno O Príncipe, p. 9 (PDF unificado, p. 148), item 58. Gabarito definitivo Cebraspe, PAS1247_001_03, item 58.",
+      "observacoes": "A fotografia do texto-base será inserida posteriormente pelo editor do sistema."
+    },
+    {
+      "numero": "67",
+      "tipo": "discursiva",
+      "alternativas": [],
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Hidrostática",
+      "subconteudo_principal": "Empuxo e flutuação",
+      "conteudos_relacionados": [
+        "Empuxo",
+        "Força de tração",
+        "2ª lei de Newton",
+        "Densidade"
+      ],
+      "tags_livres": [
+        "Com cálculo",
+        "Usa mais de uma fórmula",
+        "Interpretação de figura",
+        "Mais de um conteúdo"
+      ],
+      "ano": "2016",
+      "prova": "PAS 1",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2016 (triênio 2016/2018)",
+      "caderno": "O Príncipe",
+      "referencia_id": "pas1-2016-minerio",
+      "fonte": "Prova: Caderno O Príncipe, p. 10 (PDF unificado, p. 149), item 67. Gabarito definitivo Cebraspe, PAS1247_001_03: Tipo D.",
+      "enunciado_blocos": [
+        {
+          "tipo": "texto",
+          "texto": "Represente na figura a seguir as forças que atuam no sistema. Com base na tabela, indique o minério usado no experimento, justificando matematicamente o resultado."
+        },
+        {
+          "tipo": "imagem"
+        },
+        {
+          "tipo": "texto",
+          "texto": "O espaço reservado acima é de uso opcional para rascunho. Não se esqueça de transcrever a sua resposta para o Caderno de Respostas."
+        }
+      ],
+      "observacoes": "O gabarito oficial definitivo identifica o item como Tipo D, sem publicar aqui uma resposta-modelo. Resposta deixada vazia; figura e área de rascunho pendentes de inserção pelo editor."
+    },
+    {
+      "numero": "70",
+      "tipo": "certo_errado",
+      "enunciado": "Se o tempo entre o acionamento dos freios e o repouso de cada veículo tiver sido igual a 1,5 s, então os freios produziram uma desaceleração média igual a 20 m/s².",
+      "alternativas": [],
+      "resposta": "C",
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Cinemática",
+      "subconteudo_principal": "Movimento uniformemente variado (MUV)",
+      "conteudos_relacionados": [
+        "Aceleração",
+        "Velocidade",
+        "Conversão de unidades"
+      ],
+      "tags_livres": [
+        "Com cálculo",
+        "Usa fórmula"
+      ],
+      "ano": "2016",
+      "prova": "PAS 1",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2016 (triênio 2016/2018)",
+      "caderno": "O Príncipe",
+      "referencia_id": "pas1-2016-frenagem",
+      "fonte": "Prova: Caderno O Príncipe, p. 11 (PDF unificado, p. 150), item 70. Gabarito definitivo Cebraspe, PAS1247_001_03, item 70."
+    },
+    {
+      "numero": "71",
+      "tipo": "numerica",
+      "enunciado": "A partir dos dados fornecidos, determine, em metros, a distância entre os dois veículos após concluírem o processo de frenagem. Após efetuar todos os cálculos solicitados, despreze, para a marcação no Caderno de Respostas, a parte fracionária do resultado final obtido, caso exista.",
+      "alternativas": [],
+      "resposta": "18",
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Cinemática",
+      "subconteudo_principal": "Movimento uniforme (MU)",
+      "conteudos_relacionados": [
+        "Movimento uniformemente variado",
+        "Distância",
+        "Tempo",
+        "Velocidade"
+      ],
+      "tags_livres": [
+        "Com cálculo",
+        "Usa fórmula",
+        "Mais de um conteúdo"
+      ],
+      "ano": "2016",
+      "prova": "PAS 1",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2016 (triênio 2016/2018)",
+      "caderno": "O Príncipe",
+      "referencia_id": "pas1-2016-frenagem",
+      "fonte": "Prova: Caderno O Príncipe, p. 11 (PDF unificado, p. 150), item 71. Gabarito definitivo Cebraspe, PAS1247_001_03, item 71."
+    },
+    {
+      "numero": "72",
+      "tipo": "certo_errado",
+      "enunciado": "Um meteorito de massa 1,4 × 10³ kg que colida contra a superfície da Terra com velocidade de 6 km/s deve transmitir uma quantidade de energia superior à de duas bombas atômicas de baixa potência.",
+      "alternativas": [],
+      "resposta": "E",
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Energia Mecânica",
+      "subconteudo_principal": "Energia cinética e potencial",
+      "conteudos_relacionados": [
+        "Energia cinética",
+        "Conversão de unidades",
+        "Análise de gráficos e tabelas"
+      ],
+      "tags_livres": [
+        "Com cálculo",
+        "Usa fórmula",
+        "Análise de gráfico ou tabela"
+      ],
+      "ano": "2016",
+      "prova": "PAS 1",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2016 (triênio 2016/2018)",
+      "caderno": "O Príncipe",
+      "referencia_id": "pas1-2016-richter",
+      "fonte": "Prova: Caderno O Príncipe, p. 12 (PDF unificado, p. 151), item 72. Gabarito definitivo Cebraspe, PAS1247_001_03, item 72."
+    },
+    {
+      "numero": "74",
+      "tipo": "certo_errado",
+      "enunciado": "A diferença entre as velocidades de propagação das ondas primária e secundária é superior a 7.000 km/h.",
+      "alternativas": [],
+      "resposta": "C",
+      "area_geral": "Ondulatória",
+      "conteudo_principal": "Ondas mecânicas",
+      "subconteudo_principal": "Geração e propagação em meios materiais",
+      "conteudos_relacionados": [
+        "Velocidade de propagação",
+        "Conversão de unidades",
+        "Análise de gráficos e tabelas",
+        "Distância"
+      ],
+      "tags_livres": [
+        "Com cálculo",
+        "Usa fórmula",
+        "Análise de gráfico ou tabela",
+        "Interpretação de figura"
+      ],
+      "ano": "2016",
+      "prova": "PAS 1",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2016 (triênio 2016/2018)",
+      "caderno": "O Príncipe",
+      "referencia_id": "pas1-2016-ondas-sismicas",
+      "fonte": "Prova: Caderno O Príncipe, p. 12 (PDF unificado, p. 151), item 74. Gabarito definitivo Cebraspe, PAS1247_001_03, item 74.",
+      "observacoes": "As figuras I e II serão inseridas posteriormente pelo editor do sistema."
+    },
+    {
+      "numero": "75",
+      "tipo": "certo_errado",
+      "enunciado": "A distância do sismógrafo ao epicentro do terremoto é inferior a 215 km.",
+      "alternativas": [],
+      "resposta": "C",
+      "area_geral": "Ondulatória",
+      "conteudo_principal": "Ondas mecânicas",
+      "subconteudo_principal": "Geração e propagação em meios materiais",
+      "conteudos_relacionados": [
+        "Velocidade de propagação",
+        "Distância",
+        "Tempo",
+        "Análise de gráficos e tabelas"
+      ],
+      "tags_livres": [
+        "Com cálculo",
+        "Usa fórmula",
+        "Análise de gráfico ou tabela",
+        "Interpretação de figura"
+      ],
+      "ano": "2016",
+      "prova": "PAS 1",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2016 (triênio 2016/2018)",
+      "caderno": "O Príncipe",
+      "referencia_id": "pas1-2016-ondas-sismicas",
+      "fonte": "Prova: Caderno O Príncipe, p. 12 (PDF unificado, p. 151), item 75. Gabarito definitivo Cebraspe, PAS1247_001_03, item 75.",
+      "observacoes": "As figuras I e II serão inseridas posteriormente pelo editor do sistema."
+    },
+    {
+      "numero": "88",
+      "tipo": "multipla_escolha",
+      "enunciado": "Nessa situação, assumindo aceleração uniforme, assinale a opção que apresenta o gráfico da velocidade do veículo em função do tempo.",
+      "alternativas": [
+        {
+          "letra": "A",
+          "texto": "",
+          "imagem_pendente": true
+        },
+        {
+          "letra": "B",
+          "texto": "",
+          "imagem_pendente": true
+        },
+        {
+          "letra": "C",
+          "texto": "",
+          "imagem_pendente": true
+        },
+        {
+          "letra": "D",
+          "texto": "",
+          "imagem_pendente": true
+        }
+      ],
+      "resposta": "B",
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Cinemática",
+      "subconteudo_principal": "Movimento uniformemente variado (MUV)",
+      "conteudos_relacionados": [
+        "Movimento uniforme",
+        "Gráfico do movimento",
+        "Velocidade",
+        "Tempo"
+      ],
+      "tags_livres": [
+        "Sem cálculo",
+        "Análise de gráfico ou tabela",
+        "Mais de um conteúdo"
+      ],
+      "ano": "2016",
+      "prova": "PAS 1",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2016 (triênio 2016/2018)",
+      "caderno": "O Príncipe",
+      "referencia_id": "pas1-2016-grafico-frenagem",
+      "fonte": "Prova: Caderno O Príncipe, p. 14 (PDF unificado, p. 153), item 88. Gabarito definitivo Cebraspe, PAS1247_001_03, item 88.",
+      "observacoes": "Os quatro gráficos das alternativas serão inseridos posteriormente pelo editor do sistema."
+    },
+    {
+      "numero": "96",
+      "tipo": "certo_errado",
+      "enunciado": "Se uma estrela em repouso explodir, fragmentando-se em duas partes com massas diferentes, o fragmento de menor massa será ejetado com velocidade maior.",
+      "alternativas": [],
+      "resposta": "C",
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Impulso e Quantidade de Movimento",
+      "subconteudo_principal": "Conservação da quantidade de movimento",
+      "conteudos_relacionados": [
+        "Quantidade de movimento",
+        "Explosões",
+        "Velocidade"
+      ],
+      "tags_livres": [
+        "Sem cálculo",
+        "Usa fórmula"
+      ],
+      "ano": "2016",
+      "prova": "PAS 1",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2016 (triênio 2016/2018)",
+      "caderno": "O Príncipe",
+      "referencia_id": "pas1-2016-supernova",
+      "fonte": "Prova: Caderno O Príncipe, p. 16 (PDF unificado, p. 155), item 96. Gabarito definitivo Cebraspe, PAS1247_001_03, item 96.",
+      "observacoes": "A figura da Nebulosa do Caranguejo será inserida posteriormente pelo editor do sistema."
+    },
+    {
+      "numero": "99",
+      "tipo": "multipla_escolha",
+      "enunciado": "Considere que, durante as primeiras horas de uma supernova, os efeitos de todas as forças externas à estrela e aos seus fragmentos possam ser desprezados. Nessa situação, durante essas primeiras horas,",
+      "alternativas": [
+        {
+          "letra": "A",
+          "texto": "a energia cinética e a quantidade de movimento do sistema se conservam."
+        },
+        {
+          "letra": "B",
+          "texto": "a energia cinética total do sistema se conserva, sem conservar sua quantidade de movimento."
+        },
+        {
+          "letra": "C",
+          "texto": "a quantidade de movimento total do sistema se conserva, sem conservar sua energia cinética total."
+        },
+        {
+          "letra": "D",
+          "texto": "nenhuma quantidade física do sistema é conservada, por se tratar de um evento explosivo."
+        }
+      ],
+      "resposta": "C",
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Impulso e Quantidade de Movimento",
+      "subconteudo_principal": "Conservação da quantidade de movimento",
+      "conteudos_relacionados": [
+        "Quantidade de movimento",
+        "Explosões",
+        "Energia cinética"
+      ],
+      "tags_livres": [
+        "Sem cálculo",
+        "Usa fórmula",
+        "Mais de um conteúdo"
+      ],
+      "ano": "2016",
+      "prova": "PAS 1",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2016 (triênio 2016/2018)",
+      "caderno": "O Príncipe",
+      "referencia_id": "pas1-2016-supernova",
+      "fonte": "Prova: Caderno O Príncipe, p. 16 (PDF unificado, p. 155), item 99. Gabarito definitivo Cebraspe, PAS1247_001_03, item 99.",
+      "observacoes": "A figura da Nebulosa do Caranguejo será inserida posteriormente pelo editor do sistema."
+    }
+  ]
+}
