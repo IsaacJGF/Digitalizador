@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { withSupabaseAuth } from "@/integrations/supabase/auth-context";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Search,
@@ -64,7 +65,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/questoes")({
   head: () => ({ meta: [{ title: "Questões salvas" }] }),
-  component: Page,
+  component: withSupabaseAuth(Page),
 });
 
 type Q = {
