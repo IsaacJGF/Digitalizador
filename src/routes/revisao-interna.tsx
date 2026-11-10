@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { withSupabaseAuth } from "@/integrations/supabase/auth-context";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
@@ -203,7 +204,7 @@ function createEmptyReviewCriterionStats(): ReviewCriterionStats {
 
 export const Route = createFileRoute("/revisao-interna")({
   head: () => ({ meta: [{ title: "Revisão interna de questões" }] }),
-  component: ReviewWorkspace,
+  component: withSupabaseAuth(ReviewWorkspace),
 });
 
 function ReviewGate() {
