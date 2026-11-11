@@ -1,5 +1,4 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { withSupabaseAuth } from "@/integrations/supabase/auth-context";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, FileText, Loader2, GripVertical, X, Download, Link2, Move } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,7 +17,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/documento")({
   head: () => ({ meta: [{ title: "Criar documento" }] }),
-  component: withSupabaseAuth(Page),
+  component: Page,
 });
 
 const REFERENCE_GROUP_COLORS = [

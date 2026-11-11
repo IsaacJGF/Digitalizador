@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { withSupabaseAuth } from "@/integrations/supabase/auth-context";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus, Pencil, Trash2, GitMerge, Loader2, Search, ChevronDown, ChevronRight, GitBranch, Layers3, CircleDot } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,7 @@ const db = supabase as any;
 
 export const Route = createFileRoute("/catalogos")({
   head: () => ({ meta: [{ title: "Catálogos" }] }),
-  component: withSupabaseAuth(Page),
+  component: Page,
 });
 
 type Item = {

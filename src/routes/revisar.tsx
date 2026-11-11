@@ -1,5 +1,4 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { withSupabaseAuth } from "@/integrations/supabase/auth-context";
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import {
   ArrowLeft,
@@ -62,7 +61,7 @@ type CropTarget =
 
 export const Route = createFileRoute("/revisar")({
   head: () => ({ meta: [{ title: "Revisar questão" }] }),
-  component: withSupabaseAuth(Page),
+  component: Page,
 });
 
 function Page() {

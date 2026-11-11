@@ -1,11 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ScanLine, Library, FileText, BookMarked, BarChart3, Save, Moon, Sun, LogOut } from "lucide-react";
+import { ScanLine, Library, FileText, BookMarked, BarChart3, Save, Moon, Sun } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/ThemeProvider";
-import { useAuth } from "@/integrations/supabase/auth-context";
-import { supabase } from "@/integrations/supabase/client";
 
 const tabs = [
   { to: "/", label: "Digitalizar", icon: ScanLine },
@@ -19,21 +17,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isReviewPage = pathname === "/revisar";
   const { theme, toggleTheme } = useTheme();
-  const { user } = useAuth();
-  const [signingOut, setSigningOut] = useState(false);
-
-  const handleSignOut = async () => {
-    setSigningOut(true);
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      window.location.replace("/login");
-    } catch (error) {
-      console.error("Não foi possível encerrar a sessão:", error);
-      window.alert("Não foi possível encerrar a sessão. Tente novamente.");
-      setSigningOut(false);
-    }
-  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -62,25 +45,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
               );
             })}
           </nav>
-          <div className="flex shrink-0 items-center gap-1">
-            {user?.email && (
-              <span className="hidden max-w-40 truncate px-2 text-xs text-muted-foreground xl:block" title={user.email}>
-                {user.email}
-              </span>
-            )}
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="shrink-0"
-              onClick={handleSignOut}
-              disabled={signingOut}
-              aria-label={signingOut ? "Saindo da conta" : "Sair da conta"}
-              title={signingOut ? "Saindo da conta" : "Sair da conta"}
-            >
-              <LogOut className="size-4" />
-            </Button>
-            <Button
+          <Button
             type="button"
             variant="ghost"
             size="icon"
@@ -89,10 +54,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
             aria-label={theme === "dark" ? "Ativar tema claro" : "Ativar tema escuro"}
             title={theme === "dark" ? "Ativar tema claro" : "Ativar tema escuro"}
             aria-pressed={theme === "dark"}
-            >
-              {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
-            </Button>
-          </div>
+          >
+            {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+          </Button>
         </div>
         <nav className="sm:hidden flex border-t overflow-x-auto">
           {tabs.map((t) => {

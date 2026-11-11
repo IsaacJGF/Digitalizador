@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { withSupabaseAuth } from "@/integrations/supabase/auth-context";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
@@ -48,7 +47,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/analise-provas")({
   head: () => ({ meta: [{ title: "Análise de Provas" }] }),
-  component: withSupabaseAuth(Page),
+  component: Page,
 });
 
 type CatalogItem = { id: string; nome: string; ativo: boolean; area_id?: string | null; conteudo_id?: string | null };
