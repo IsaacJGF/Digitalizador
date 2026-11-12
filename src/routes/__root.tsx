@@ -173,7 +173,7 @@ function ExternalDatabaseGate({ children }: { children: ReactNode }) {
       configureExternalPublicClient(result.config);
       setReady(true);
     }).catch(() => {
-      if (!cancelled) setError("Não foi possível carregar a configuração do banco externo. Cadastre os três EXTERNAL_SUPABASE_* em Lovable Secrets. Nenhuma consulta será enviada ao Lovable Cloud.");
+      if (!cancelled) setError("Não foi possível carregar a configuração do banco externo. Confira EXTERNAL_SUPABASE_URL, EXTERNAL_SUPABASE_PUBLISHABLE_KEY e DIGITALIZADOR_SUPABASE_SECRET_KEY nos Secrets do projeto Lovable. Nenhuma consulta será enviada ao Lovable Cloud.");
     });
     return () => { cancelled = true; };
   }, [loadConfig]);
