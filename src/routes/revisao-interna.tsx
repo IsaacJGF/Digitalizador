@@ -573,7 +573,7 @@ function ReviewWorkspace() {
     }).catch((error) => {
       if (!cancelled) {
         console.error("Falha ao carregar contagens por critério:", error);
-        setCriterionStatsError("Não foi possível carregar os indicadores da Revisão Interna. Confira SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY nos Secrets do servidor Lovable.");
+        setCriterionStatsError("Não foi possível carregar os indicadores da Revisão Interna. Confira EXTERNAL_SUPABASE_URL e DIGITALIZADOR_SUPABASE_SECRET_KEY nos Secrets do projeto Lovable.");
       }
     }).finally(() => {
       if (!cancelled) setCriterionStatsLoading(false);
