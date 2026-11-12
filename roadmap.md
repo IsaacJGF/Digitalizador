@@ -4,6 +4,7 @@
 - [ ] Republicação e conexão no ChatGPT: dependem da aprovação do usuário.
 
 # Migração para Supabase próprio
+- [x] Redirecionar também os clientes padrão para configuração externa validada, sem VITE_ nem fallback; remover o teste solicitado e verificar somente compilação.
 - [x] Direcionar acessos da aplicação ao destino externo, sem fallback; validar compilação e bloqueio por Secrets ausentes, sem gravar dados ou publicar.
 - [ ] Consultas externas: bloqueadas até cadastrar EXTERNAL_SUPABASE_URL, EXTERNAL_SUPABASE_PUBLISHABLE_KEY e EXTERNAL_SUPABASE_SERVICE_ROLE_KEY em Lovable Secrets; nada publicado.
 - [x] Preparar plano de preservação, ensaio, validação, troca e retorno, sem executar a migração.

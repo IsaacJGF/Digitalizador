@@ -10,7 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Agent connection
-- Application database access uses external-only clients from `src/lib/external-database*`; bootstrap returns only public connection fields, requires all three Secrets, and rejects other destinations rather than falling back to managed Cloud. Generated integration clients and existing storage remain untouched.
+- Application database access uses external-only clients from `src/lib/external-database*`; bootstrap returns only public connection fields, requires all three Secrets, and rejects other destinations rather than falling back to managed Cloud. Vite redirects generated default public/admin client imports (including integration-relative imports) to those clients so managed environment values cannot restore Cloud access; generated files and existing storage remain untouched.
 - Keep remote MCP tools in `src/lib/mcp`, one definition per file, and let the SDK generate transport routes; this keeps the public catalog separate from browser UI.
 - MCP database calls use only the public-key client and existing anonymous RLS, with explicit table/field allowlists; internal review and privileged clients must never enter this module.
 - Question updates require the previously read timestamp to prevent overwriting concurrent edits; catalog rename/merge stays in the existing app workflow to preserve linked labels.
