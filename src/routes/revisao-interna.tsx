@@ -305,6 +305,7 @@ function ReviewWorkspace() {
   const [criterionStatusFilter, setCriterionStatusFilter] = useState<ReviewCriterionStatusFilter>("pendente");
   const [criterionStats, setCriterionStats] = useState<ReviewCriterionStats>(() => createEmptyReviewCriterionStats());
   const [criterionStatsLoading, setCriterionStatsLoading] = useState(false);
+  const [criterionStatsError, setCriterionStatsError] = useState("");
   const [reviewChecks, setReviewChecks] = useState<ReviewCheck[]>([]);
   const [reviewHistory, setReviewHistory] = useState<ReviewHistoryEntry[]>([]);
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
@@ -561,6 +562,7 @@ function ReviewWorkspace() {
     if (!initialized) return;
     let cancelled = false;
     setCriterionStatsLoading(true);
+    setCriterionStatsError("");
     void fetchCriterionStats({ data: {
       term: debouncedQuery,
       anos: filters.anos,
@@ -569,7 +571,10 @@ function ReviewWorkspace() {
     } }).then((result) => {
       if (!cancelled) setCriterionStats(result as unknown as ReviewCriterionStats);
     }).catch((error) => {
-      if (!cancelled) console.error("Falha ao carregar contagens por critério:", error);
+      if (!cancelled) {
+        console.error("Falha ao carregar contagens por critério:", error);
+        setCriterionStatsError("Não foi possível carregar os indicadores da Revisão Interna. Confira SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY nos Secrets do servidor Lovable.");
+      }
     }).finally(() => {
       if (!cancelled) setCriterionStatsLoading(false);
     });
@@ -855,6 +860,11 @@ function ReviewWorkspace() {
           <ReviewStat label="Pendentes" value={stats.pending} />
           <ReviewStat label="Precisam de ajuste" value={stats.needsAdjustment} />
         </section>
+        {criterionStatsError && (
+          <p role="alert" className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+            {criterionStatsError}
+          </p>
+        )}
 
         <section className="space-y-3 rounded-xl border bg-card p-3" aria-label="Filtros da revisão">
           <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="Fila de revisão">
