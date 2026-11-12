@@ -5,7 +5,7 @@ export default defineTool({
   name: "criar_item_catalogo", title: "Cadastrar item de catálogo", description: "Cria um item público; conteúdos exigem parent_id da área e subconteúdos do conteúdo. Peça confirmação antes de executar.",
   inputSchema: { item: catalogCreateSchema }, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
   handler: async ({ item }) => {
-    const client = supabaseAnon();
+    const client = await supabaseAnon();
     const response = item.tipo === "conteudo"
       ? await client.from("catalog_conteudos").insert({ nome: item.nome, area_id: item.parent_id ?? "" }).select().single()
       : item.tipo === "subconteudo"

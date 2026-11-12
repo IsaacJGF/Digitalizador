@@ -9,7 +9,7 @@ export default defineTool({
   inputSchema: { busca: z.string().max(200).optional(), area: z.string().max(200).optional(), conteudo: z.string().max(200).optional(), limite: z.number().int().min(1).max(50).default(20), offset: z.number().int().min(0).max(100000).default(0) },
   annotations: { readOnlyHint: true, openWorldHint: false },
   handler: async ({ busca, area, conteudo, limite, offset }) => {
-    let query = supabaseAnon().from("questions").select("id,numero,enunciado,tipo,area_geral,conteudo_principal,ano,prova,instituicao,updated_at", { count: "exact" });
+    let query = (await supabaseAnon()).from("questions").select("id,numero,enunciado,tipo,area_geral,conteudo_principal,ano,prova,instituicao,updated_at", { count: "exact" });
     if (busca) query = query.ilike("enunciado", `%${busca.replace(/[\\%_]/g, "\\$&")}%`);
     if (area) query = query.eq("area_geral", area);
     if (conteudo) query = query.eq("conteudo_principal", conteudo);

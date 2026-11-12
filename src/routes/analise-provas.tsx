@@ -1,3 +1,4 @@
+import { pageMetadata } from "@/lib/page-metadata";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
@@ -41,12 +42,12 @@ import {
   SheetTrigger,
   SheetFooter,
 } from "@/components/ui/sheet";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/external-database";
 import { analyzeProvaQuestions, type FrequencyRow, type ProvaAnalysisQuestion, type ProvaAnalysisSummary } from "@/lib/prova-analysis";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/analise-provas")({
-  head: () => ({ meta: [{ title: "Análise de Provas" }] }),
+  head: () => pageMetadata("Análise de Provas", "Explore os conteúdos e indicadores das questões por prova e ano."),
   component: Page,
 });
 

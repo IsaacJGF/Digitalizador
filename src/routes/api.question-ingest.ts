@@ -696,7 +696,8 @@ async function importIssueQuestion(input: z.infer<typeof issueRequestSchema>) {
   const id = await stableQuestionId(source.issue_id);
 
   // Keep the service-role client inside the server handler.
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { createExternalAdminClient } = await import("@/lib/external-database-admin.server");
+  const supabaseAdmin = createExternalAdminClient();
   const { data: existing, error: lookupError } = await supabaseAdmin
     .from("questions")
     .select("id")
@@ -727,7 +728,8 @@ async function importIssueQuestion(input: z.infer<typeof issueRequestSchema>) {
 async function importQuestionBatch(input: z.infer<typeof batchRequestSchema>) {
   const { batch, source } = input;
   // Keep the service-role client inside this server handler.
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { createExternalAdminClient } = await import("@/lib/external-database-admin.server");
+  const supabaseAdmin = createExternalAdminClient();
   const db = supabaseAdmin as any;
 
   const catalog = await validateActiveCatalogs(db, batch.questions);

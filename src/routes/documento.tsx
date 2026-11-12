@@ -1,3 +1,4 @@
+import { pageMetadata } from "@/lib/page-metadata";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, FileText, Loader2, GripVertical, X, Download, Link2, Move } from "lucide-react";
@@ -16,7 +17,7 @@ import { loadSelectedQuestionIds, saveSelectedQuestionIds } from "@/lib/selectio
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/documento")({
-  head: () => ({ meta: [{ title: "Criar documento" }] }),
+  head: () => pageMetadata("Criar documento", "Prepare documentos Word com as questões selecionadas."),
   component: Page,
 });
 

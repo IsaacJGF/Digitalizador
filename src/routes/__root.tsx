@@ -7,11 +7,14 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { useServerFn } from "@tanstack/react-start";
+import { getExternalDatabaseConfig } from "@/lib/external-database.functions";
+import { configureExternalPublicClient } from "@/lib/external-database";
 
 const DOCUMENT_SELECTION_KEY = "digitalizador.selecionadas";
 
@@ -107,18 +110,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
+      { title: "Digitalizador de Questões" },
       { name: "description", content: "Web app to digitize questions from images, organize them, and generate editable Word documents." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
+      { property: "og:title", content: "Digitalizador de Questões" },
       { property: "og:description", content: "Web app to digitize questions from images, organize them, and generate editable Word documents." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Lovable App" },
+      { name: "twitter:title", content: "Digitalizador de Questões" },
       { name: "twitter:description", content: "Web app to digitize questions from images, organize them, and generate editable Word documents." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/20a3b3e0-30ed-4ccd-9b7c-d252d0ab10d4/id-preview-1597754b--7acdfbd4-1023-4ac7-98c1-69fb673e5133.lovable.app-1781709046025.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/20a3b3e0-30ed-4ccd-9b7c-d252d0ab10d4/id-preview-1597754b--7acdfbd4-1023-4ac7-98c1-69fb673e5133.lovable.app-1781709046025.png" },
     ],
     links: [
       {
@@ -154,10 +155,35 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
+        <ExternalDatabaseGate><Outlet /></ExternalDatabaseGate>
       </ThemeProvider>
     </QueryClientProvider>
   );
+}
+
+function ExternalDatabaseGate({ children }: { children: ReactNode }) {
+  const loadConfig = useServerFn(getExternalDatabaseConfig);
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    void loadConfig().then((result) => {
+      if (cancelled) return;
+      if (!result.ok) { setError(result.error); return; }
+      configureExternalPublicClient(result.config);
+      setReady(true);
+    }).catch(() => {
+      if (!cancelled) setError("Não foi possível carregar a configuração do banco externo. Cadastre os três EXTERNAL_SUPABASE_* em Lovable Secrets. Nenhuma consulta será enviada ao Lovable Cloud.");
+    });
+    return () => { cancelled = true; };
+  }, [loadConfig]);
+  if (ready) return children;
+  return <main className="min-h-screen bg-background text-foreground flex items-center justify-center px-6">
+    <div className="max-w-xl space-y-3" role={error ? "alert" : "status"}>
+      <h1 className="text-xl font-semibold">{error ? "Banco externo indisponível" : "Conectando ao banco externo"}</h1>
+      {error && <p className="text-sm text-muted-foreground break-words">{error}</p>}
+    </div>
+  </main>;
 }
 
 function clearDocumentSelection() {

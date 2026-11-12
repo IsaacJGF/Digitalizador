@@ -7,7 +7,7 @@ export default defineTool({
   inputSchema: { tipo: catalogKind, limite: z.number().int().min(1).max(100).default(50), offset: z.number().int().min(0).max(100000).default(0) },
   annotations: { readOnlyHint: true, openWorldHint: false },
   handler: async ({ tipo, limite, offset }) => {
-    const { data, error, count } = await supabaseAnon().from(catalogTables[tipo]).select("*", { count: "exact" }).order("nome").order("id").range(offset, offset + limite - 1);
+    const { data, error, count } = await (await supabaseAnon()).from(catalogTables[tipo]).select("*", { count: "exact" }).order("nome").order("id").range(offset, offset + limite - 1);
     return error ? failure(error.message) : result({ total: count, itens: data });
   },
 });

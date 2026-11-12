@@ -1,3 +1,4 @@
+import { pageMetadata } from "@/lib/page-metadata";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
@@ -51,7 +52,7 @@ import { QuestionPreviewContent } from "@/components/QuestionPreviewDialog";
 import { ImageCropDialog } from "@/components/ImageCropDialog";
 import { ImageLayoutEditor } from "@/components/ImageLayoutEditor";
 import { ExtraImagesEditor } from "@/components/ExtraImagesEditor";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/external-database";
 import { insertQuestionsWithCompatibility } from "@/lib/question-compat";
 import { loadSelectedQuestionIds, saveSelectedQuestionIds } from "@/lib/selection-store";
 import {
@@ -63,7 +64,7 @@ import { legacyReferenceToContent } from "@/lib/content-blocks";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/questoes")({
-  head: () => ({ meta: [{ title: "Questões salvas" }] }),
+  head: () => pageMetadata("Questões salvas", "Consulte e organize o banco de questões do Digitalizador."),
   component: Page,
 });
 

@@ -1,3 +1,4 @@
+import { pageMetadata } from "@/lib/page-metadata";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import {
@@ -48,7 +49,7 @@ import {
 } from "@/lib/image-layout";
 import { formatMetadataSuggestion, hasMetadataSuggestion, suggestQuestionMetadata } from "@/lib/metadata-suggestions";
 import { insertQuestionsWithCompatibility } from "@/lib/question-compat";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/external-database";
 import { toast } from "sonner";
 
 type CatalogItem = { id: string; nome: string; ativo: boolean; area_id?: string; conteudo_id?: string };
@@ -60,7 +61,7 @@ type CropTarget =
   | { kind: "alt"; index: number; currentImage?: string };
 
 export const Route = createFileRoute("/revisar")({
-  head: () => ({ meta: [{ title: "Revisar questão" }] }),
+  head: () => pageMetadata("Revisar questão", "Confira textos, imagens e classificação das questões digitalizadas."),
   component: Page,
 });
 

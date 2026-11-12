@@ -30,9 +30,9 @@ function passwordMatches(input: string, expected: string) {
 async function requireUnlocked() {}
 
 async function admin() {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { createExternalAdminClient } = await import("@/lib/external-database-admin.server");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return supabaseAdmin as any;
+  return createExternalAdminClient() as any;
 }
 
 export const getReviewAccess = createServerFn({ method: "GET" }).handler(async () => {

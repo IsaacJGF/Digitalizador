@@ -210,7 +210,8 @@ export const Route = createFileRoute("/api/question-image-ingest")({
         }
 
         try {
-          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const { createExternalAdminClient } = await import("@/lib/external-database-admin.server");
+  const supabaseAdmin = createExternalAdminClient();
           const { data, error } = await supabaseAdmin.rpc(
             "import_question_images_batch",
             { _items: validation.data.questions },

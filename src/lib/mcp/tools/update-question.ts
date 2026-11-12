@@ -7,7 +7,7 @@ export default defineTool({
   inputSchema: { id: z.uuid(), updated_at: z.string().datetime({ offset: true }).describe("Versão obtida ao ler a questão; impede sobrescrever edições concorrentes."), alteracoes: updateQuestionSchema },
   annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
   handler: async ({ id, updated_at, alteracoes }) => {
-    const { data, error } = await supabaseAnon().from("questions").update(alteracoes).eq("id", id).eq("updated_at", updated_at).select("id,numero,updated_at").maybeSingle();
+    const { data, error } = await (await supabaseAnon()).from("questions").update(alteracoes).eq("id", id).eq("updated_at", updated_at).select("id,numero,updated_at").maybeSingle();
     if (error) return failure(error.message);
     return data ? result(data) : failure("Questão inexistente ou alterada por outra pessoa. Leia novamente antes de editar.");
   },

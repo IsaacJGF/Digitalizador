@@ -1,3 +1,4 @@
+import { pageMetadata } from "@/lib/page-metadata";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus, Pencil, Trash2, GitMerge, Loader2, Search, ChevronDown, ChevronRight, GitBranch, Layers3, CircleDot } from "lucide-react";
@@ -9,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AppLayout } from "@/components/AppLayout";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/external-database";
 import { toast } from "sonner";
 import { CATALOG_LABEL, CATALOG_TABLE, type CatalogKind, countUsage, renameInQuestions } from "@/lib/catalogos";
 
@@ -18,7 +19,7 @@ import { CATALOG_LABEL, CATALOG_TABLE, type CatalogKind, countUsage, renameInQue
 const db = supabase as any;
 
 export const Route = createFileRoute("/catalogos")({
-  head: () => ({ meta: [{ title: "Catálogos" }] }),
+  head: () => pageMetadata("Catálogos", "Organize áreas, conteúdos, provas e tags das questões."),
   component: Page,
 });
 

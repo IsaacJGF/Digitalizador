@@ -1,3 +1,4 @@
+import { pageMetadata } from "@/lib/page-metadata";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
@@ -29,7 +30,7 @@ import {
 } from "@/components/QuestionEditDialog";
 import { QuestionPreviewContent } from "@/components/QuestionPreviewDialog";
 import type { PreviewQuestion } from "@/components/QuestionPreviewDialog";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/external-database";
 import { legacyReferenceToContent } from "@/lib/content-blocks";
 import { normalizeExtraImages, type ExtraImage, type ImagePlacementLayout } from "@/lib/image-layout";
 import { toast } from "sonner";
@@ -202,7 +203,7 @@ function createEmptyReviewCriterionStats(): ReviewCriterionStats {
 }
 
 export const Route = createFileRoute("/revisao-interna")({
-  head: () => ({ meta: [{ title: "Revisão interna de questões" }] }),
+  head: () => pageMetadata("Revisão interna de questões", "Confira a fila, os critérios e o histórico de revisão das questões."),
   component: ReviewWorkspace,
 });
 
@@ -573,7 +574,7 @@ function ReviewWorkspace() {
     }).catch((error) => {
       if (!cancelled) {
         console.error("Falha ao carregar contagens por critério:", error);
-        setCriterionStatsError("Não foi possível carregar os indicadores da Revisão Interna. Confira SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY nos Secrets do servidor Lovable.");
+        setCriterionStatsError("Não foi possível carregar os indicadores da Revisão Interna. Cadastre EXTERNAL_SUPABASE_URL, EXTERNAL_SUPABASE_PUBLISHABLE_KEY e EXTERNAL_SUPABASE_SERVICE_ROLE_KEY em Lovable Secrets.");
       }
     }).finally(() => {
       if (!cancelled) setCriterionStatsLoading(false);

@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/external-database";
 
 export type SimpleCatalog = {
   id: string;
