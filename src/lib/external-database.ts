@@ -13,7 +13,7 @@ export function configureExternalPublicClient(config: { url: string; publicKey: 
 
 export const supabase = new Proxy({} as SupabaseClient<Database>, {
   get(_target, property) {
-    if (!client) throw new Error("Banco externo indisponível. Configure os três EXTERNAL_SUPABASE_* em Lovable Secrets. Não há fallback para Lovable Cloud.");
+    if (!client) throw new Error("Banco externo indisponível. Confira EXTERNAL_SUPABASE_URL, EXTERNAL_SUPABASE_PUBLISHABLE_KEY e DIGITALIZADOR_SUPABASE_SECRET_KEY nos Secrets do projeto Lovable. Não há fallback para Lovable Cloud.");
     const value = Reflect.get(client, property);
     return typeof value === "function" ? value.bind(client) : value;
   },

@@ -4,7 +4,7 @@ export function validateExternalDatabaseConfig(url: string | undefined, publicKe
   const missing = [
     ...(!url?.trim() ? ["EXTERNAL_SUPABASE_URL"] : []),
     ...(!publicKey?.trim() ? ["EXTERNAL_SUPABASE_PUBLISHABLE_KEY"] : []),
-    ...(requireAdmin && !adminKey?.trim() ? ["EXTERNAL_SUPABASE_SERVICE_ROLE_KEY"] : []),
+    ...(requireAdmin && !adminKey?.trim() ? ["DIGITALIZADOR_SUPABASE_SECRET_KEY"] : []),
   ];
   if (missing.length) throw new Error(`Banco externo não configurado. Cadastre em Lovable Secrets: ${missing.join(", ")}. Nenhuma consulta será enviada ao Lovable Cloud.`);
   const parsed = new URL(url?.trim() ?? "");
