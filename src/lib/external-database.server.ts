@@ -7,7 +7,7 @@ export const getExternalPublicConfig = createServerOnlyFn(() => {
   return validateExternalDatabaseConfig(
     process.env["EXTERNAL_SUPABASE_URL"],
     process.env["EXTERNAL_SUPABASE_PUBLISHABLE_KEY"],
-    process.env["EXTERNAL_SUPABASE_SERVICE_ROLE_KEY"],
+    process.env["DIGITALIZADOR_SUPABASE_SECRET_KEY"],
     true,
   );
 });
