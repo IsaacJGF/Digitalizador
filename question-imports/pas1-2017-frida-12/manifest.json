@@ -1,0 +1,352 @@
+{
+  "schema_version": 1,
+  "batch_key": "pas1-2017-frida-fisica-12",
+  "references": [
+    {
+      "id": "pas1-2017-fouette-040-042",
+      "blocos": [
+        { "tipo": "imagem" },
+        { "tipo": "texto", "texto": "Figura I." },
+        { "tipo": "imagem" },
+        {
+          "tipo": "texto",
+          "texto": "Figura II.\n\nInternet: <www.buzzle.com>.\n\nA dança compõe-se de movimentos ritmados do corpo acompanhados por música, que é a arte de se exprimir por meio de sons. No balé clássico, um dos passos mais tradicionais é o fouetté: o dançarino gira em torno de seu próprio eixo e braços e pernas se aproximam ou distanciam do corpo, o que, respectivamente, aumenta ou diminui a velocidade de rotação do dançarino. As figuras I e II acima mostram dois momentos dessa técnica.\n\nConsiderando que, na execução dos movimentos do fouetté, o momento angular se conserva, julgue os itens a seguir."
+        }
+      ],
+      "fonte": "PAS 1/UnB, Subprograma 2017 (triênio 2017/2019), Primeira Etapa, Caderno Frida, PAS1313_001_01, p. 7 (PDF unificado, p. 125); figuras I e II."
+    },
+    {
+      "id": "pas1-2017-salto-043",
+      "blocos": [
+        { "tipo": "imagem" },
+        {
+          "tipo": "texto",
+          "texto": "Internet: <web.hep.uiuc.edu> (com adaptações).\n\nA figura acima mostra as posições de um bailarino no início e no fim do salto, que pode ser descrito como um movimento oblíquo no vácuo. Na figura, CM é o centro de massa do bailarino, h é a altura máxima atingida por CM e D é a distância percorrida durante o salto.\n\nCom relação às informações apresentadas, julgue o seguinte item."
+        }
+      ],
+      "fonte": "PAS 1/UnB, Subprograma 2017 (triênio 2017/2019), Primeira Etapa, Caderno Frida, PAS1313_001_01, p. 7 (PDF unificado, p. 125); figura do salto."
+    },
+    {
+      "id": "pas1-2017-equilibrio-bailarinos-044",
+      "blocos": [
+        { "tipo": "imagem" },
+        {
+          "tipo": "texto",
+          "texto": "Sandra Brown and Johann Renvall (ABT) em Airs (Nancy Ellison). Internet: <web.hep.uiuc.edu>.\n\nCom base na foto acima, que mostra parte de uma coreografia em que se pode observar uma situação perfeita de equilíbrio estático, faça o que se pede no item 44, que é do tipo D."
+        }
+      ],
+      "fonte": "PAS 1/UnB, Subprograma 2017 (triênio 2017/2019), Primeira Etapa, Caderno Frida, PAS1313_001_01, p. 7 (PDF unificado, p. 125); fotografia e diagrama."
+    },
+    {
+      "id": "pas1-2017-quadro-atrito-051-052",
+      "blocos": [
+        { "tipo": "imagem" },
+        { "tipo": "texto", "texto": "Figura I." },
+        { "tipo": "imagem" },
+        {
+          "tipo": "texto",
+          "texto": "Figura II.\n\nA figura I acima ilustra a situação em que um quadro está preso à parede por meio de um único cabo. O quadro está inclinado verticalmente para uma melhor visualização pelos observadores. O cabo forma um ângulo φ com a parede e, na base do quadro, a força de atrito mantém o sistema em equilíbrio. Na figura II, que mostra o diagrama de forças dessa situação, T⃗ é a tensão no cabo, P⃗ é o peso do quadro, F⃗ₐ é a força de atrito e N⃗ é a reação normal da parede sobre o quadro.\n\nA partir das informações precedentes, julgue o item 51 e faça o que se pede no item 52, que é do tipo B."
+        }
+      ],
+      "fonte": "PAS 1/UnB, Subprograma 2017 (triênio 2017/2019), Primeira Etapa, Caderno Frida, PAS1313_001_01, p. 9 (PDF unificado, p. 127); figuras I e II."
+    },
+    {
+      "id": "pas1-2017-quadro-cabos-053-055",
+      "blocos": [
+        { "tipo": "imagem" },
+        { "tipo": "imagem" },
+        {
+          "tipo": "texto",
+          "texto": "A figura acima ilustra a situação em que um quadro está pendurado na parede de um museu por meio de dois cabos, que formam um ângulo de 120°. Os cabos estão presos à moldura nos seus cantos superiores e a um prego, no ponto de suporte (PS). O prego está alinhado com o centro de massa (CM) do quadro. Na figura, T⃗₁ representa a tensão nos cabos, devido à força peso P⃗.\n\nNão existe atrito entre o quadro e a parede.\n\nTendo as informações acima como referências e considerando que os cabos e o prego têm massas desprezíveis e que o prego tem dimensões desprezíveis, julgue os seguintes itens."
+        }
+      ],
+      "fonte": "PAS 1/UnB, Subprograma 2017 (triênio 2017/2019), Primeira Etapa, Caderno Frida, PAS1313_001_01, p. 9 (PDF unificado, p. 127); figuras do quadro e do diagrama vetorial."
+    },
+    {
+      "id": "pas1-2017-polimeros-072-075",
+      "blocos": [
+        {
+          "tipo": "texto",
+          "texto": "Sacolas de supermercado, garrafas de refrigerantes e espumas são os principais plásticos encontrados no mar. Esses materiais, misturas de polímeros, apresentam as características mostradas na tabela a seguir.\n\nMaterial | Principal polímero constituinte | Densidade do polímero puro | Ponto de fusão do polímero puro\nSacolas | Polietileno de baixa densidade (PEBD) | 0,92 g/cm³ | 110 °C\nEspumas | Poliestireno (PS) | 1,05 g/cm³ | 220 °C\nGarrafas | Politereftalato de etileno (PET) | 1,38 g/cm³ | 260 °C\n\nA partir dessas informações, julgue os itens 72 e 73, assinale a opção correta no item 74, que é do tipo C, e faça o que se pede no item 75, que é do tipo D."
+        }
+      ],
+      "fonte": "PAS 1/UnB, Subprograma 2017 (triênio 2017/2019), Primeira Etapa, Caderno Frida, PAS1313_001_01, p. 12 (PDF unificado, p. 130); tabela transcrita em texto."
+    }
+  ],
+  "questions": [
+    {
+      "numero": "40",
+      "tipo": "certo_errado",
+      "enunciado": "Se a velocidade de giro do dançarino for constante, ele não estará submetido a nenhuma aceleração.",
+      "alternativas": [],
+      "resposta": "C",
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Cinemática",
+      "subconteudo_principal": "Movimento circular",
+      "conteudos_relacionados": ["Aceleração centrípeta", "Movimento circular"],
+      "tags_livres": ["Sem cálculo"],
+      "ano": "2017",
+      "prova": "PAS 1",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2017 (triênio 2017/2019)",
+      "caderno": "Frida",
+      "referencia_id": "pas1-2017-fouette-040-042",
+      "fonte": "Cebraspe, gabarito oficial definitivo PAS1313_001_01, item 40. https://cdn.cebraspe.org.br/pas/arquivos/Gab_Definitivo_PAS1313_001_01.PDF",
+      "observacoes": "As duas figuras da referência foram reservadas como espaços de imagem nativos para inserção posterior pelo editor."
+    },
+    {
+      "numero": "41",
+      "tipo": "certo_errado",
+      "enunciado": "Na figura I, se o dançarino movimentar os braços para baixo, o seu centro de massa permanecerá inalterado.",
+      "alternativas": [],
+      "resposta": "E",
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Dinâmica",
+      "subconteudo_principal": "Dinâmica circular",
+      "conteudos_relacionados": ["Centro de massa", "Movimento circular"],
+      "tags_livres": ["Sem cálculo", "Interpretação de figura"],
+      "ano": "2017",
+      "prova": "PAS 1",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2017 (triênio 2017/2019)",
+      "caderno": "Frida",
+      "referencia_id": "pas1-2017-fouette-040-042",
+      "fonte": "Cebraspe, gabarito oficial definitivo PAS1313_001_01, item 41. https://cdn.cebraspe.org.br/pas/arquivos/Gab_Definitivo_PAS1313_001_01.PDF",
+      "observacoes": "As duas figuras da referência foram reservadas como espaços de imagem nativos para inserção posterior pelo editor."
+    },
+    {
+      "numero": "42",
+      "tipo": "certo_errado",
+      "enunciado": "Para diminuir o período do giro, o dançarino deve aproximar os braços do corpo, como ilustrado na figura II.",
+      "alternativas": [],
+      "resposta": "C",
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Dinâmica",
+      "subconteudo_principal": "Dinâmica circular",
+      "conteudos_relacionados": ["Movimento circular", "Centro de massa"],
+      "tags_livres": ["Sem cálculo", "Usa fórmula", "Interpretação de figura"],
+      "ano": "2017",
+      "prova": "PAS 1",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2017 (triênio 2017/2019)",
+      "caderno": "Frida",
+      "referencia_id": "pas1-2017-fouette-040-042",
+      "fonte": "Cebraspe, gabarito oficial definitivo PAS1313_001_01, item 42. https://cdn.cebraspe.org.br/pas/arquivos/Gab_Definitivo_PAS1313_001_01.PDF",
+      "observacoes": "O catálogo não possui subconteúdo específico para conservação do momento angular; foi usada a categoria ativa mais próxima, Dinâmica circular. As duas figuras da referência foram reservadas como espaços de imagem nativos para inserção posterior pelo editor."
+    },
+    {
+      "numero": "43",
+      "tipo": "certo_errado",
+      "enunciado": "O tempo necessário para que o CM do bailarino atinja a altura máxima h é igual a √(2h/g), em que g é a aceleração da gravidade.",
+      "alternativas": [],
+      "resposta": "C",
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Cinemática",
+      "subconteudo_principal": "Movimento uniformemente variado (MUV)",
+      "conteudos_relacionados": ["Movimento vertical", "Lançamento oblíquo", "Movimento bidimensional"],
+      "tags_livres": ["Usa fórmula", "Interpretação de figura"],
+      "ano": "2017",
+      "prova": "PAS 1",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2017 (triênio 2017/2019)",
+      "caderno": "Frida",
+      "referencia_id": "pas1-2017-salto-043",
+      "fonte": "Cebraspe, gabarito oficial definitivo PAS1313_001_01, item 43. https://cdn.cebraspe.org.br/pas/arquivos/Gab_Definitivo_PAS1313_001_01.PDF",
+      "observacoes": "A figura do salto foi reservada como espaço de imagem nativo para inserção posterior pelo editor."
+    },
+    {
+      "numero": "44",
+      "tipo": "discursiva",
+      "enunciado_blocos": [
+        {
+          "tipo": "texto",
+          "texto": "Desenhe, na figura a seguir, o conjunto de forças que atuam nos corpos dos bailarinos e no solo, identificando-as. Por meio de um diagrama de forças, mostre que a resultante das forças que atuam no centro de massa (CM2) do bailarino no solo é igual a zero."
+        },
+        { "tipo": "imagem" },
+        {
+          "tipo": "texto",
+          "texto": "CM1 = centro de massa 1; CM2 = centro de massa 2.\n\nO espaço reservado acima é de uso opcional, para rascunho. Não se esqueça de transcrever sua resposta para o Caderno de Respostas."
+        }
+      ],
+      "alternativas": [],
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Estática",
+      "subconteudo_principal": "Equilíbrio de partículas",
+      "conteudos_relacionados": ["Sistema de forças", "Força resultante", "Condição de equilíbrio", "Centro de massa"],
+      "tags_livres": ["Sem cálculo", "Interpretação de figura"],
+      "ano": "2017",
+      "prova": "PAS 1",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2017 (triênio 2017/2019)",
+      "caderno": "Frida",
+      "referencia_id": "pas1-2017-equilibrio-bailarinos-044",
+      "fonte": "Cebraspe, gabarito oficial definitivo PAS1313_001_01, item 44 (Tipo D; sem resposta-modelo textual no gabarito). https://cdn.cebraspe.org.br/pas/arquivos/Gab_Definitivo_PAS1313_001_01.PDF",
+      "observacoes": "Resposta construída Tipo D; o gabarito oficial não fornece resposta-modelo textual. A fotografia e o diagrama foram reservados como espaços de imagem nativos para inserção posterior pelo editor."
+    },
+    {
+      "numero": "51",
+      "tipo": "certo_errado",
+      "enunciado": "O coeficiente de atrito estático (μₑ) entre o quadro e a parede pode ser calculado por μₑ = |P⃗| / (|T⃗| · sen(φ)) − 1 / tg(φ).",
+      "alternativas": [],
+      "resposta": "C",
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Dinâmica",
+      "subconteudo_principal": "Atrito e resistência",
+      "conteudos_relacionados": ["Força de atrito", "Força normal", "Força de tração", "Condição de equilíbrio"],
+      "tags_livres": ["Sem cálculo", "Usa fórmula"],
+      "ano": "2017",
+      "prova": "PAS 1",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2017 (triênio 2017/2019)",
+      "caderno": "Frida",
+      "referencia_id": "pas1-2017-quadro-atrito-051-052",
+      "fonte": "Cebraspe, gabarito oficial definitivo PAS1313_001_01, item 51. https://cdn.cebraspe.org.br/pas/arquivos/Gab_Definitivo_PAS1313_001_01.PDF",
+      "observacoes": "As figuras da referência foram reservadas como espaços de imagem nativos para inserção posterior pelo editor."
+    },
+    {
+      "numero": "52",
+      "tipo": "numerica",
+      "enunciado_blocos": [
+        {
+          "tipo": "texto",
+          "texto": "Considerando que o quadro pese 20 N, desconsiderando a sua espessura e considerando as dimensões mostradas na figura a seguir, calcule, em N × m, o módulo do torque gerado pela força peso em relação ao ponto F. Após efetuar todos os cálculos solicitados, despreze, para a marcação no Caderno de Respostas, a parte fracionária do resultado final obtido, caso exista."
+        },
+        { "tipo": "imagem" }
+      ],
+      "alternativas": [],
+      "resposta": "1",
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Estática",
+      "subconteudo_principal": "Torque",
+      "conteudos_relacionados": ["Força peso", "Braço de Alavanca"],
+      "tags_livres": ["Com cálculo", "Usa fórmula", "Interpretação de figura"],
+      "ano": "2017",
+      "prova": "PAS 1",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2017 (triênio 2017/2019)",
+      "caderno": "Frida",
+      "referencia_id": "pas1-2017-quadro-atrito-051-052",
+      "fonte": "Cebraspe, gabarito oficial definitivo PAS1313_001_01, item 52. https://cdn.cebraspe.org.br/pas/arquivos/Gab_Definitivo_PAS1313_001_01.PDF",
+      "observacoes": "As figuras da referência e do enunciado foram reservadas como espaços de imagem nativos para inserção posterior pelo editor."
+    },
+    {
+      "numero": "53",
+      "tipo": "certo_errado",
+      "enunciado": "Se existisse atrito entre o quadro e a parede, ele dependeria da área de contato entre ambos, porque, quanto maior a área de contato, maior a força de atrito.",
+      "alternativas": [],
+      "resposta": "E",
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Dinâmica",
+      "subconteudo_principal": "Atrito e resistência",
+      "conteudos_relacionados": ["Força de atrito"],
+      "tags_livres": ["Sem cálculo"],
+      "ano": "2017",
+      "prova": "PAS 1",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2017 (triênio 2017/2019)",
+      "caderno": "Frida",
+      "referencia_id": "pas1-2017-quadro-cabos-053-055",
+      "fonte": "Cebraspe, gabarito oficial definitivo PAS1313_001_01, item 53. https://cdn.cebraspe.org.br/pas/arquivos/Gab_Definitivo_PAS1313_001_01.PDF",
+      "observacoes": "As duas figuras da referência foram reservadas como espaços de imagem nativos para inserção posterior pelo editor."
+    },
+    {
+      "numero": "54",
+      "tipo": "certo_errado",
+      "enunciado": "Para analisar as condições de equilíbrio do sistema formado pelo quadro e pelos cabos, é necessário considerar a natureza vetorial das grandezas envolvidas.",
+      "alternativas": [],
+      "resposta": "C",
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Estática",
+      "subconteudo_principal": "Equilíbrio de corpos extensos",
+      "conteudos_relacionados": ["Vetores", "Força de tração", "Condição de equilíbrio"],
+      "tags_livres": ["Sem cálculo", "Interpretação de figura"],
+      "ano": "2017",
+      "prova": "PAS 1",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2017 (triênio 2017/2019)",
+      "caderno": "Frida",
+      "referencia_id": "pas1-2017-quadro-cabos-053-055",
+      "fonte": "Cebraspe, gabarito oficial definitivo PAS1313_001_01, item 54. https://cdn.cebraspe.org.br/pas/arquivos/Gab_Definitivo_PAS1313_001_01.PDF",
+      "observacoes": "As duas figuras da referência foram reservadas como espaços de imagem nativos para inserção posterior pelo editor."
+    },
+    {
+      "numero": "55",
+      "tipo": "certo_errado",
+      "enunciado": "O módulo da componente vertical da tensão independe do ângulo formado entre os cabos.",
+      "alternativas": [],
+      "resposta": "C",
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Estática",
+      "subconteudo_principal": "Equilíbrio de corpos extensos",
+      "conteudos_relacionados": ["Força de tração", "Vetores", "Condição de equilíbrio"],
+      "tags_livres": ["Sem cálculo", "Interpretação de figura"],
+      "ano": "2017",
+      "prova": "PAS 1",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2017 (triênio 2017/2019)",
+      "caderno": "Frida",
+      "referencia_id": "pas1-2017-quadro-cabos-053-055",
+      "fonte": "Cebraspe, gabarito oficial definitivo PAS1313_001_01, item 55. https://cdn.cebraspe.org.br/pas/arquivos/Gab_Definitivo_PAS1313_001_01.PDF",
+      "observacoes": "As duas figuras da referência foram reservadas como espaços de imagem nativos para inserção posterior pelo editor."
+    },
+    {
+      "numero": "74",
+      "tipo": "multipla_escolha",
+      "enunciado": "Considerando que uma fonte de calor, partindo de 25 °C, aqueça continuamente uma tira da garrafa de refrigerante até a fusão, assinale a opção cujo gráfico melhor representa a variação da temperatura do material em função do tempo.",
+      "alternativas": [
+        { "letra": "A", "texto": "", "imagem_pendente": true },
+        { "letra": "B", "texto": "", "imagem_pendente": true },
+        { "letra": "C", "texto": "", "imagem_pendente": true },
+        { "letra": "D", "texto": "", "imagem_pendente": true }
+      ],
+      "resposta": "D",
+      "area_geral": "Física Térmica",
+      "conteudo_principal": "Calorimetria",
+      "subconteudo_principal": "Mudanças de estado",
+      "conteudos_relacionados": ["Curva de aquecimento", "Calor latente", "Temperatura"],
+      "tags_livres": ["Sem cálculo", "Análise de gráfico ou tabela", "Interpretação de figura"],
+      "ano": "2017",
+      "prova": "PAS 1",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2017 (triênio 2017/2019)",
+      "caderno": "Frida",
+      "referencia_id": "pas1-2017-polimeros-072-075",
+      "fonte": "Cebraspe, gabarito oficial definitivo PAS1313_001_01, item 74. https://cdn.cebraspe.org.br/pas/arquivos/Gab_Definitivo_PAS1313_001_01.PDF",
+      "observacoes": "Os quatro gráficos das alternativas foram reservados como espaços de imagem nativos para inserção posterior pelo editor."
+    },
+    {
+      "numero": "75",
+      "tipo": "discursiva",
+      "enunciado_blocos": [
+        {
+          "tipo": "texto",
+          "texto": "Uma maneira de identificar os diferentes tipos de plásticos é pela verificação do seu comportamento quando imersos em soluções com diferentes densidades, como no caso da solução salina, cuja densidade varia em função da concentração do sal, conforme mostra o gráfico abaixo."
+        },
+        { "tipo": "imagem" },
+        {
+          "tipo": "texto",
+          "texto": "Considere que os recipientes I e II mostrados na figura a seguir contenham, respectivamente, uma solução aquosa salina de concentração igual a 14% (massa/massa) em NaCl e água pura. Considere ainda que três blocos maciços de polímeros puros (PEBD, PS e PET) sejam colocados em cada recipiente. A partir dessas informações, desenhe as posições dos três polímeros nos recipientes mostrados, após os sistemas entrarem em equilíbrio. Utilize a seguinte representação: ○ = PEBD; □ = PS; e △ = PET."
+        },
+        { "tipo": "imagem" },
+        {
+          "tipo": "texto",
+          "texto": "O espaço reservado acima é de uso opcional, para rascunho. Não se esqueça de transcrever sua resposta para o Caderno de Respostas."
+        }
+      ],
+      "alternativas": [],
+      "area_geral": "Mecânica",
+      "conteudo_principal": "Hidrostática",
+      "subconteudo_principal": "Empuxo e flutuação",
+      "conteudos_relacionados": ["Densidade", "Empuxo", "Flutuação"],
+      "tags_livres": ["Análise de gráfico ou tabela", "Interpretação de figura"],
+      "ano": "2017",
+      "prova": "PAS 1",
+      "instituicao": "UnB",
+      "modalidade": "Subprograma 2017 (triênio 2017/2019)",
+      "caderno": "Frida",
+      "referencia_id": "pas1-2017-polimeros-072-075",
+      "fonte": "Cebraspe, gabarito oficial definitivo PAS1313_001_01, item 75 (Tipo D; sem resposta-modelo textual no gabarito). https://cdn.cebraspe.org.br/pas/arquivos/Gab_Definitivo_PAS1313_001_01.PDF",
+      "observacoes": "Resposta construída Tipo D; o gabarito oficial não fornece resposta-modelo textual. O gráfico de densidade e a figura dos recipientes foram reservados como espaços de imagem nativos para inserção posterior pelo editor."
+    }
+  ]
+}
